@@ -7163,6 +7163,12 @@ function wsPicker(){
 }
 
 /* ══════════════════ شاشة مركز الإجراءات ══════════════════ */
+let AC_BUSY=false;
+function acFresh(){ let mx=0; Object.keys(DOCS).forEach(k=>{ const d=DOCS[k]; if(d&&+d.updatedAt>mx) mx=+d.updatedAt; }); return mx? new Date(mx).toLocaleString(EN()?"en-GB":"ar-EG",{dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Riyadh"}) : "—"; }
+ACT.acRefresh=async()=>{ if(AC_BUSY) return; AC_BUSY=true; render();
+  try{ S.loadedFrom=null; S.loadedTo=null; await reload(); toast(L("الإجراءات اتحدثت على آخر أرقام","Actions refreshed with the latest data")); }
+  catch(e){ toast(L("مقدرتش أحدّث: ","Couldn't refresh: ")+(e.message||e),true); }
+  AC_BUSY=false; render(); };
 function renderActions(){
   const [from,to]=resolveRange();
   if(!S.cfg.clients.length) return emptyBox(L("ابدأ بإضافة أول عميل.","Start by adding your first client."),
@@ -7187,7 +7193,9 @@ function renderActions(){
   }).join("");
   const counts=bands.map(b=>[b,acts.filter(a=>a.pri.band===b).length]).filter(x=>x[1]);
   const main='<div class="card"><div class="card-h"><div class="card-t">'+esc(L("محتاج تدخلك","Needs you"))+'</div><div class="card-x">'+
-      esc(L("الأهم فوق، وبعدين الأكبر فلوس · ","Most urgent first, then most money · "))+per+"</div></div>"+
+      esc(L("الأهم فوق، وبعدين الأكبر فلوس · ","Most urgent first, then most money · "))+per+
+      ' <button class="btn btn-s" data-a="acRefresh"'+(AC_BUSY?" disabled":"")+'>↻ '+esc(AC_BUSY?L("بحدّث…","Refreshing…"):L("تحديث","Refresh"))+"</button>"+
+      '<div class="hint" style="margin-top:4px">'+esc(L("آخر أرقام وصلت: ","Latest data: ")+acFresh())+"</div></div></div>"+
     '<div class="ac-hero"><span class="ac-n num">'+acts.length+'</span><span>'+esc(L("بند","items"))+"</span>"+
       counts.map(([b,n])=>'<span class="acr-pill" style="color:'+PRI[b].color+';border-color:'+PRI[b].color+'">'+n+" "+esc(PRI[b].label)+"</span>").join("")+"</div>"+
     (rows||'<div class="empty" style="padding:24px">'+esc(L("مفيش حاجة محتاجة تدخلك في الفترة دي.","Nothing needs you in this period."))+"</div>")+
