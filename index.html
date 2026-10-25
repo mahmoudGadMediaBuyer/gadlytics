@@ -8197,7 +8197,7 @@ function renderMediaAuto(){
       av.forEach((v,i)=>{ if(shown>=600) return; shown++;
         h+="<tr"+(i===0?' class="grp"':"")+">"+
           "<td>"+maChip(v.rate)+maPerf(v)+"</td>"+
-          '<td class="md-vid">'+(v.camps.map(esc).join("<br>")||"—")+"</td>"+
+          '<td class="md-vid"'+(v.camps.length>3?' title="'+esc(v.camps.join("\n"))+'"':"")+">"+(v.camps.slice(-3).map(esc).join("<br>")||"—")+(v.camps.length>3?'<div class="ma-st">+'+(v.camps.length-3)+esc(L(" حملات تانية"," more"))+"</div>":"")+"</td>"+
           "<td>"+chk(v.launched)+"</td><td>"+chk(v.uploaded)+"</td>"+
           MA_PL.slice().reverse().map(pl=>"<td>"+chk(v.plats[pl[0]])+"</td>").join("")+
           '<td style="white-space:nowrap;text-align:center">'+(v.first? esc(rpDayName(v.first))+"<br><b>"+esc(fdate(v.first))+"</b>" : "—")+"</td>"+
@@ -8232,7 +8232,6 @@ ACT.maHookSave=async t=>{ const id=t.dataset.id, v=(($("#maHookT")||{}).value||"
   catch(e){ toast(L("مقدرتش أحفظ: ","Couldn't save: ")+(e.message||e),true); } };
 
 function renderCreatives(){
-  if(window.SUPA_DB&&SUPA_DB.client) return renderMediaAuto();
   const all=S.creatives||[], list=creativeList();
   const f=S.mf;
   let h='<div class="md-bar">'+
@@ -10378,6 +10377,7 @@ function crSumm(items){ const h=crAvg(items,"hook"), d=crAvg(items,"hold"), r=cr
   return '<span class="cr-sm">'+(h!=null?"Hook "+fnum(h,1)+"%":"")+(d!=null?" · Hold "+fnum(d,1)+"%":"")+(r!=null?" · ROAS "+fnum(r,2)+"x":"")+"</span>"; }
 function crDistinct(k){ return [...new Set((S.lib||[]).filter(c=>inScope(c.clientId)).map(crN).map(n=>n[k]).filter(Boolean))].sort(); }
 function renderLibrary(){
+  if(window.SUPA_DB&&SUPA_DB.client) return renderMediaAuto();
   const f=S.crf, list=crList(), all=(S.lib||[]).filter(c=>inScope(c.clientId)).map(crN);
   const cnt=s=>all.filter(n=>n.status===s).length, late=all.filter(crLateSort).length;
   let h='<div class="tv-top"><div class="tv-stats">'+CR_ST.slice(0,5).map(s=>'<button class="tv-stat'+(f.status===s[0]?" on":"")+'" data-a="lbfSt" data-s="'+s[0]+'"><b style="color:'+s[3]+'">'+cnt(s[0])+"</b><span>"+esc(L(s[1],s[2]))+"</span></button>").join("")+
