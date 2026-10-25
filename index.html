@@ -10959,7 +10959,7 @@ ACT.syncSnap=async()=>{
   if(SYNC.busy) return;
   if(READONLY) return toast(L("وضع المشاهدة — مينفعش تسجل لقطات","View-only — snapshots are locked"),true);
   if(window.SUPA_DB){ await schLoad(); SCH.cfg=Object.assign({every:30,start:"09:00",on:true},SCH.cfg||{},{requested:new Date().toISOString()}); await schSave();
-    return toast(L("اتسجل طلب لقطة — Claude بيشيّك كل ربع ساعة وهياخدها (Meta وTikTok وسناب + خزامى) وتظهر في الشيت لوحدها.","Snapshot requested — Claude checks every 15 minutes and will take it.")); }
+    return toast(L("اتسجل طلب لقطة — Claude بيشيّك كل ٥ دقايق — اللقطة هتظهر في الشيت خلال ٥–٧ دقايق بالكتير (Meta وTikTok وسناب + خزامى).","Snapshot requested — Claude checks every 5 minutes; it lands within 5–7 minutes.")); }
   const cls=S.cfg.clients.filter(c=>hasLinks(c)&&(!S.ws||c.id===S.ws));
   if(!cls.length){ S.view="admin"; S.setupTab="links"; render(); return toast(L("اربط حسابات العميل الأول من «الربط التلقائي»","Link the client's accounts first"),true); }
   const mcp=await mcpGet();
@@ -10994,11 +10994,11 @@ function renderLinks(){
   if(window.SUPA_DB){ const c=SCH.cfg||{}; if(!SCH.loaded) setTimeout(schLoad,0);
     const acc=[["Meta","312559678073897 · 1355849785679367"],["TikTok","7338783723795595266"],["Snapchat","828aa8bb-bd63-44ee-8cf8-b735981ca06f"],[L("خزامى","Khzama"),"ME · TT · SC · bio · com · DM"]];
     return card(L("السحب التلقائي","Auto-pull"),L("بيتم من Claude — مفيش حاجة تتملي هنا","Runs from Claude — nothing to fill in here"),
-      '<div class="lk-intro">'+esc(L("Claude بيشيّك كل ربع ساعة من ٩ الصبح لـ ١٢ بالليل: لو جه ميعاد اللقطة أو دوست «ابدأ سناب شوت» بياخد صرف النهارده من أول اليوم لحد اللحظة من كل منصة، وطلبات وإيراد خزامى لأكوادك، ويسجلهم لقطة بوقتها. والسحب اليومي الكامل (كل إعلان وفيديو) بيتم كل يوم الساعة ٨:٣٠ الصبح.",
-        "Claude checks every 15 minutes from 9am to midnight; when a snapshot is due or requested it pulls today's spend per platform and Khzama orders/revenue and logs them."))+"</div>"+
+      '<div class="lk-intro">'+esc(L("Claude بيشيّك كل ٥ دقايق من ٩ الصبح لـ ١٢ بالليل: لو جه ميعاد اللقطة أو دوست «ابدأ سناب شوت» بياخد صرف النهارده من أول اليوم لحد اللحظة من كل منصة، وطلبات وإيراد خزامى لأكوادك، ويسجلهم لقطة بوقتها. والسحب اليومي الكامل (كل إعلان وفيديو) بيتم كل يوم الساعة ٨:٣٠ الصبح.",
+        "Claude checks every 5 minutes from 9am to midnight; when a snapshot is due or requested it pulls today's spend per platform and Khzama orders/revenue and logs them."))+"</div>"+
       '<div class="tw"><table class="lk-t"><tbody>'+acc.map(a=>"<tr><td><b>"+esc(a[0])+'</b></td><td dir="ltr" class="num">'+esc(a[1])+"</td></tr>").join("")+
       "<tr><td><b>"+esc(L("كل قد إيه","Every"))+"</b></td><td>"+esc((c.every||30)+L(" دقيقة"," min"))+"</td></tr></tbody></table></div>"+
-      '<div class="lk-foot">'+syncBtn()+'<span class="hint">'+esc(L("الطلب بيتنفذ في أول تشييكة (أقصى حاجة ربع ساعة). Claude والكروم لازم يكونوا مفتوحين على الجهاز.","Runs on the next check (≤15 min). Claude and Chrome must be open on the computer."))+"</span></div>"); }
+      '<div class="lk-foot">'+syncBtn()+'<span class="hint">'+esc(L("الطلب بيتنفذ في أول تشييكة (٥–٧ دقايق بالكتير). Claude والكروم لازم يكونوا مفتوحين على الجهاز.","Runs on the next check (≤7 min). Claude and Chrome must be open on the computer."))+"</span></div>"); }
   const cl=S.cfg.clients, row=c=>{ const l=clientLinks(c), inp=(k,ph)=>'<input class="inp num" dir="ltr" data-c="lnk" data-id="'+esc(c.id)+'" data-k="'+k+'" value="'+esc(l[k]||"")+'" placeholder="'+esc(ph)+'">';
     return "<tr><td><b>"+esc(c.name)+"</b></td><td>"+inp("meta","312559678073897")+"</td><td>"+inp("tiktok","7338783723795595266")+"</td><td>"+inp("mixpanel","3769752")+"</td></tr>"; };
   return card(L("الربط التلقائي","Auto-pull"),L("رقم حساب كل عميل على كل منصة","Each client's account id on each platform"),
