@@ -11,7 +11,7 @@
 <body>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GADLYTICS</title>
-<style>.ex-ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}.ex-ctl .fld{display:flex;flex-direction:column;gap:4px;font-size:12px}.ex-q{flex:1;min-width:200px}.ex-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;width:100%}.ex-kpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:12px 0}.ex-t tr.on td{background:color-mix(in srgb,var(--cyan) 10%,transparent)}.ex-k{max-width:340px;white-space:normal;word-break:break-word}.ex-tot td{font-weight:800}.ex-up{color:var(--good,#12a150)}.ex-dn{color:var(--bad,#d23)}.sb-ctl{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}.sb-ctl .fld{display:flex;flex-direction:column;gap:4px;font-size:12px;min-width:220px}.sb-grid{direction:rtl;display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-top:12px}.sb-c{border-radius:14px;padding:14px}.sb-h{font-weight:800;font-size:15px}.sb-h span{font-size:11px;font-weight:700}.sb-l{font-size:12px;margin-top:8px}.sb-v{font-size:21px;font-weight:800;font-variant-numeric:tabular-nums}.sb-r{display:flex;justify-content:space-between;gap:8px;margin-top:10px;font-size:13px}.sb-r b{font-weight:800}.sb-tot{grid-column:span 1}.ex-pick{width:100%;border-top:1px solid var(--line,#e5e7eb);padding-top:10px}.ex-pick .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.ex-drill{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}</style>
+<style>.ex-ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}.ex-ctl .fld{display:flex;flex-direction:column;gap:4px;font-size:12px}.ex-q{flex:1;min-width:200px}.ex-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;width:100%}.ex-kpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:12px 0}.ex-t tr.on td{background:color-mix(in srgb,var(--cyan) 10%,transparent)}.ex-k{max-width:340px;white-space:normal;word-break:break-word}.ex-tot td{font-weight:800}.ex-up{color:var(--good,#12a150)}.ex-dn{color:var(--bad,#d23)}.sb-ctl{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}.sb-ctl .fld{display:flex;flex-direction:column;gap:4px;font-size:12px;min-width:220px}.sb-grid{direction:rtl;display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-top:12px}.sb-c{border-radius:14px;padding:14px}.sb-h{font-weight:800;font-size:15px}.sb-h span{font-size:11px;font-weight:700}.sb-l{font-size:12px;margin-top:8px}.sb-v{font-size:21px;font-weight:800;font-variant-numeric:tabular-nums}.sb-r{display:flex;justify-content:space-between;gap:8px;margin-top:10px;font-size:13px}.sb-r b{font-weight:800}.sb-tot{grid-column:span 1}.ss-t{border-collapse:separate;border-spacing:0;font-size:12.5px;width:100%;direction:rtl}.ss-t th,.ss-t td{padding:6px 8px;text-align:center;white-space:nowrap;border-bottom:1px solid var(--line,rgba(128,128,128,.18));font-variant-numeric:tabular-nums}.ss-t th{font-weight:800;font-size:11.5px}.ss-t th small{opacity:.75;font-weight:700}.ss-t .ss-tot{background:#EEEDFE;color:#26215C;font-weight:800}.ss-t .ss-time{font-weight:700;text-align:start;position:sticky;right:0;background:var(--card,#fff)}.ss-ro{font-weight:800}.ss-best td,.ss-best{background:#E1F5EE!important;color:#085041!important}.ss-worst td,.ss-worst{background:#FCEBEB!important;color:#791F1F!important}.ex-pick{width:100%;border-top:1px solid var(--line,#e5e7eb);padding-top:10px}.ex-pick .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.ex-drill{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}</style>
 <style>/* معاينة التقرير ورقة بيضا دايماً، حتى في الوضع الليلي */
 .rp-prev .rp-tb th,.rp-prev .rp-tb td{color:#131A32!important;background:transparent;opacity:1!important}
 .rp-prev .rp-tb th{background:#F4F6FC!important;color:#4A5573!important;border-bottom:1px solid #DDE3F0!important}
@@ -10578,7 +10578,7 @@ function renderViewRaw(){
       case "compare":  return renderCompare();
       case "analyze":  return renderAnalyze();
       case "explorer": return renderExplorer();
-      case "snapboard": return renderSnapBoard();
+      case "snapboard": return renderSnapSheet();
       case "insights": return renderInsights();
       case "entry":    return renderEntry();
       case "admin":    return isMember()? emptyBox(L("الإعدادات بيظبطها الأدمن.","Settings are managed by an admin.")) : renderSetup();
@@ -10634,7 +10634,7 @@ function headerFor(){
     experiments:[L("التجارب","Experiments"),
       L("فرضية، مجموعتين، ونتيجة محسوبة من بياناتك","A hypothesis, two groups, a result from your data")],
     compare:[L("مقارنة الفترات","Compare periods"),L("قارن أي فترتين ببعض","Compare any two periods")],
-    snapboard:[L("اللقطة","Snapshot"),L("صرف كل منصة وإيراد خزامى بالأكواد، والإجمالي","Spend per platform and Khzama revenue by code")],
+    snapboard:[L("اللقطات","Snapshots"),L("كل لقطة سطر: صرف كل منصة وإيراد خزامى بالأكواد — شوف الفرق بين كل ساعة واللي بعدها، وقارن ساعة على كل الأيام","Each snapshot is a row: spend per platform and Khzama revenue by code")],
     explorer:[L("المحلل","Analyzer"),L("كل إعلان وفيديو ومشهور على كل المنصات — قسّم وقارن ودوس على أي سطر للتفاصيل","Every ad, video and influencer across platforms — break down, compare, drill in")],
     analyze:[L("تحليل الحملات","Campaign analysis"),L("كل أرقام الحملة في مكان واحد: المسار، الأيام، الساعات، المنصات","Every number for a campaign: funnel, days, hours, platforms")],
     insights:[L("الاستنتاجات","Insights"),
@@ -10678,13 +10678,13 @@ function navHTML(){
     entry:it("entry",L("إدخال البيانات","Data entry")),rep:it("reports",L("التقارير","Reports")),plans:it("plans",L("الميديا بلان","Media plans")),cr:it("library",L("مكتبة الكريتيف","Creative library")),media:it("creatives",L("إدارة الميديا","Media management")),
     ap:it("approvals",L("الموافقات","Approvals")),team:it("team",L("الفريق","Team")),perf:it("perf",L("تقييم الأداء","Performance")),admin:it("admin",L("الإعدادات","Settings")),portal:it("portal",L("بوابتي","My portal"))};
   if(isClient()) return grp(L("حسابك","Your account"),[I.portal,I.rep]);
-  const work=grp(L("شغلي","My work"),[I.me,I.tasks,I.chat]), perfG=grp(L("الأداء","Performance"),[I.live,I.ov,it("snapboard",L("اللقطة","Snapshot"),"live"),it("explorer",L("المحلل","Analyzer"),"insights"),it("analyze",L("تحليل الحملات","Campaign analysis"),"insights"),I.entry,I.rep]), planG=grp(L("التخطيط والإبداع","Planning & creative"),[I.plans,I.media,I.cr,I.ap]);
+  const work=grp(L("شغلي","My work"),[I.me,I.tasks,I.chat]), perfG=grp(L("الأداء","Performance"),[I.live,I.ov,it("snapboard",L("اللقطات","Snapshots"),"live"),it("explorer",L("المحلل","Analyzer"),"insights"),it("analyze",L("تحليل الحملات","Campaign analysis"),"insights"),I.entry,I.rep]), planG=grp(L("التخطيط والإبداع","Planning & creative"),[I.plans,I.media,I.cr,I.ap]);
   if(isMember()) return work+perfG+planG;
   if(SIMPLE()) return work+perfG+planG+grp(L("الإدارة","Management"),[I.team,I.perf,I.admin])+
     (cs.length?grp(L("شاشاتي","My screens"),cs.map(v=>it(v.id,v.name,"screen"))):"")+modeBar();
   return work+
     grp(L("متابعة","Monitor"),[it("actions",L("مركز الإجراءات","Action Center")),it("live",L("اليوم مباشر","Live Today")),it("brief",L("الملخص اليومي","Daily brief"))])+
-    grp(L("تحليل","Analyze"),[it("overview",L("نظرة عامة","Overview")),it("compare",L("مقارنة فترات","Compare")),it("snapboard",L("اللقطة","Snapshot"),"live"),it("explorer",L("المحلل","Analyzer"),"insights"),it("analyze",L("تحليل الحملات","Campaign analysis"),"insights"),it("insights",L("استنتاجات","Insights")),I.rep])+
+    grp(L("تحليل","Analyze"),[it("overview",L("نظرة عامة","Overview")),it("compare",L("مقارنة فترات","Compare")),it("snapboard",L("اللقطات","Snapshots"),"live"),it("explorer",L("المحلل","Analyzer"),"insights"),it("analyze",L("تحليل الحملات","Campaign analysis"),"insights"),it("insights",L("استنتاجات","Insights")),I.rep])+
     grp(L("تشغيل","Operate"),[it("entry",L("إدخال البيانات","Data entry")),it("roster",L("إدارة الحملات","Campaign roster")),I.plans,I.media,I.cr,I.ap,
       it("changes",L("سجل التغييرات","Change log")),it("experiments",L("التجارب","Experiments"))])+
     grp(L("الإدارة","Management"),[I.team,I.perf])+
@@ -11065,6 +11065,58 @@ function renderSnapBoard(){
   h+='<div class="hint" style="margin-top:8px">'+esc(L("آخر تحديث: ","Updated: ")+(d.taken?new Date(d.taken).toLocaleString(EN()?"en-GB":"ar-EG",{dateStyle:"medium",timeStyle:"short"}):"—")+L(" · الزيارات مش داخلة لأن خزامى بيحسبها من أول ما الرابط اتعمل."," · Visits excluded (Khzama counts them lifetime)."))+"</div>";
   return h; }
 CHG.sbP=v=>{ SB.sel=v; sbLoad(); };
+/* ── شيت اللقطات: كل سطر لقطة، وكل منصة أعمدتها بلونها، وعرض تراكمي أو الفرق بين اللقطات ── */
+const SS={tab:"sheet",days:null,day:"",rows:{},mode:"diff",hour:"",all:null,busy:false,err:""};
+const SS_SRC=[["meta","Meta","ME","#E6F1FB","#0C447C",1],["tiktok","TikTok","TT","#FBEAF0","#72243E",1],["snap","Snapchat","SC","#FAEEDA","#633806",1],
+  ["bio","bio","","#E1F5EE","#085041",0],["com","com","","#E1F5EE","#085041",0],["DM","DM","","#E1F5EE","#085041",0]];
+function ssCid(){ return S.ws||(S.cfg.clients[0]||{}).id; }
+async function ssDays(){ const sb=window.SUPA_DB&&SUPA_DB.client; if(!sb){ SS.err=L("اللقطات بتتقرا من الداتا بيز — افتحها من رابط الموقع.","Open it from the site link."); return render(); }
+  const r=await sb.from("snapshots").select("date").eq("client_id",ssCid()).order("date",{ascending:false}).limit(5000);
+  if(r.error){ SS.err=r.error.message; return render(); } SS.days=[...new Set(r.data.map(x=>x.date))]; if(!SS.day&&SS.days.length) SS.day=SS.days[0]; render(); if(SS.day) ssLoad(SS.day); }
+async function ssLoad(d){ if(SS.rows[d]) return render(); SS.busy=true; render();
+  const r=await SUPA_DB.client.from("snapshots").select("taken_at,source,spend,revenue,donations").eq("client_id",ssCid()).eq("date",d).order("taken_at");
+  SS.busy=false; if(r.error){ SS.err=r.error.message; return render(); } SS.rows[d]=r.data; render(); }
+async function ssLoadAll(){ if(SS.all) return; const r=await SUPA_DB.client.from("snapshots").select("date,taken_at,source,spend,revenue,donations").eq("client_id",ssCid()).order("taken_at").limit(20000); SS.all=r.error?[]:r.data; render(); }
+function ssGrid(rows){ const by={}; rows.forEach(x=>{ const t=x.taken_at; (by[t]=by[t]||{})[x.source]={s:+x.spend||0,r:+x.revenue||0,d:+x.donations||0}; });
+  return Object.keys(by).sort().map(t=>({t:t,v:by[t]})); }
+function ssTot(v){ let s=0,r=0,d=0; SS_SRC.forEach(c=>{ const x=v[c[0]]; if(x){ s+=x.s; r+=x.r; d+=x.d; } }); return {s:s,r:r,d:d}; }
+function ssDiff(g){ return g.map((row,i)=>{ if(!i) return row; const p=g[i-1].v, v={}; SS_SRC.forEach(c=>{ const a=row.v[c[0]]||{s:0,r:0,d:0}, b=p[c[0]]||{s:0,r:0,d:0}; v[c[0]]={s:a.s-b.s,r:a.r-b.r,d:a.d-b.d}; }); return {t:row.t,v:v,from:g[i-1].t}; }); }
+function ssTime(t){ return new Date(t).toLocaleTimeString(EN()?"en-GB":"ar-EG",{hour:"numeric",minute:"2-digit",timeZone:"Asia/Riyadh"}); }
+function ssHour(t){ return +new Date(t).toLocaleString("en-GB",{hour:"2-digit",hour12:false,timeZone:"Asia/Riyadh"}); }
+function ssCells(x,plat,tot){ const ro=x.s? x.r/x.s : null, aov=x.d? x.r/x.d : null, f=(v,dd)=>v==null||!isFinite(v)?"—":fnum(v,dd);
+  if(!plat&&!tot) return "<td>"+f(x.r,0)+"</td><td>"+f(x.d,0)+"</td>";
+  return "<td>"+f(x.s,0)+"</td><td>"+f(x.r,0)+'</td><td class="ss-ro">'+(ro==null?"—":ro.toFixed(2)+"x")+"</td><td>"+f(aov,0)+"</td>"+(tot?"<td>"+f(x.d,0)+"</td>":""); }
+function renderSnapSheet(){
+  if(SS.days===null&&!SS.err){ SS.days=[]; setTimeout(ssDays,0); }
+  let h='<div class="card sb-ctl"><span class="seg">'+[["sheet","لقطات اليوم","Day sheet"],["hour","قارن ساعة","Compare an hour"],["period","ملخص فترة","Period summary"]].map(x=>'<button class="'+(SS.tab===x[0]?"on":"")+'" data-a="ssTab" data-k="'+x[0]+'">'+esc(L(x[1],x[2]))+"</button>").join("")+"</span>";
+  if(SS.tab==="period") return h+"</div>"+renderSnapBoard();
+  if(SS.err) return h+"</div>"+emptyBox(SS.err,"");
+  if(SS.tab==="sheet"){
+    h+='<label class="fld"><span>'+esc(L("اليوم","Day"))+'</span><select class="sel" data-c="ssDay">'+(SS.days||[]).map(d=>'<option value="'+d+'"'+(d===SS.day?" selected":"")+">"+esc(rpDayName(d)+" "+fdate(d)+" "+d.slice(0,4))+"</option>").join("")+"</select></label>"+
+      '<span class="seg">'+[["diff","الفرق بين اللقطات","Change between snapshots"],["cum","تراكمي من أول اليوم","Cumulative"]].map(x=>'<button class="'+(SS.mode===x[0]?"on":"")+'" data-a="ssMode" data-k="'+x[0]+'">'+esc(L(x[1],x[2]))+"</button>").join("")+"</span></div>";
+    const rows=SS.rows[SS.day]; if(!rows) return h+'<div class="empty">'+esc(SS.busy||!SS.days.length?L("بحمّل…","Loading…"):L("مفيش لقطات لسه.","No snapshots yet."))+"</div>";
+    const g=ssGrid(rows), view=SS.mode==="diff"? ssDiff(g) : g;
+    let best=-1,worst=-1,bv=-1e9,wv=1e9; if(SS.mode==="diff") view.forEach((row,i)=>{ if(!i) return; const t=ssTot(row.v); if(t.s<50) return; const ro=t.r/t.s; if(ro>bv){bv=ro;best=i;} if(ro<wv){wv=ro;worst=i;} });
+    h+='<div class="card"><div class="tw"><table class="ss-t"><tr><th rowspan="2">'+esc(L("اللقطة","Snapshot"))+"</th>"+
+      SS_SRC.map(c=>'<th colspan="'+(c[5]?4:2)+'" style="background:'+c[3]+";color:"+c[4]+'">'+esc(c[1])+(c[2]?" <small>"+c[2]+"</small>":"")+"</th>").join("")+'<th colspan="5" class="ss-tot">'+esc(L("الإجمالي","Total"))+"</th></tr><tr>"+
+      SS_SRC.map(c=>(c[5]?["الصرف","الإيراد","ROAS","AOV"]:["الإيراد","تبرعات"]).map(x=>'<th style="background:'+c[3]+";color:"+c[4]+'">'+esc(x)+"</th>").join("")).join("")+["الصرف","الإيراد","ROAS","AOV","تبرعات"].map(x=>'<th class="ss-tot">'+esc(x)+"</th>").join("")+"</tr>"+
+      view.map((row,i)=>'<tr class="'+(i===best?"ss-best":i===worst?"ss-worst":"")+'"><td class="ss-time">'+esc((SS.mode==="diff"&&row.from? ssTime(row.from)+" ← " : SS.mode==="diff"? L("من ١٢ص ← ","from 0:00 ← "):"")+ssTime(row.t))+"</td>"+
+        SS_SRC.map(c=>ssCells(row.v[c[0]]||{s:0,r:0,d:0},c[5],0)).join("")+'<td class="ss-tot" colspan="0"></td>'.slice(0,0)+ssCells(ssTot(row.v),1,1).replace(/<td/g,'<td class="ss-tot"')+"</tr>").join("")+"</table></div>"+
+      (SS.mode==="diff"&&best>0?'<div class="hint" style="margin-top:8px"><span class="ss-best" style="padding:2px 6px;border-radius:6px">'+esc(L("أقوى فترة: ","Best: ")+ssTime(view[best].from)+" ← "+ssTime(view[best].t)+" · ROAS "+bv.toFixed(2)+"x")+'</span> &nbsp; <span class="ss-worst" style="padding:2px 6px;border-radius:6px">'+esc(L("أضعف فترة: ","Weakest: ")+ssTime(view[worst].from)+" ← "+ssTime(view[worst].t)+" · ROAS "+wv.toFixed(2)+"x")+"</span></div>":"")+
+      '<div class="hint">'+esc(L("الصرف من المنصات، والإيراد والتبرعات من خزامى بأكواد الروابط. الفترات اللي صرفها أقل من ٥٠ ريال مش داخلة في الأقوى والأضعف.","Spend from platforms; revenue from Khzama codes."))+"</div></div>";
+    return h; }
+  // قارن ساعة على كل الأيام
+  if(!SS.all){ setTimeout(ssLoadAll,0); return h+'</div><div class="empty">'+esc(L("بحمّل…","Loading…"))+"</div>"; }
+  const hours=[...new Set(SS.all.map(x=>ssHour(x.taken_at)))].sort((a,b)=>a-b); if(SS.hour===""&&hours.length) SS.hour=String(hours[0]);
+  h+='<label class="fld"><span>'+esc(L("الساعة","Hour"))+'</span><select class="sel" data-c="ssHr">'+hours.map(x=>'<option value="'+x+'"'+(String(x)===SS.hour?" selected":"")+">"+x+":00</option>").join("")+"</select></label></div>";
+  const byDay={}; SS.all.forEach(x=>{ (byDay[x.date]=byDay[x.date]||[]).push(x); });
+  const out=Object.keys(byDay).sort().reverse().map(d=>{ const g=ssDiff(ssGrid(byDay[d])); const row=g.find(r=>ssHour(r.t)===+SS.hour&&new Date(r.t).getMinutes()===0); return row?{d:d,row:row}:null; }).filter(Boolean);
+  h+='<div class="card"><div class="card-t">'+esc(L("الساعة اللي بتخلص ","Hour ending ")+SS.hour+":00 "+L("على كل الأيام","across days"))+'</div><div class="tw"><table class="ss-t"><tr><th>'+esc(L("اليوم","Day"))+"</th>"+SS_SRC.filter(c=>c[5]).map(c=>'<th colspan="3" style="background:'+c[3]+";color:"+c[4]+'">'+esc(c[1])+"</th>").join("")+'<th colspan="3" class="ss-tot">'+esc(L("الإجمالي","Total"))+"</th></tr>"+
+    out.map(o=>{ const c3=x=>"<td>"+fnum(x.s,0)+"</td><td>"+fnum(x.r,0)+'</td><td class="ss-ro">'+(x.s?(x.r/x.s).toFixed(2)+"x":"—")+"</td>"; return "<tr><td>"+esc(rpDayName(o.d)+" "+fdate(o.d))+"</td>"+SS_SRC.filter(c=>c[5]).map(c=>c3(o.row.v[c[0]]||{s:0,r:0,d:0})).join("")+c3(ssTot(o.row.v)).replace(/<td/g,'<td class="ss-tot"')+"</tr>"; }).join("")+"</table></div></div>";
+  return h; }
+ACT.ssTab=t=>{ SS.tab=t.dataset.k; render(); }; ACT.ssMode=t=>{ SS.mode=t.dataset.k; render(); };
+CHG.ssDay=v=>{ SS.day=v; ssLoad(v); }; CHG.ssHr=v=>{ SS.hour=v; render(); };
+
 
 function topbarHTML(){
   if(isPending()) return '<div class="tb-sp"></div>'+tbRight();
