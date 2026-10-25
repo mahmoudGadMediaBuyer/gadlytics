@@ -7163,6 +7163,50 @@ function wsPicker(){
 }
 
 /* ══════════════════ شاشة مركز الإجراءات ══════════════════ */
+/* ── ملخص مركز الإجراءات: كل منصة + أحسن وأضعف الحملات والفيديوهات والمشاهير (الصرف من المنصات، الطلبات والإيراد من خزامى) ── */
+const ACS={key:"",busy:false,err:""};
+async function acsLoad(a,b,c,d){ const k=a+"|"+b+"|"+(c||""); if(ACS.key===k||ACS.busy) return; ACS.busy=true; ACS.err="";
+  try{ await exFetch(a,b); if(c) await exFetch(c,d); ACS.key=k; }catch(e){ ACS.err=e.message||String(e); }
+  ACS.busy=false; render(); }
+function acsAgg(rows,kz,dim){ const cm=exCrMap(rows), sc=exScope(rows,dim), g=exGroup(sc,dim), kg=exKzGroup((kz||[]).filter(k=>["meta","tiktok","snap"].indexOf(k.platform)>=0),dim,cm);
+  Object.keys(kg).forEach(k=>{ if(!g[k]) g[k]=[]; }); const o={}; Object.keys(g).forEach(k=>{ o[k]=exUseKz(exAgg(g[k]),kg[k]); }); return o; }
+function acsChip(ro,avg){ if(ro==null) return ""; const r=avg? ro/avg : 1; const c= r>=1.15? ["ممتاز","Strong","#1D9E75"] : r>=0.9? ["كويس","OK","#888780"] : ["ضعيف","Weak","#E24B4A"];
+  return '<span class="acs-chip" style="color:'+c[2]+';border-color:'+c[2]+'">'+esc(L(c[0],c[1]))+"</span>"; }
+function acsName(rows,k,dim){ const r=rows.find(x=>dim==="campaign"? (x.camp_no||x.campaign_name)===k : dim==="creative"? x.creative_id===k : x.influencer===k);
+  if(!r) return k; const ex=dim==="campaign"? [r.variation||r.product] : dim==="creative"? [r.influencer,r.variation||r.product] : [];
+  return [k].concat(ex.filter(Boolean)).join(" · "); }
+function acsRank(map,minSpend,label,dim,rows){ const arr=Object.keys(map).map(k=>({k:k,v:map[k]})).filter(x=>x.k!=="—"&&x.v.spend>=minSpend&&x.v.roas!=null);
+  if(!arr.length) return ""; arr.sort((x,y)=>y.v.roas-x.v.roas);
+  const top=arr.slice(0,3), bot=arr.length>3? arr.slice(-3).reverse() : [];
+  const row=(x,good)=>'<tr data-a="acsOpen" data-dim="'+dim+'" data-k="'+esc(x.k)+'" style="cursor:pointer"><td class="acs-n">'+esc(acsName(rows,x.k,dim))+'</td><td class="num">'+fnum(x.v.spend,0)+'</td><td class="num" style="color:'+(good?"#1D9E75":"#E24B4A")+';font-weight:800">'+x.v.roas.toFixed(2)+'x</td><td class="num">'+(x.v.cpa==null?"—":fnum(x.v.cpa,0))+"</td></tr>";
+  return '<div class="acs-box"><div class="acs-bt">'+esc(label)+'</div><table class="acs-t"><tr><th></th><th class="num">'+esc(L("الصرف","Spend"))+'</th><th class="num">ROAS</th><th class="num">CPA</th></tr>'+
+    '<tr><td colspan="4" class="acs-sub" style="color:#1D9E75">'+esc(L("الأحسن","Best"))+"</td></tr>"+top.map(x=>row(x,1)).join("")+
+    (bot.length?'<tr><td colspan="4" class="acs-sub" style="color:#E24B4A">'+esc(L("الأضعف","Weakest"))+"</td></tr>"+bot.map(x=>row(x,0)).join(""):"")+"</table></div>"; }
+function acSummary(from,to){
+  if(!(window.SUPA_DB&&SUPA_DB.client)) return "";
+  const len=diffDays(from,to)+1, pt=addDays(from,-1), pf=addDays(pt,-(len-1));
+  const cur=EX.cache[from+"|"+to], prv=EX.cache[pf+"|"+pt];
+  if(!cur||!prv){ setTimeout(()=>acsLoad(from,to,pf,pt),0); return '<div class="card acs"><div class="card-t">'+esc(L("الملخص","Summary"))+'</div><div class="hint">'+esc(ACS.err||L("بحمّل الملخص…","Loading summary…"))+"</div></div>"; }
+  const P=acsAgg(cur,cur.kz,"platform"), PP=acsAgg(prv,prv.kz,"platform");
+  let ts=0,tr=0,tn=0; ["meta","tiktok","snap"].forEach(id=>{ const v=P[id]; if(v){ ts+=v.spend; tr+=v.revenue; tn+=v.purchases; } });
+  const avg=ts? tr/ts : null, minSp=Math.max(300,ts*0.01);
+  const cards=["meta","tiktok","snap"].filter(id=>P[id]&&(P[id].spend||P[id].revenue)).map(id=>{ const v=P[id], p=PP[id], pl=platById(id)||{name:id,color:"#888"};
+    const d=(a,b,inv)=>{ if(a==null||b==null||!b) return ""; const x=(a-b)/Math.abs(b)*100, good=inv?x<0:x>0; return ' <small style="color:'+(good?"#1D9E75":"#E24B4A")+'">'+(x>0?"▲":"▼")+fnum(Math.abs(x),Math.abs(x)<10?1:0)+"%</small>"; };
+    return '<div class="acs-pc" style="border-top:3px solid '+pl.color+'"><div class="acs-ph"><b>'+esc(pl.name)+"</b>"+acsChip(v.roas,avg)+"</div>"+
+      '<div class="acs-kv"><span>'+esc(L("الصرف","Spend"))+"</span><b>"+fnum(v.spend,0)+d(v.spend,p&&p.spend)+"</b></div>"+
+      '<div class="acs-kv"><span>'+esc(L("الطلبات","Orders"))+"</span><b>"+fnum(v.purchases,0)+d(v.purchases,p&&p.purchases)+"</b></div>"+
+      '<div class="acs-kv"><span>'+esc(L("الإيراد","Revenue"))+"</span><b>"+fnum(v.revenue,0)+d(v.revenue,p&&p.revenue)+"</b></div>"+
+      '<div class="acs-kv"><span>ROAS</span><b>'+(v.roas==null?"—":v.roas.toFixed(2)+"x")+d(v.roas,p&&p.roas)+"</b></div>"+
+      '<div class="acs-kv"><span>CPA</span><b>'+(v.cpa==null?"—":fnum(v.cpa,0))+d(v.cpa,p&&p.cpa,1)+"</b></div>"+
+      '<div class="acs-kv"><span>AOV</span><b>'+(v.aov==null?"—":fnum(v.aov,0))+"</b></div></div>"; }).join("");
+  const C=acsAgg(cur,cur.kz,"campaign"), V=acsAgg(cur,cur.kz,"creative"), I=acsAgg(cur,cur.kz,"influencer");
+  return '<div class="card acs"><div class="card-h"><div class="card-t">'+esc(L("الملخص","Summary")+" · "+fdate(from)+" — "+fdate(to))+'</div><div class="card-x">'+
+    esc(L("الإجمالي: صرف ","Total: spend ")+fnum(ts,0)+L(" · طلبات "," · orders ")+fnum(tn,0)+L(" · إيراد "," · revenue ")+fnum(tr,0)+" · ROAS "+(avg?avg.toFixed(2)+"x":"—"))+"</div></div>"+
+    (cards?'<div class="acs-pg">'+cards+"</div>":'<div class="hint">'+esc(L("مفيش صرف في الفترة دي.","No spend in this period."))+"</div>")+
+    '<div class="acs-rk">'+acsRank(C,minSp,L("الحملات","Campaigns"),"campaign",cur)+acsRank(V,minSp,L("الفيديوهات","Videos"),"creative",cur)+acsRank(I,minSp,L("المشاهير","Influencers"),"influencer",cur)+"</div>"+
+    '<div class="hint">'+esc(L("الصرف من المنصات · الطلبات والإيراد والـ ROAS والـ CPA والـ AOV من خزامى · «ممتاز/ضعيف» مقارنة بمتوسط الفترة · النسب مقارنة بالفترة اللي قبلها بنفس الطول · اللي صرفه أقل من ١٪ من الإجمالي مش داخل في الترتيب · دوس على أي سطر يفتحه في المحلل.","Spend from platforms; orders, revenue, ROAS, CPA, AOV from Khzama."))+"</div></div>"; }
+ACT.acsOpen=t=>{ const [a,b]=resolveRange(); EX.from=a; EX.to=b; EX.cmp="prev"; EX.dim=t.dataset.dim; EX.sel=t.dataset.k; S.view="explorer"; refresh(); };
+
 let AC_BUSY=false;
 function acFresh(){ let mx=0; Object.keys(DOCS).forEach(k=>{ const d=DOCS[k]; if(d&&+d.updatedAt>mx) mx=+d.updatedAt; }); return mx? new Date(mx).toLocaleString(EN()?"en-GB":"ar-EG",{dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Riyadh"}) : "—"; }
 ACT.acRefresh=async()=>{ if(AC_BUSY) return; AC_BUSY=true; render();
@@ -7202,7 +7246,7 @@ function renderActions(){
     '<div class="hint" style="margin-top:12px">'+esc(L("الأولوية من خطورة النوع وحجم الصرف والإيراد المتأثر والانحراف والثقة. عدّل الحدود من لوحة التحكم ← الذكاء.",
       "Priority comes from severity, affected spend and revenue, deviation and confidence. Tune thresholds in Admin → Intelligence."))+"</div></div>";
   const side='<div class="ac-side">'+acTasks()+acBudget()+acSnaps()+acTracking(from,to)+"</div>";
-  return acTape()+'<div class="ac-grid">'+main+side+"</div>"+
+  return acTape()+acSummary(from,to)+'<div class="ac-grid">'+main+side+"</div>"+
     '<div style="margin-top:14px">'+sectionsBlock("actions",{from:from,to:to,cmp:resolveCmp(from,to)})+"</div>";
 }
 let AC_CACHE=[];
@@ -7877,6 +7921,18 @@ h1 .hlp{width:17px;height:17px;font-size:11px}
 .tape-v small{font-size:11.5px;color:var(--ink-3);font-weight:400;margin-inline-start:4px}
 .tape-f{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11px;color:var(--ink-3);min-height:20px}
 .tape-note{grid-column:1/-1;background:var(--ground-1);padding:4px 16px 6px;font-size:10.5px;color:var(--ink-3)}
+.acs{margin-bottom:14px}
+.acs-pg{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:10px 0}
+.acs-pc{background:var(--bg2,rgba(127,127,127,.06));border-radius:10px;padding:10px 12px}
+.acs-ph{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.acs-chip{font-size:11px;border:1px solid;border-radius:20px;padding:1px 8px;font-weight:700}
+.acs-kv{display:flex;justify-content:space-between;font-size:13px;padding:2px 0}.acs-kv span{opacity:.7}.acs-kv small{font-size:10.5px;font-weight:600}
+.acs-rk{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px;margin:6px 0 8px}
+.acs-box{border:1px solid var(--line,rgba(127,127,127,.2));border-radius:10px;padding:8px 10px;min-width:0}
+.acs-bt{font-weight:800;margin-bottom:4px}
+.acs-t{width:100%;border-collapse:collapse;font-size:12.5px}.acs-t th{font-weight:600;opacity:.65;padding:3px 4px;text-align:start}.acs-t td{padding:4px;border-top:1px solid var(--line,rgba(127,127,127,.12))}
+.acs-t .num{text-align:end;white-space:nowrap}.acs-n{word-break:break-word;max-width:180px}.acs-sub{font-weight:700;font-size:11.5px;border-top:none!important;padding-top:6px!important}
+.acs-t tr[data-a]:hover td{background:rgba(70,95,255,.07)}
 .ac-grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(270px,1fr);gap:14px;align-items:start}
 .ac-side{display:flex;flex-direction:column;gap:14px}
 @media (max-width:1000px){.ac-grid{grid-template-columns:1fr}}
