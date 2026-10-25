@@ -11,6 +11,7 @@
 <body>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GADLYTICS</title>
+<style>.ex-ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}.ex-ctl .fld{display:flex;flex-direction:column;gap:4px;font-size:12px}.ex-q{flex:1;min-width:200px}.ex-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;width:100%}.ex-kpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:12px 0}.ex-t tr.on td{background:color-mix(in srgb,var(--cyan) 10%,transparent)}.ex-k{max-width:340px;white-space:normal;word-break:break-word}.ex-tot td{font-weight:800}.ex-up{color:var(--good,#12a150)}.ex-dn{color:var(--bad,#d23)}.ex-drill{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}</style>
 <style>/* معاينة التقرير ورقة بيضا دايماً، حتى في الوضع الليلي */
 .rp-prev .rp-tb th,.rp-prev .rp-tb td{color:#131A32!important;background:transparent;opacity:1!important}
 .rp-prev .rp-tb th{background:#F4F6FC!important;color:#4A5573!important;border-bottom:1px solid #DDE3F0!important}
@@ -890,7 +891,7 @@ function defaultConfig(){
 
 /* ── الوضع البسيط: نفس السيستم بشاشات وأقسام أقل — التبديل بيرجّع كل حاجة زي ما هي ── */
 const SIMPLE = () => ((S.cfg.settings&&S.cfg.settings.mode)||"simple")!=="pro";
-const SIMPLE_VIEWS={analyze:1,overview:1,live:1,entry:1,tasks:1,admin:1,me:1,chat:1,team:1,pending:1,plans:1,creatives:1,library:1,approvals:1,perf:1,reports:1,portal:1};
+const SIMPLE_VIEWS={explorer:1,analyze:1,overview:1,live:1,entry:1,tasks:1,admin:1,me:1,chat:1,team:1,pending:1,plans:1,creatives:1,library:1,approvals:1,perf:1,reports:1,portal:1};
 const SIMPLE_SEC_ID={s_kpi:1,s_health:1,s_trend:1,s_bspend:1,s_broas:1,s_sheet:1,s_lkpi:1,s_lcurve:1,s_lcmp:1};
 const SIMPLE_SEC_TYPE={brief:1,eod:1};
 let _defIds=null;   // أقسام السيستم الافتراضية — أي قسم تاني إنت اللي ضايفه فبيفضل ظاهر
@@ -10429,7 +10430,7 @@ function rpHTML(D){
     .map(k=>'<div class="rp-kpi"><div>'+esc(k[0])+"</div><b>"+esc(k[1])+"</b>"+k[2]+"</div>").join("")+'</div><div class="rp-note">'+esc(L("النسب مقارنة بالفترة اللي قبلها بنفس الطول.","Changes compare with the previous period of the same length."))+"</div>";
   const G=S.rp.grain||"day", GT={day:[L("يوم بيوم","Day by day"),L("اليوم","Day")],week:[L("أسبوع بأسبوع","Week by week"),L("الأسبوع","Week")],month:[L("شهر بشهر","Month by month"),L("الشهر","Month")]}[G];
   if(sc.trend&&D.buckets.length>1) h+='<div class="rp-sec"><h3>'+esc(L("الاتجاه ","Trend · ")+GT[0])+"</h3>"+rpSpark(D.buckets)+"</div>";
-  if(sc.per){ const bs=D.buckets.filter(x=>x.spend||x.revenue||x.orders), hid=D.buckets.length-bs.length;
+  if(sc.per){ const bs=D.buckets, hid=0;   // الأيام اللي مفيهاش صرف بتظهر بصفر
     if(bs.length){ const row=(lbl,x,st)=>"<tr"+(st?' style="font-weight:800;background:#F4F6FC"':"")+"><td>"+esc(lbl)+"</td><td>"+fnum(x.spend,0)+"</td><td>"+fnum(x.revenue,0)+"</td><td>"+(x.spend?(x.revenue/x.spend).toFixed(2)+"x":"—")+"</td><td>"+fnum(x.orders,0)+"</td><td>"+(x.orders?fnum(x.spend/x.orders,1):"—")+"</td></tr>";
       h+='<div class="rp-sec"><h3>'+esc(L("الأداء ","Performance · ")+GT[0])+'</h3><table class="rp-tb"><tr><th>'+esc(GT[1])+"</th><th>"+esc(L("الصرف","Spend"))+"</th><th>"+esc(L("الإيراد","Revenue"))+"</th><th>ROAS</th><th>"+esc(L("الطلبات","Orders"))+"</th><th>"+esc(L("تكلفة الطلب","CPA"))+"</th></tr>"+
         bs.map(x=>row(x.lbl,x)).join("")+row(L("الإجمالي","Total"),{spend:cu.spend||0,revenue:cu.revenue||0,orders:cu.orders||0},1)+"</table>"+
@@ -10561,6 +10562,7 @@ function renderViewRaw(){
       case "experiments": return renderExperiments();
       case "compare":  return renderCompare();
       case "analyze":  return renderAnalyze();
+      case "explorer": return renderExplorer();
       case "insights": return renderInsights();
       case "entry":    return renderEntry();
       case "admin":    return isMember()? emptyBox(L("الإعدادات بيظبطها الأدمن.","Settings are managed by an admin.")) : renderSetup();
@@ -10616,6 +10618,7 @@ function headerFor(){
     experiments:[L("التجارب","Experiments"),
       L("فرضية، مجموعتين، ونتيجة محسوبة من بياناتك","A hypothesis, two groups, a result from your data")],
     compare:[L("مقارنة الفترات","Compare periods"),L("قارن أي فترتين ببعض","Compare any two periods")],
+    explorer:[L("المحلل","Analyzer"),L("كل إعلان وفيديو ومشهور على كل المنصات — قسّم وقارن ودوس على أي سطر للتفاصيل","Every ad, video and influencer across platforms — break down, compare, drill in")],
     analyze:[L("تحليل الحملات","Campaign analysis"),L("كل أرقام الحملة في مكان واحد: المسار، الأيام، الساعات، المنصات","Every number for a campaign: funnel, days, hours, platforms")],
     insights:[L("الاستنتاجات","Insights"),
       L("اللي الداتا بتقوله من غير ما تدور","What the data says without digging")],
@@ -10658,13 +10661,13 @@ function navHTML(){
     entry:it("entry",L("إدخال البيانات","Data entry")),rep:it("reports",L("التقارير","Reports")),plans:it("plans",L("الميديا بلان","Media plans")),cr:it("library",L("مكتبة الكريتيف","Creative library")),media:it("creatives",L("إدارة الميديا","Media management")),
     ap:it("approvals",L("الموافقات","Approvals")),team:it("team",L("الفريق","Team")),perf:it("perf",L("تقييم الأداء","Performance")),admin:it("admin",L("الإعدادات","Settings")),portal:it("portal",L("بوابتي","My portal"))};
   if(isClient()) return grp(L("حسابك","Your account"),[I.portal,I.rep]);
-  const work=grp(L("شغلي","My work"),[I.me,I.tasks,I.chat]), perfG=grp(L("الأداء","Performance"),[I.live,I.ov,it("analyze",L("تحليل الحملات","Campaign analysis"),"insights"),I.entry,I.rep]), planG=grp(L("التخطيط والإبداع","Planning & creative"),[I.plans,I.media,I.cr,I.ap]);
+  const work=grp(L("شغلي","My work"),[I.me,I.tasks,I.chat]), perfG=grp(L("الأداء","Performance"),[I.live,I.ov,it("explorer",L("المحلل","Analyzer"),"insights"),it("analyze",L("تحليل الحملات","Campaign analysis"),"insights"),I.entry,I.rep]), planG=grp(L("التخطيط والإبداع","Planning & creative"),[I.plans,I.media,I.cr,I.ap]);
   if(isMember()) return work+perfG+planG;
   if(SIMPLE()) return work+perfG+planG+grp(L("الإدارة","Management"),[I.team,I.perf,I.admin])+
     (cs.length?grp(L("شاشاتي","My screens"),cs.map(v=>it(v.id,v.name,"screen"))):"")+modeBar();
   return work+
     grp(L("متابعة","Monitor"),[it("actions",L("مركز الإجراءات","Action Center")),it("live",L("اليوم مباشر","Live Today")),it("brief",L("الملخص اليومي","Daily brief"))])+
-    grp(L("تحليل","Analyze"),[it("overview",L("نظرة عامة","Overview")),it("compare",L("مقارنة فترات","Compare")),it("analyze",L("تحليل الحملات","Campaign analysis"),"insights"),it("insights",L("استنتاجات","Insights")),I.rep])+
+    grp(L("تحليل","Analyze"),[it("overview",L("نظرة عامة","Overview")),it("compare",L("مقارنة فترات","Compare")),it("explorer",L("المحلل","Analyzer"),"insights"),it("analyze",L("تحليل الحملات","Campaign analysis"),"insights"),it("insights",L("استنتاجات","Insights")),I.rep])+
     grp(L("تشغيل","Operate"),[it("entry",L("إدخال البيانات","Data entry")),it("roster",L("إدارة الحملات","Campaign roster")),I.plans,I.media,I.cr,I.ap,
       it("changes",L("سجل التغييرات","Change log")),it("experiments",L("التجارب","Experiments"))])+
     grp(L("الإدارة","Management"),[I.team,I.perf])+
@@ -10887,6 +10890,115 @@ function renderLinks(){
     '<div class="lk-foot">'+syncBtn()+'<span class="hint">'+esc(L("الأرقام اللي بتتسحب: الصرف، الظهور، النقرات، مشاهدة المنتج، الإضافة للسلة، بدء الدفع، الطلبات، الإيراد.","Pulled: spend, impressions, clicks, product views, add to cart, checkout, orders, revenue."))+"</span></div>")+syncPanel();
 }
 CHG.lnk=(v,t)=>{ const c=clientById(t.dataset.id); if(!c) return; c.links=Object.assign({},c.links||{}); const x=String(v||"").trim(); if(x) c.links[t.dataset.k]=x; else delete c.links[t.dataset.k]; saveCfg(); toast(L("اتحفظ","Saved")); };
+
+/* ══════════════════ المحلل: أرقام كل إعلان وفيديو من جدول ad_daily (نسخة الموقع) ══════════════════ */
+const EX={from:"",to:"",cmp:"prev",cfrom:"",cto:"",dim:"platform",plats:[],q:"",sort:"spend",dir:-1,cols:"base",sel:null,cache:{},busy:false,err:""};
+const EX_DIMS=[["platform","المنصة","Platform"],["account","الحساب","Account"],["campaign","الحملة","Campaign"],["creative","الفيديو (Creative ID)","Video"],["influencer","المشهور","Influencer"],
+  ["product","المنتج","Product"],["variation","الفاريشن","Variation"],["content_type","نوع المحتوى","Content type"],["ad_size","المقاس","Size"],
+  ["day","اليوم","Day"],["week","الأسبوع","Week"],["month","الشهر","Month"],["weekday","يوم الأسبوع","Weekday"]];
+const EX_CREATIVE_DIMS={creative:1,influencer:1,content_type:1,ad_size:1};
+const EX_SUM=["spend","revenue","impressions","reach","clicks","link_clicks","landing_page_views","video_plays","video_2s","video_6s","thruplays","video_p25","video_p50","video_p75","video_p100","view_content","add_to_cart","initiate_checkout","add_payment_info","purchases"];
+const EX_COLS={
+  base:[["spend","الصرف","Spend","cur"],["revenue","الإيراد","Revenue","cur"],["roas","ROAS","ROAS","x"],["purchases","الطلبات","Orders","n"],["cpa","تكلفة الطلب","CPA","cur2"],["aov","متوسط الطلب","AOV","cur2"],
+    ["impressions","الظهور","Impr.","n"],["cpm","CPM","CPM","cur2"],["clicks","النقرات","Clicks","n"],["ctr","CTR","CTR","pct"],["cpc","CPC","CPC","cur2"]],
+  funnel:[["clicks","النقرات","Clicks","n"],["landing_page_views","زيارات الصفحة","LP views","n"],["view_content","مشاهدة منتج","View content","n"],["add_to_cart","إضافة للسلة","Add to cart","n"],["initiate_checkout","بدء الدفع","Checkout","n"],["purchases","الطلبات","Purchases","n"],
+    ["r_click_vc","نقرة ← مشاهدة","Click→VC","pct"],["r_vc_atc","مشاهدة ← سلة","VC→ATC","pct"],["r_atc_ic","سلة ← دفع","ATC→Checkout","pct"],["r_ic_pur","دفع ← شراء","Checkout→Buy","pct"],["cvr","نقرة ← شراء","Click→Buy","pct"],["cost_atc","تكلفة السلة","Cost/ATC","cur2"],["cost_ic","تكلفة بدء الدفع","Cost/Checkout","cur2"]],
+  video:[["impressions","الظهور","Impr.","n"],["video_plays","مشاهدات","Plays","n"],["hook","Hook rate","Hook rate","pct"],["video_2s","٢ ثانية","2s views","n"],["video_6s","٦ ثواني","6s views","n"],["thruplays","ThruPlay","ThruPlay","n"],
+    ["q25","وصلوا ٢٥٪","25%","pct"],["q50","وصلوا ٥٠٪","50%","pct"],["q75","وصلوا ٧٥٪","75%","pct"],["hold","كمّلوا للآخر","Hold (100%)","pct"],["spend","الصرف","Spend","cur"],["roas","ROAS","ROAS","x"]]};
+function exDerive(a){ const d=(x,y)=>y? x/y : null;
+  return Object.assign(a,{roas:d(a.revenue,a.spend),cpa:d(a.spend,a.purchases),aov:d(a.revenue,a.purchases),cpm:d(a.spend*1000,a.impressions),ctr:d((a.link_clicks||a.clicks)*100,a.impressions),cpc:d(a.spend,a.link_clicks||a.clicks),
+    r_click_vc:d(a.view_content*100,a.link_clicks||a.clicks),r_vc_atc:d(a.add_to_cart*100,a.view_content),r_atc_ic:d(a.initiate_checkout*100,a.add_to_cart),r_ic_pur:d(a.purchases*100,a.initiate_checkout),cvr:d(a.purchases*100,a.link_clicks||a.clicks),
+    cost_atc:d(a.spend,a.add_to_cart),cost_ic:d(a.spend,a.initiate_checkout),hook:d((a.video_2s||a.video_plays)*100,a.impressions),q25:d(a.video_p25*100,a.video_plays),q50:d(a.video_p50*100,a.video_plays),q75:d(a.video_p75*100,a.video_plays),hold:d(a.video_p100*100,a.video_plays)}); }
+function exAgg(rows){ const a={n:rows.length}; EX_SUM.forEach(k=>a[k]=0); rows.forEach(r=>EX_SUM.forEach(k=>{ a[k]+=+r[k]||0; })); return exDerive(a); }
+function exFmt(v,t){ if(v==null||!isFinite(v)) return "—";
+  return t==="cur"? fnum(v,0) : t==="cur2"? fnum(v,v<10?2:1) : t==="x"? v.toFixed(2)+"x" : t==="pct"? fnum(v,v<1?2:1)+"%" : fnum(v,0); }
+function exWeekStart(d){ return addDays(d,-parseISO(d).getDay()); }
+function exKey(r,dim){ switch(dim){
+  case "platform": return r.platform; case "account": return r.platform+" · "+(r.account_name||r.account_id);
+  case "campaign": return r.camp_no||r.campaign_name||"—"; case "creative": return r.creative_id||r.video_name||r.ad_name||"—";
+  case "day": return r.date; case "week": return exWeekStart(r.date); case "month": return r.date.slice(0,7);
+  case "weekday": return String(parseISO(r.date).getDay());
+  default: return r[dim]||"—"; } }
+function exLabel(k,dim){
+  if(dim==="platform") return (platById(k)||{}).name||k;
+  if(dim==="day") return rpDayName(k)+" "+fdate(k); if(dim==="week") return fdate(k)+" — "+fdate(addDays(k,6));
+  if(dim==="month") return rpMonthLbl(k); if(dim==="weekday") return (EN()?["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]:AR_D_AR)[+k];
+  return k; }
+function exScope(rows,dim){   // للفيديو والمشهور: فيديوهات Smart+ من تقرير الكريتيف، والباقي من الإعلانات — من غير تكرار
+  if(!EX_CREATIVE_DIMS[dim]) return rows.filter(r=>r.level==="ad");
+  const smart=new Set(rows.filter(r=>r.level==="material"&&r.ad_id).map(r=>r.account_id+"|"+r.ad_id)), hasMat=rows.some(r=>r.level==="material");
+  return rows.filter(r=> r.level==="material" || (r.level==="ad" && !smart.has(r.account_id+"|"+r.ad_id) && !(hasMat&&r.platform==="tiktok"&&!smart.size&&/Smart:ON/i.test(r.campaign_name||"")))); }
+function exFilter(rows){ const q=EX.q.trim().toLowerCase();
+  return rows.filter(r=>(!EX.plats.length||EX.plats.indexOf(r.platform)>=0)&&(!q||[r.campaign_name,r.ad_name,r.video_name,r.creative_id,r.influencer,r.product,r.variation].some(x=>x&&String(x).toLowerCase().indexOf(q)>=0))); }
+async function exFetch(from,to){
+  const k=from+"|"+to; if(EX.cache[k]) return EX.cache[k];
+  const sb=window.SUPA_DB&&SUPA_DB.client; if(!sb) throw new Error("site-only");
+  const cid=S.ws||(S.cfg.clients[0]||{}).id, out=[]; let i=0;
+  for(;;){ let q=sb.from("ad_daily").select("*").gte("date",from).lte("date",to).order("date").order("platform").order("ad_id").order("video_id").range(i,i+999);
+    if(cid) q=q.eq("client_id",cid);
+    const r=await q; if(r.error) throw r.error; out.push(...r.data); if(r.data.length<1000) break; i+=1000; }
+  EX.cache[k]=out; return out; }
+function exRange(){ const t=todayISO(); if(!EX.from){ EX.from=t.slice(0,8)+"01"; EX.to=t; }
+  let cf=null, ct=null; const len=diffDays(EX.from,EX.to)+1;
+  if(EX.cmp==="prev"){ ct=addDays(EX.from,-1); cf=addDays(ct,-(len-1)); } else if(EX.cmp==="year"){ cf=addDays(EX.from,-364); ct=addDays(EX.to,-364); } else if(EX.cmp==="custom"&&EX.cfrom&&EX.cto){ cf=EX.cfrom; ct=EX.cto; }
+  return [EX.from,EX.to,cf,ct]; }
+async function exLoad(){ const [a,b,c,d]=exRange(); EX.busy=true; EX.err=""; render();
+  try{ await exFetch(a,b); if(c) await exFetch(c,d); }catch(e){ EX.err=e.message==="site-only"? L("المحلل بيقرا من الداتا بيز — افتحه من رابط الموقع.","The analyzer reads the database — open it from the site link.") : (e.message||String(e)); }
+  EX.busy=false; render(); }
+function exGroup(rows,dim){ const g={}; rows.forEach(r=>{ const k=exKey(r,dim); (g[k]=g[k]||[]).push(r); }); return g; }
+function renderExplorer(){
+  const [a,b,c,d]=exRange(), cur=EX.cache[a+"|"+b], prv=c?EX.cache[c+"|"+d]:null;
+  if(!cur&&!EX.busy&&!EX.err) setTimeout(exLoad,0);
+  const cols=EX_COLS[EX.cols], dimL=(EX_DIMS.find(x=>x[0]===EX.dim)||EX_DIMS[0]);
+  let h='<div class="card ex-ctl">'+
+    '<label class="fld"><span>'+esc(L("من","From"))+'</span><input class="inp" type="date" data-c="exF" value="'+esc(a)+'"></label>'+
+    '<label class="fld"><span>'+esc(L("إلى","To"))+'</span><input class="inp" type="date" data-c="exT" value="'+esc(b)+'"></label>'+
+    '<label class="fld"><span>'+esc(L("قارن بـ","Compare with"))+'</span><select class="sel" data-c="exCmp">'+selOpts([["none","بدون مقارنة","No comparison"],["prev","الفترة اللي قبلها","Previous period"],["year","نفس الفترة السنة اللي فاتت","Same period last year"],["custom","فترة أختارها","Custom"]],EX.cmp)+"</select></label>"+
+    (EX.cmp==="custom"?'<label class="fld"><span>'+esc(L("مقارنة من","Compare from"))+'</span><input class="inp" type="date" data-c="exCF" value="'+esc(EX.cfrom)+'"></label><label class="fld"><span>'+esc(L("إلى","To"))+'</span><input class="inp" type="date" data-c="exCT" value="'+esc(EX.cto)+'"></label>':"")+
+    '<label class="fld"><span>'+esc(L("قسّم حسب","Break down by"))+'</span><select class="sel" data-c="exDim">'+selOpts(EX_DIMS,EX.dim)+"</select></label>"+
+    '<label class="fld ex-q"><span>'+esc(L("دوّر","Search"))+'</span><input class="inp" data-c="exQ" placeholder="'+esc(L("Creative ID، مشهور، حملة…","Creative ID, influencer, campaign…"))+'" value="'+esc(EX.q)+'"></label>'+
+    '<div class="ex-row"><div class="chips"><button class="chip'+(EX.plats.length?"":" on")+'" data-a="exPl" data-id="">'+esc(L("كل المنصات","All"))+"</button>"+
+      ["meta","tiktok","snap","google"].filter(id=>platById(id)).map(id=>'<button class="chip'+(EX.plats.indexOf(id)>=0?" on":"")+'" data-a="exPl" data-id="'+id+'"><i class="sw" style="background:'+platById(id).color+'"></i>'+esc(platById(id).name)+"</button>").join("")+"</div>"+
+    '<span class="seg">'+[["base","أساسي","Core"],["funnel","القمع","Funnel"],["video","الفيديو","Video"]].map(x=>'<button class="'+(EX.cols===x[0]?"on":"")+'" data-a="exCols" data-k="'+x[0]+'">'+esc(L(x[1],x[2]))+"</button>").join("")+"</span>"+
+    '<button class="btn btn-s" data-a="exCsv">⬇ CSV</button><button class="btn btn-s" data-a="exReload">↻</button></div></div>';
+  if(EX.err) return h+emptyBox(EX.err,"");
+  if(!cur) return h+'<div class="empty">'+esc(L("بحمّل الأرقام…","Loading…"))+"</div>";
+  const scope=exFilter(exScope(cur,EX.dim)), pscope=prv?exFilter(exScope(prv,EX.dim)):null, tot=exAgg(scope), ptot=pscope?exAgg(pscope):null;
+  const dl=(v,p,inv)=>{ if(p==null||!p||v==null) return ""; const x=(v-p)/Math.abs(p)*100; const good=inv? x<0 : x>0; return ' <small class="'+(good?"ex-up":"ex-dn")+'">'+(x>0?"▲":"▼")+fnum(Math.abs(x),Math.abs(x)<10?1:0)+"%</small>"; };
+  h+='<div class="grid ex-kpis">'+[["spend","الصرف","Spend","cur",1],["revenue","الإيراد","Revenue","cur"],["roas","ROAS","ROAS","x"],["purchases","الطلبات","Orders","n"],["cpa","تكلفة الطلب","CPA","cur2",1],["ctr","CTR","CTR","pct"],["cvr","نقرة ← شراء","Click→Buy","pct"],["cpm","CPM","CPM","cur2",1]]
+    .map(k=>'<div class="card kpi"><div class="kpi-l"><span>'+esc(L(k[1],k[2]))+'</span></div><div class="kpi-v">'+exFmt(tot[k[0]],k[3])+'</div><div class="kpi-f">'+(ptot?dl(tot[k[0]],ptot[k[0]],k[4])+' <span class="dlt-c">'+exFmt(ptot[k[0]],k[3])+"</span>":"")+"</div></div>").join("")+"</div>";
+  const g=exGroup(scope,EX.dim), pg=pscope?exGroup(pscope,EX.dim):{};
+  let list=Object.keys(g).map(k=>({k:k,v:exAgg(g[k]),p:pg[k]?exAgg(pg[k]):null}));
+  if(["day","week","month","weekday"].indexOf(EX.dim)>=0&&EX.sort==="spend"&&EX.dir===-1){ list.sort((x,y)=>x.k<y.k?-1:1);
+    if(EX.dim==="day"){ const have=new Set(list.map(x=>x.k)); for(let x=a;x<=b;x=addDays(x,1)) if(!have.has(x)) list.push({k:x,v:exAgg([]),p:null}); list.sort((x,y)=>x.k<y.k?-1:1); } }
+  else list.sort((x,y)=>((y.v[EX.sort]??-1e18)-(x.v[EX.sort]??-1e18))*(-EX.dir));
+  const th=(k,l)=>'<th class="num" data-a="exSort" data-k="'+k+'" style="cursor:pointer">'+esc(l)+(EX.sort===k?(EX.dir<0?" ▾":" ▴"):"")+"</th>";
+  h+='<div class="card"><div class="card-t">'+esc(L("الأداء حسب ","By ")+L(dimL[1],dimL[2]))+' <small class="muted">'+list.length+"</small></div>"+
+    '<div class="tw"><table class="an-tbl ex-t"><tr><th>'+esc(L(dimL[1],dimL[2]))+"</th>"+cols.map(c=>th(c[0],L(c[1],c[2]))).join("")+"</tr>"+
+    list.slice(0,500).map(x=>'<tr data-a="exSel" data-k="'+esc(x.k)+'" class="'+(EX.sel===x.k?"on":"")+'" style="cursor:pointer"><td class="ex-k">'+esc(exLabel(x.k,EX.dim))+"</td>"+
+      cols.map(c=>'<td class="num">'+exFmt(x.v[c[0]],c[3])+(x.p&&["spend","revenue","roas","purchases","cpa"].indexOf(c[0])>=0?dl(x.v[c[0]],x.p[c[0]],c[0]==="cpa"):"")+"</td>").join("")+"</tr>").join("")+
+    '<tr class="ex-tot"><td>'+esc(L("الإجمالي","Total"))+"</td>"+cols.map(c=>'<td class="num">'+exFmt(tot[c[0]],c[3])+"</td>").join("")+"</tr></table></div>"+
+    '<div class="hint">'+esc(L("دوس على أي سطر تشوف تفاصيله: على أنهي منصة وحملة وشهر كان أحسن.","Click a row to see where it did best: platform, campaign, month."))+
+    (EX_CREATIVE_DIMS[EX.dim]?" "+esc(L("فيديوهات Smart+ في TikTok محسوبة كل فيديو لوحده من تقرير الكريتيف.","TikTok Smart+ videos are counted per video from the creative report.")):"")+"</div></div>";
+  if(EX.sel&&g[EX.sel]){ const rows=g[EX.sel], parts=[["platform","المنصة","Platform"],["campaign","الحملة","Campaign"],["month","الشهر","Month"],["creative","الفيديو","Video"]].filter(p=>p[0]!==EX.dim);
+    h+='<div class="card"><div class="card-t">'+esc(L("تفاصيل: ","Details: ")+exLabel(EX.sel,EX.dim))+'</div><div class="ex-drill">'+parts.map(p=>{ const gg=exGroup(rows,p[0]);
+      const ll=Object.keys(gg).map(k=>({k:k,v:exAgg(gg[k])})).sort((x,y)=>y.v.spend-x.v.spend).slice(0,12);
+      return '<div><b>'+esc(L("حسب ","By ")+L(p[1],p[2]))+'</b><div class="tw"><table class="an-tbl"><tr><th></th><th class="num">'+esc(L("الصرف","Spend"))+'</th><th class="num">'+esc(L("الإيراد","Revenue"))+'</th><th class="num">ROAS</th><th class="num">'+esc(L("الطلبات","Orders"))+'</th><th class="num">CPA</th></tr>'+
+        ll.map(x=>"<tr><td>"+esc(exLabel(x.k,p[0]))+'</td><td class="num">'+exFmt(x.v.spend,"cur")+'</td><td class="num">'+exFmt(x.v.revenue,"cur")+'</td><td class="num">'+exFmt(x.v.roas,"x")+'</td><td class="num">'+exFmt(x.v.purchases,"n")+'</td><td class="num">'+exFmt(x.v.cpa,"cur2")+"</td></tr>").join("")+"</table></div></div>"; }).join("")+"</div></div>"; }
+  return h; }
+CHG.exF=v=>{ EX.from=v; EX.sel=null; exLoad(); }; CHG.exT=v=>{ EX.to=v; EX.sel=null; exLoad(); };
+CHG.exCmp=v=>{ EX.cmp=v; exLoad(); }; CHG.exCF=v=>{ EX.cfrom=v; exLoad(); }; CHG.exCT=v=>{ EX.cto=v; exLoad(); };
+CHG.exDim=v=>{ EX.dim=v; EX.sel=null; EX.sort="spend"; EX.dir=-1; render(); }; CHG.exQ=v=>{ EX.q=v; EX.sel=null; render(); };
+ACT.exPl=t=>{ const id=t.dataset.id, a=EX.plats; if(!id) a.length=0; else { const i=a.indexOf(id); i<0?a.push(id):a.splice(i,1); } render(); };
+ACT.exCols=t=>{ EX.cols=t.dataset.k; render(); };
+ACT.exSort=t=>{ const k=t.dataset.k; if(EX.sort===k) EX.dir=-EX.dir; else { EX.sort=k; EX.dir=-1; } render(); };
+ACT.exSel=t=>{ EX.sel=EX.sel===t.dataset.k?null:t.dataset.k; render(); };
+ACT.exReload=()=>{ EX.cache={}; exLoad(); };
+ACT.exCsv=async()=>{ const [a,b]=exRange(), cur=EX.cache[a+"|"+b]; if(!cur) return;
+  const scope=exFilter(exScope(cur,EX.dim)), g=exGroup(scope,EX.dim), cols=EX_COLS.base.concat(EX_COLS.funnel,EX_COLS.video).filter((c,i,arr)=>arr.findIndex(x=>x[0]===c[0])===i);
+  const lines=[[L("البند","Item")].concat(cols.map(c=>L(c[1],c[2])))].concat(Object.keys(g).map(k=>{ const v=exAgg(g[k]); return [exLabel(k,EX.dim)].concat(cols.map(c=>v[c[0]]==null?"":(+v[c[0]]).toFixed(c[3]==="n"?0:2))); }));
+  const csv="﻿"+lines.map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(",")).join("\n");
+  const blob=new Blob([csv],{type:"text/csv"}), u=URL.createObjectURL(blob), el=document.createElement("a"); el.href=u; el.download="gadlytics_"+EX.dim+"_"+a+"_"+b+".csv"; el.click(); setTimeout(()=>URL.revokeObjectURL(u),2000); };
 
 function topbarHTML(){
   if(isPending()) return '<div class="tb-sp"></div>'+tbRight();
