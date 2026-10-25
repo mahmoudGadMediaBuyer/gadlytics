@@ -11,7 +11,7 @@
 <body>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GADLYTICS</title>
-<style>.ex-ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}.ex-ctl .fld{display:flex;flex-direction:column;gap:4px;font-size:12px}.ex-q{flex:1;min-width:200px}.ex-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;width:100%}.ex-kpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:12px 0}.ex-t tr.on td{background:color-mix(in srgb,var(--cyan) 10%,transparent)}.ex-k{max-width:340px;white-space:normal;word-break:break-word}.ex-tot td{font-weight:800}.ex-up{color:var(--good,#12a150)}.ex-dn{color:var(--bad,#d23)}.sb-ctl{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}.sb-ctl .fld{display:flex;flex-direction:column;gap:4px;font-size:12px;min-width:220px}.sb-grid{direction:rtl;display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-top:12px}.sb-c{border-radius:14px;padding:14px}.sb-h{font-weight:800;font-size:15px}.sb-h span{font-size:11px;font-weight:700}.sb-l{font-size:12px;margin-top:8px}.sb-v{font-size:21px;font-weight:800;font-variant-numeric:tabular-nums}.sb-r{display:flex;justify-content:space-between;gap:8px;margin-top:10px;font-size:13px}.sb-r b{font-weight:800}.sb-tot{grid-column:span 1}.ss-t{border-collapse:separate;border-spacing:0;font-size:12.5px;width:100%;direction:rtl}.ss-t th,.ss-t td{padding:6px 8px;text-align:center;white-space:nowrap;border-bottom:1px solid var(--line,rgba(128,128,128,.18));font-variant-numeric:tabular-nums}.ss-t th{font-weight:800;font-size:11.5px}.ss-t th small{opacity:.75;font-weight:700}.ss-t .ss-tot{background:#EEEDFE;color:#26215C;font-weight:800}.ss-t .ss-time{font-weight:700;text-align:start}.ss-ro{font-weight:800}.ss-best td,.ss-best{background:#E1F5EE!important;color:#085041!important}.ss-worst td,.ss-worst{background:#FCEBEB!important;color:#791F1F!important}.ex-pick{width:100%;border-top:1px solid var(--line,#e5e7eb);padding-top:10px}.ex-pick .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.ex-drill{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}</style>
+<style>.ex-ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}.ex-ctl .fld{display:flex;flex-direction:column;gap:4px;font-size:12px}.ex-q{flex:1;min-width:200px}.ex-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;width:100%}.ex-kpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:12px 0}.ex-t tr.on td{background:color-mix(in srgb,var(--cyan) 10%,transparent)}.ex-k{max-width:340px;white-space:normal;word-break:break-word}.ex-tot td{font-weight:800}.ex-up{color:var(--good,#12a150)}.ex-dn{color:var(--bad,#d23)}.sb-ctl{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}.sb-ctl .fld{display:flex;flex-direction:column;gap:4px;font-size:12px;min-width:220px}.sb-grid{direction:rtl;display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-top:12px}.sb-c{border-radius:14px;padding:14px}.sb-h{font-weight:800;font-size:15px}.sb-h span{font-size:11px;font-weight:700}.sb-l{font-size:12px;margin-top:8px}.sb-v{font-size:21px;font-weight:800;font-variant-numeric:tabular-nums}.sb-r{display:flex;justify-content:space-between;gap:8px;margin-top:10px;font-size:13px}.sb-r b{font-weight:800}.sb-tot{grid-column:span 1}.ss-t{border-collapse:separate;border-spacing:0;font-size:12.5px;width:100%;direction:rtl}.ss-t th,.ss-t td{padding:6px 8px;text-align:center;white-space:nowrap;border-bottom:1px solid var(--line,rgba(128,128,128,.18));font-variant-numeric:tabular-nums}.ss-t th{font-weight:800;font-size:11.5px}.ss-t th small{opacity:.75;font-weight:700}.ss-t .ss-tot{background:#EEEDFE;color:#26215C;font-weight:800}.ss-t .ss-time{font-weight:700;text-align:start}.ss-ro{font-weight:800}.ss-best td,.ss-best{background:#E1F5EE!important;color:#085041!important}.ss-worst td,.ss-worst{background:#FCEBEB!important;color:#791F1F!important}.ss-live{margin-bottom:14px}.ss-lh{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.ex-pick{width:100%;border-top:1px solid var(--line,#e5e7eb);padding-top:10px}.ex-pick .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.ex-drill{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}</style>
 <style>/* معاينة التقرير ورقة بيضا دايماً، حتى في الوضع الليلي */
 .rp-prev .rp-tb th,.rp-prev .rp-tb td{color:#131A32!important;background:transparent;opacity:1!important}
 .rp-prev .rp-tb th{background:#F4F6FC!important;color:#4A5573!important;border-bottom:1px solid #DDE3F0!important}
@@ -4428,7 +4428,7 @@ function stateAt(date,msOfDay){
 function renderLive(){
   const D=S.liveDate;
   _roundShown=false;
-  return livePlatBar()+sectionsBlock("live",{from:D,to:D,cmp:[addDays(D,-1),addDays(D,-1)]});
+  return livePlatBar()+ssLiveBlock(D)+sectionsBlock("live",{from:D,to:D,cmp:[addDays(D,-1),addDays(D,-1)]});
 }
 /* ── المنصات الظاهرة في صفحة اليوم مباشر (بتتحفظ) ── */
 function livePlats(){ return (S.cfg.settings.livePlats||[]).filter(id=>S.cfg.platforms.some(p=>p.id===id&&!isAcct(id))); }
@@ -10678,13 +10678,13 @@ function navHTML(){
     entry:it("entry",L("إدخال البيانات","Data entry")),rep:it("reports",L("التقارير","Reports")),plans:it("plans",L("الميديا بلان","Media plans")),cr:it("library",L("مكتبة الكريتيف","Creative library")),media:it("creatives",L("إدارة الميديا","Media management")),
     ap:it("approvals",L("الموافقات","Approvals")),team:it("team",L("الفريق","Team")),perf:it("perf",L("تقييم الأداء","Performance")),admin:it("admin",L("الإعدادات","Settings")),portal:it("portal",L("بوابتي","My portal"))};
   if(isClient()) return grp(L("حسابك","Your account"),[I.portal,I.rep]);
-  const work=grp(L("شغلي","My work"),[I.me,I.tasks,I.chat]), perfG=grp(L("الأداء","Performance"),[I.live,I.ov,it("snapboard",L("اللقطات","Snapshots"),"live"),it("explorer",L("المحلل","Analyzer"),"insights"),it("analyze",L("تحليل الحملات","Campaign analysis"),"insights"),I.entry,I.rep]), planG=grp(L("التخطيط والإبداع","Planning & creative"),[I.plans,I.media,I.cr,I.ap]);
+  const work=grp(L("شغلي","My work"),[I.me,I.tasks,I.chat]), perfG=grp(L("الأداء","Performance"),[I.live,I.ov,it("explorer",L("المحلل","Analyzer"),"insights"),it("analyze",L("تحليل الحملات","Campaign analysis"),"insights"),I.entry,I.rep]), planG=grp(L("التخطيط والإبداع","Planning & creative"),[I.plans,I.media,I.cr,I.ap]);
   if(isMember()) return work+perfG+planG;
   if(SIMPLE()) return work+perfG+planG+grp(L("الإدارة","Management"),[I.team,I.perf,I.admin])+
     (cs.length?grp(L("شاشاتي","My screens"),cs.map(v=>it(v.id,v.name,"screen"))):"")+modeBar();
   return work+
     grp(L("متابعة","Monitor"),[it("actions",L("مركز الإجراءات","Action Center")),it("live",L("اليوم مباشر","Live Today")),it("brief",L("الملخص اليومي","Daily brief"))])+
-    grp(L("تحليل","Analyze"),[it("overview",L("نظرة عامة","Overview")),it("compare",L("مقارنة فترات","Compare")),it("snapboard",L("اللقطات","Snapshots"),"live"),it("explorer",L("المحلل","Analyzer"),"insights"),it("analyze",L("تحليل الحملات","Campaign analysis"),"insights"),it("insights",L("استنتاجات","Insights")),I.rep])+
+    grp(L("تحليل","Analyze"),[it("overview",L("نظرة عامة","Overview")),it("compare",L("مقارنة فترات","Compare")),it("explorer",L("المحلل","Analyzer"),"insights"),it("analyze",L("تحليل الحملات","Campaign analysis"),"insights"),it("insights",L("استنتاجات","Insights")),I.rep])+
     grp(L("تشغيل","Operate"),[it("entry",L("إدخال البيانات","Data entry")),it("roster",L("إدارة الحملات","Campaign roster")),I.plans,I.media,I.cr,I.ap,
       it("changes",L("سجل التغييرات","Change log")),it("experiments",L("التجارب","Experiments"))])+
     grp(L("الإدارة","Management"),[I.team,I.perf])+
@@ -11094,17 +11094,7 @@ function renderSnapSheet(){
   if(SS.tab==="sheet"){
     h+='<label class="fld"><span>'+esc(L("اليوم","Day"))+'</span><select class="sel" data-c="ssDay">'+(SS.days||[]).map(d=>'<option value="'+d+'"'+(d===SS.day?" selected":"")+">"+esc(rpDayName(d)+" "+fdate(d)+" "+d.slice(0,4))+"</option>").join("")+"</select></label>"+
       '<span class="seg">'+[["diff","الفرق بين اللقطات","Change between snapshots"],["cum","تراكمي من أول اليوم","Cumulative"]].map(x=>'<button class="'+(SS.mode===x[0]?"on":"")+'" data-a="ssMode" data-k="'+x[0]+'">'+esc(L(x[1],x[2]))+"</button>").join("")+"</span></div>";
-    const rows=SS.rows[SS.day]; if(!rows) return h+'<div class="empty">'+esc(SS.busy||!SS.days.length?L("بحمّل…","Loading…"):L("مفيش لقطات لسه.","No snapshots yet."))+"</div>";
-    const g=ssGrid(rows), view=SS.mode==="diff"? ssDiff(g) : g;
-    let best=-1,worst=-1,bv=-1e9,wv=1e9; if(SS.mode==="diff") view.forEach((row,i)=>{ if(!i) return; const t=ssTot(row.v); if(t.s<50) return; const ro=t.r/t.s; if(ro>bv){bv=ro;best=i;} if(ro<wv){wv=ro;worst=i;} });
-    h+='<div class="card"><div class="tw"><table class="ss-t"><tr><th rowspan="2">'+esc(L("اللقطة","Snapshot"))+"</th>"+
-      SS_SRC.map(c=>'<th colspan="'+(c[5]?4:2)+'" style="background:'+c[3]+";color:"+c[4]+'">'+esc(c[1])+(c[2]?" <small>"+c[2]+"</small>":"")+"</th>").join("")+'<th colspan="5" class="ss-tot">'+esc(L("الإجمالي","Total"))+"</th></tr><tr>"+
-      SS_SRC.map(c=>(c[5]?["الصرف","الإيراد","ROAS","AOV"]:["الإيراد","تبرعات"]).map(x=>'<th style="background:'+c[3]+";color:"+c[4]+'">'+esc(x)+"</th>").join("")).join("")+["الصرف","الإيراد","ROAS","AOV","تبرعات"].map(x=>'<th class="ss-tot">'+esc(x)+"</th>").join("")+"</tr>"+
-      view.map((row,i)=>'<tr class="'+(i===best?"ss-best":i===worst?"ss-worst":"")+'"><td class="ss-time">'+esc((SS.mode==="diff"&&row.from? ssTime(row.from)+" ← " : SS.mode==="diff"? L("من ١٢ص ← ","from 0:00 ← "):"")+ssTime(row.t))+"</td>"+
-        SS_SRC.map(c=>ssCells(row.v[c[0]]||{s:0,r:0,d:0},c[5],0)).join("")+'<td class="ss-tot" colspan="0"></td>'.slice(0,0)+ssCells(ssTot(row.v),1,1).replace(/<td/g,'<td class="ss-tot"')+"</tr>").join("")+"</table></div>"+
-      (SS.mode==="diff"&&best>0?'<div class="hint" style="margin-top:8px"><span class="ss-best" style="padding:2px 6px;border-radius:6px">'+esc(L("أقوى فترة: ","Best: ")+ssTime(view[best].from)+" ← "+ssTime(view[best].t)+" · ROAS "+bv.toFixed(2)+"x")+'</span> &nbsp; <span class="ss-worst" style="padding:2px 6px;border-radius:6px">'+esc(L("أضعف فترة: ","Weakest: ")+ssTime(view[worst].from)+" ← "+ssTime(view[worst].t)+" · ROAS "+wv.toFixed(2)+"x")+"</span></div>":"")+
-      '<div class="hint">'+esc(L("الصرف من المنصات، والإيراد والتبرعات من خزامى بأكواد الروابط. الفترات اللي صرفها أقل من ٥٠ ريال مش داخلة في الأقوى والأضعف.","Spend from platforms; revenue from Khzama codes."))+"</div></div>";
-    return h; }
+    return h+ssSheetBody(SS.day); }
   // قارن ساعة على كل الأيام
   if(!SS.all){ setTimeout(ssLoadAll,0); return h+'</div><div class="empty">'+esc(L("بحمّل…","Loading…"))+"</div>"; }
   const hours=[...new Set(SS.all.map(x=>ssHour(x.taken_at)))].sort((a,b)=>a-b); if(SS.hour===""&&hours.length) SS.hour=String(hours[0]);
@@ -11114,6 +11104,24 @@ function renderSnapSheet(){
   h+='<div class="card"><div class="card-t">'+esc(L("الساعة اللي بتخلص ","Hour ending ")+SS.hour+":00 "+L("على كل الأيام","across days"))+'</div><div class="tw"><table class="ss-t"><tr><th>'+esc(L("اليوم","Day"))+"</th>"+SS_SRC.filter(c=>c[5]).map(c=>'<th colspan="3" style="background:'+c[3]+";color:"+c[4]+'">'+esc(c[1])+"</th>").join("")+'<th colspan="3" class="ss-tot">'+esc(L("الإجمالي","Total"))+"</th></tr>"+
     out.map(o=>{ const c3=x=>"<td>"+fnum(x.s,0)+"</td><td>"+fnum(x.r,0)+'</td><td class="ss-ro">'+(x.s?(x.r/x.s).toFixed(2)+"x":"—")+"</td>"; return "<tr><td>"+esc(rpDayName(o.d)+" "+fdate(o.d))+"</td>"+SS_SRC.filter(c=>c[5]).map(c=>c3(o.row.v[c[0]]||{s:0,r:0,d:0})).join("")+c3(ssTot(o.row.v)).replace(/<td/g,'<td class="ss-tot"')+"</tr>"; }).join("")+"</table></div></div>";
   return h; }
+function ssSheetBody(day){
+    const rows=SS.rows[day]; if(!rows) return '<div class="empty">'+esc(SS.busy||!(SS.days||[]).length?L("بحمّل…","Loading…"):L("مفيش لقطات لسه.","No snapshots yet."))+"</div>";
+    const g=ssGrid(rows), view=SS.mode==="diff"? ssDiff(g) : g;
+    let best=-1,worst=-1,bv=-1e9,wv=1e9; if(SS.mode==="diff") view.forEach((row,i)=>{ if(!i) return; const t=ssTot(row.v); if(t.s<50) return; const ro=t.r/t.s; if(ro>bv){bv=ro;best=i;} if(ro<wv){wv=ro;worst=i;} });
+    let h='<div class="card"><div class="tw"><table class="ss-t"><tr><th rowspan="2">'+esc(L("اللقطة","Snapshot"))+"</th>"+
+      SS_SRC.map(c=>'<th colspan="'+(c[5]?4:2)+'" style="background:'+c[3]+";color:"+c[4]+'">'+esc(c[1])+(c[2]?" <small>"+c[2]+"</small>":"")+"</th>").join("")+'<th colspan="5" class="ss-tot">'+esc(L("الإجمالي","Total"))+"</th></tr><tr>"+
+      SS_SRC.map(c=>(c[5]?["الصرف","الإيراد","ROAS","AOV"]:["الإيراد","تبرعات"]).map(x=>'<th style="background:'+c[3]+";color:"+c[4]+'">'+esc(x)+"</th>").join("")).join("")+["الصرف","الإيراد","ROAS","AOV","تبرعات"].map(x=>'<th class="ss-tot">'+esc(x)+"</th>").join("")+"</tr>"+
+      view.map((row,i)=>'<tr class="'+(i===best?"ss-best":i===worst?"ss-worst":"")+'"><td class="ss-time">'+esc((SS.mode==="diff"&&row.from? ssTime(row.from)+" ← " : SS.mode==="diff"? L("من ١٢ص ← ","from 0:00 ← "):"")+ssTime(row.t))+"</td>"+
+        SS_SRC.map(c=>ssCells(row.v[c[0]]||{s:0,r:0,d:0},c[5],0)).join("")+'<td class="ss-tot" colspan="0"></td>'.slice(0,0)+ssCells(ssTot(row.v),1,1).replace(/<td/g,'<td class="ss-tot"')+"</tr>").join("")+"</table></div>"+
+      (SS.mode==="diff"&&best>0?'<div class="hint" style="margin-top:8px"><span class="ss-best" style="padding:2px 6px;border-radius:6px">'+esc(L("أقوى فترة: ","Best: ")+ssTime(view[best].from)+" ← "+ssTime(view[best].t)+" · ROAS "+bv.toFixed(2)+"x")+'</span> &nbsp; <span class="ss-worst" style="padding:2px 6px;border-radius:6px">'+esc(L("أضعف فترة: ","Weakest: ")+ssTime(view[worst].from)+" ← "+ssTime(view[worst].t)+" · ROAS "+wv.toFixed(2)+"x")+"</span></div>":"")+
+      '<div class="hint">'+esc(L("الصرف من المنصات، والإيراد والتبرعات من خزامى بأكواد الروابط. الفترات اللي صرفها أقل من ٥٠ ريال مش داخلة في الأقوى والأضعف.","Spend from platforms; revenue from Khzama codes."))+"</div></div>";
+    return h; }
+function ssLiveBlock(D){   // شيت اللقطات جوه «اليوم مباشر»
+  if(!(window.SUPA_DB&&SUPA_DB.client)) return "";
+  if(!SS.rows[D]&&!SS.busy) setTimeout(()=>ssLoad(D),0);
+  const rows=SS.rows[D];
+  return '<div class="card ss-live"><div class="ss-lh"><div class="card-t">'+esc(L("لقطات اليوم","Today's snapshots"))+'</div><span class="seg">'+[["diff","الفرق بين اللقطات","Change"],["cum","تراكمي","Cumulative"]].map(x=>'<button class="'+(SS.mode===x[0]?"on":"")+'" data-a="ssMode" data-k="'+x[0]+'">'+esc(L(x[1],x[2]))+"</button>").join("")+"</span></div>"+
+    (rows&&rows.length? ssSheetBody(D).replace('<div class="card">','<div>') : '<div class="hint">'+esc(rows?L("مفيش لقطات لليوم ده لسه.","No snapshots for this day yet."):L("بحمّل…","Loading…"))+"</div>")+"</div>"; }
 ACT.ssTab=t=>{ SS.tab=t.dataset.k; render(); }; ACT.ssMode=t=>{ SS.mode=t.dataset.k; render(); };
 CHG.ssDay=v=>{ SS.day=v; ssLoad(v); }; CHG.ssHr=v=>{ SS.hour=v; render(); };
 
