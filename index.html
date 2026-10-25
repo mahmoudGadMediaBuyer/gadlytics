@@ -13,6 +13,9 @@
 <title>GADLYTICS</title>
 <style>.ex-ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}.ex-ctl .fld{display:flex;flex-direction:column;gap:4px;font-size:12px}.ex-q{flex:1;min-width:200px}.ex-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;width:100%}.ex-kpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:12px 0}.ex-t tr.on td{background:color-mix(in srgb,var(--cyan) 10%,transparent)}.ex-k{max-width:340px;white-space:normal;word-break:break-word}.ex-tot td{font-weight:800}.ex-up{color:var(--good,#12a150)}.ex-dn{color:var(--bad,#d23)}.sb-ctl{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}.sb-ctl .fld{display:flex;flex-direction:column;gap:4px;font-size:12px;min-width:220px}.sb-grid{direction:rtl;display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-top:12px}.sb-c{border-radius:14px;padding:14px}.sb-h{font-weight:800;font-size:15px}.sb-h span{font-size:11px;font-weight:700}.sb-l{font-size:12px;margin-top:8px}.sb-v{font-size:21px;font-weight:800;font-variant-numeric:tabular-nums}.sb-r{display:flex;justify-content:space-between;gap:8px;margin-top:10px;font-size:13px}.sb-r b{font-weight:800}.sb-tot{grid-column:span 1}.ex-pick{width:100%;border-top:1px solid var(--line,#e5e7eb);padding-top:10px}.ex-pick .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.ex-drill{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}</style>
 <style>.ss-live{margin-bottom:14px}.ss-lh{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.ss-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}.ss-kc{border:1px solid var(--line,rgba(128,128,128,.22));border-radius:12px;padding:12px}
+.ss-kl{font-size:12px;opacity:.75}.ss-kv{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;margin:4px 0}.ss-kf{font-size:12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}.ss-d{font-weight:800}
+.ss-cmp{margin-bottom:14px}.ss-ct{font-weight:800;margin:4px 0 8px}.ss-ct2 td,.ss-ct2 th{padding:8px 10px}.ss-today td{font-weight:800;box-shadow:inset 0 0 0 999px rgba(70,95,255,.10)}
 .ss-wrap{border-radius:12px;border:1px solid var(--line,rgba(128,128,128,.22))}
 .ss-t{border-collapse:separate;border-spacing:0;font-size:13.5px;width:100%;direction:rtl}
 .ss-t th,.ss-t td{padding:9px 10px;text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums;border-bottom:1px solid var(--line,rgba(128,128,128,.14))}
@@ -11091,7 +11094,7 @@ function renderSnapBoard(){
   return h; }
 CHG.sbP=v=>{ SB.sel=v; sbLoad(); };
 /* ── شيت اللقطات: كل سطر لقطة، وكل منصة أعمدتها بلونها، وعرض تراكمي أو الفرق بين اللقطات ── */
-const SS={tab:"sheet",days:null,day:"",rows:{},mode:"diff",hour:"",all:null,busy:false,err:""};
+const SS={tab:"sheet",days:null,day:"",rows:{},mode:"cum",hour:"",all:null,busy:false,err:""};
 const SS_SRC=[["meta","Meta","ME","#E6F1FB","#0C447C",1],["tiktok","TikTok","TT","#FBEAF0","#72243E",1],["snap","Snapchat","SC","#FAEEDA","#633806",1],
   ["bio","bio","","#E1F5EE","#085041",0],["com","com","","#E1F5EE","#085041",0],["DM","DM","","#E1F5EE","#085041",0]];
 function ssCid(){ return S.ws||(S.cfg.clients[0]||{}).id; }
@@ -11142,22 +11145,22 @@ function ssSheetBody(day){
   let h='<div class="tw ss-wrap"><table class="ss-t"><thead><tr><th rowspan="2" class="ss-time">'+sp(esc(L("وقت اللقطة","Taken at")))+"</th>"+
     PL.map(c=>'<th colspan="4" class="gh gs g-'+c[0]+'">'+sp(esc(c[1])+' <small>'+c[2]+"</small>")+"</th>").join("")+
     '<th colspan="'+(OR.length)+'" class="gh gs g-org">'+sp(esc(L("روابط مباشرة (إيراد)","Direct links (revenue)")))+"</th>"+
-    '<th colspan="4" class="gh gs g-tot">'+sp(esc(L("الإجمالي","Total")))+"</th></tr><tr>"+
+    '<th colspan="6" class="gh gs g-tot">'+sp(esc(L("الإجمالي","Total")))+"</th></tr><tr>"+
     PL.map(c=>["الصرف","الإيراد","ROAS","AOV"].map((x,i)=>'<th class="g-'+c[0]+(i?"":" gs")+'">'+sp(esc(x))+"</th>").join("")).join("")+
     OR.map((c,i)=>'<th class="g-org'+(i?"":" gs")+'">'+sp(esc(c[1]))+"</th>").join("")+
-    ["الصرف","الإيراد","ROAS","AOV"].map((x,i)=>'<th class="g-tot'+(i?"":" gs")+'">'+sp(esc(x))+"</th>").join("")+"</tr></thead><tbody>"+
+    ["الصرف","الطلبات","الإيراد","ROAS","AOV","CPA"].map((x,i)=>'<th class="g-tot'+(i?"":" gs")+'">'+sp(esc(x))+"</th>").join("")+"</tr></thead><tbody>"+
     view.map((row,i)=>{ const t=ssTot(row.v), tro=t.s? t.r/t.s : null, taov=t.d? t.r/t.d : null;
       return '<tr class="'+(i===best?"ss-best":i===worst?"ss-worst":"")+'"><td class="ss-time">'+esc(ssTime(row.t))+"</td>"+
         PL.map(c=>plCells(row.v[c[0]]||{s:0,r:0,d:0},c,1)).join("")+
         OR.map((c,j)=>{ const x=row.v[c[0]]||{r:0,d:0}; return '<td class="g-org'+(j?"":" gs")+'">'+ssN(x.r)+(x.d?' <small class="ss-m">('+x.d+")</small>":"")+"</td>"; }).join("")+
-        '<td class="g-tot gs">'+ssN(t.s)+'</td><td class="g-tot">'+ssN(t.r)+'</td><td class="g-tot ss-ro '+ssRoCls(tro)+'">'+(tro==null?"—":tro.toFixed(2)+"x")+'</td><td class="g-tot ss-m">'+ssN(taov)+"</td></tr>"; }).join("")+
+        '<td class="g-tot gs">'+ssN(t.s)+'</td><td class="g-tot">'+ssN(t.d)+'</td><td class="g-tot">'+ssN(t.r)+'</td><td class="g-tot ss-ro '+ssRoCls(tro)+'">'+(tro==null?"—":tro.toFixed(2)+"x")+'</td><td class="g-tot ss-m">'+ssN(taov)+'</td><td class="g-tot ss-m">'+ssN(t.d? t.s/t.d : null,1)+"</td></tr>"; }).join("")+
     "</tbody></table></div>";
   h+='<div class="ss-legend">'+(SS.mode==="diff"&&best>0?'<span class="ss-best">'+esc(L("أقوى فترة","Best")+" · "+ssTime(view[best].from)+" ← "+ssTime(view[best].t)+" · "+bv.toFixed(2)+"x")+'</span><span class="ss-worst">'+esc(L("أضعف فترة","Weakest")+" · "+ssTime(view[worst].from)+" ← "+ssTime(view[worst].t)+" · "+wv.toFixed(2)+"x")+"</span>":"")+
     '<span class="ss-m">'+esc(SS.mode==="diff"? L("كل سطر = اللي اتصرف واتجاب من اللقطة اللي قبله لحد وقته · بين القوسين عدد التبرعات","Each row = since the previous snapshot") : L("كل سطر = من أول اليوم لحد وقت اللقطة","Each row = since midnight"))+"</span></div>";
   return h; }
 function ssChart(day){   // صعود ونزول اليوم: صرف وإيراد كل فترة + خط الـ ROAS
   const rows=SS.rows[day]; if(!rows||!rows.length) return "";
-  const v=ssDiff(ssGrid(rows)).map(r=>{ const t=ssTot(r.v); return {t:r.t,s:t.s,r:t.r,ro:t.s>=50? t.r/t.s : null}; });
+  const v=(SS.mode==="diff"? ssDiff(ssGrid(rows)) : ssGrid(rows)).map(r=>{ const t=ssTot(r.v); return {t:r.t,s:t.s,r:t.r,ro:t.s>=50? t.r/t.s : null}; });
   const W=1300,H=230,P={l:56,r:50,t:14,b:28}, n=v.length, bw=(W-P.l-P.r)/n, mx=Math.max(1,...v.map(x=>Math.max(x.s,x.r))), mr=Math.max(1,...v.map(x=>x.ro||0));
   const y=x=>H-P.b-(x/mx)*(H-P.t-P.b), yr=x=>H-P.b-(x/mr)*(H-P.t-P.b), cx=i=>P.l+bw*i+bw/2;
   let s='<svg viewBox="0 0 '+W+" "+H+'" class="ss-ch" role="img" aria-label="day chart">';
@@ -11182,12 +11185,36 @@ function schBar(){ if(!SCH.loaded) setTimeout(schLoad,0); const c=SCH.cfg||{ever
 CHG.schEvery=v=>{ SCH.cfg=Object.assign({},SCH.cfg||{}, {every:+v}); if(+v&&!SCH.cfg.nextAt) SCH.cfg.nextAt=new Date(Date.now()+ +v*60000).toISOString(); if(!+v) SCH.cfg.nextAt=null; schSave(); };
 ACT.schShift=t=>{ const c=SCH.cfg=Object.assign({},SCH.cfg||{every:30}); const base=c.nextAt? new Date(c.nextAt).getTime() : Date.now(); c.nextAt=new Date(Math.max(Date.now(),base+ +t.dataset.m*60000)).toISOString(); schSave(); };
 ACT.schNow=()=>{ SCH.cfg=Object.assign({},SCH.cfg||{every:30},{nextAt:new Date().toISOString(),requested:new Date().toISOString()}); schSave(); toast(L("اتسجل طلب لقطة دلوقتي — Claude هياخدها في أول دورة.","Snapshot requested — Claude will take it on its next run.")); };
+/* ── كروت اللحظة + مقارنة بنفس الوقت في أيام تانية (من اللقطات، بإيراد خزامى) ── */
+function ssMin(t){ const p=new Date(t).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",hour12:false,timeZone:"Asia/Riyadh"}).split(":"); return (+p[0])*60+(+p[1]); }
+function ssAt(rows,min){ if(!rows||!rows.length) return null; const g=ssGrid(rows).filter(r=>ssMin(r.t)<=min); if(!g.length) return null; const last=g[g.length-1]; const t=ssTot(last.v); return Object.assign(t,{t:last.t}); }
+function ssK(x){ return x? {s:x.s,r:x.r,d:x.d,ro:x.s? x.r/x.s : null,aov:x.d? x.r/x.d : null,cpa:x.d? x.s/x.d : null} : null; }
+const SS_KPI=[["s","الصرف","Spend",0,1],["r","الإيراد","Revenue",0],["ro","ROAS","ROAS",2],["d","الطلبات","Orders",0],["aov","AOV","AOV",0],["cpa","CPA","CPA",1,1]];
+function ssFmtK(v,k){ if(v==null||!isFinite(v)) return "—"; return k==="ro"? v.toFixed(2)+"x" : fnum(v,k==="cpa"?1:0); }
+function ssDl(v,p,inv){ if(v==null||p==null||!p) return ""; const x=(v-p)/Math.abs(p)*100, good=inv? x<0 : x>0; return '<span class="ss-d '+(good?"ss-g":"ss-b")+'">'+(x>0?"▲":"▼")+fnum(Math.abs(x),Math.abs(x)<10?1:0)+"%</span>"; }
+function ssDayRows(d){ return (SS.all||[]).filter(x=>x.date===d); }
+function ssCmpBlock(D){
+  if(!SS.all){ setTimeout(ssLoadAll,0); return ""; }
+  const today=SS.rows[D]; if(!today||!today.length) return "";
+  const g=ssGrid(today), lastT=g[g.length-1].t, m=ssMin(lastT), now=ssK(ssTot(g[g.length-1].v));
+  const yd=ssK(ssAt(ssDayRows(addDays(D,-1)),m)), lw=ssK(ssAt(ssDayRows(addDays(D,-7)),m));
+  const prev7=[1,2,3,4,5,6,7].map(i=>ssAt(ssDayRows(addDays(D,-i)),m)).filter(Boolean);
+  const avg=prev7.length? ssK(prev7.reduce((a,x)=>({s:a.s+x.s/prev7.length,r:a.r+x.r/prev7.length,d:a.d+x.d/prev7.length}),{s:0,r:0,d:0})) : null;
+  const tm=ssTime(lastT);
+  let h='<div class="ss-kpis">'+SS_KPI.map(k=>'<div class="ss-kc"><div class="ss-kl">'+esc(L(k[1],k[2]))+'</div><div class="ss-kv">'+ssFmtK(now[k[0]],k[0])+"</div>"+
+    '<div class="ss-kf">'+(yd? ssDl(now[k[0]],yd[k[0]],k[4])+' <span class="ss-m">'+esc(L("امبارح نفس الوقت ","Yesterday ")+ssFmtK(yd[k[0]],k[0]))+"</span>" : '<span class="ss-m">'+esc(L("مفيش لقطة امبارح","No snapshot yesterday"))+"</span>")+"</div></div>").join("")+"</div>";
+  const rowsC=[[L("النهارده","Today")+" · "+tm,now,1],[L("امبارح نفس الوقت","Yesterday, same time"),yd],[L("نفس اليوم الأسبوع اللي فات","Same day last week"),lw],[L("متوسط آخر ٧ أيام","Avg of last 7 days")+(avg?" ("+prev7.length+")":""),avg]];
+  h+='<div class="ss-cmp"><div class="ss-ct">'+esc(L("مقارنة بنفس الوقت ","Same time comparison · ")+tm)+'</div><div class="tw"><table class="ss-t ss-ct2"><thead><tr><th><span></span></th>'+SS_KPI.map(k=>"<th><span>"+esc(L(k[1],k[2]))+"</span></th>").join("")+"</tr></thead><tbody>"+
+    rowsC.map(r=>"<tr"+(r[2]?' class="ss-today"':"")+'><td class="ss-time">'+esc(r[0])+"</td>"+SS_KPI.map(k=>"<td>"+(r[1]? ssFmtK(r[1][k[0]],k[0])+(r[2]?"":" "+ssDl(now[k[0]],r[1][k[0]],k[4])) : '<span class="ss-z">—</span>')+"</td>").join("")+"</tr>").join("")+
+    '</tbody></table></div><div class="ss-legend"><span class="ss-m">'+esc(L("النسبة = النهارده مقارنة بالسطر ده، بإيراد خزامى وعلى آخر لقطة قبل نفس الساعة.","% = today vs that row, Khzama revenue, last snapshot at or before the same time."))+"</span></div></div>";
+  return h; }
+
 function ssLiveBlock(D){   // شيت اللقطات + الشارت جوه «اليوم مباشر»
   if(!(window.SUPA_DB&&SUPA_DB.client)) return "";
   if(!SS.rows[D]&&!SS.busy) setTimeout(()=>ssLoad(D),0);
   const rows=SS.rows[D];
-  return '<div class="card ss-live"><div class="ss-lh"><div class="card-t">'+esc(L("لقطات اليوم","Today's snapshots"))+'</div><span class="seg">'+[["diff","الفرق بين اللقطات","Change"],["cum","تراكمي","Cumulative"]].map(x=>'<button class="'+(SS.mode===x[0]?"on":"")+'" data-a="ssMode" data-k="'+x[0]+'">'+esc(L(x[1],x[2]))+"</button>").join("")+"</span></div>"+
-    schBar()+(rows&&rows.length? ssSheetBody(D)+ssChart(D) : '<div class="hint">'+esc(rows?L("مفيش لقطات لليوم ده لسه.","No snapshots for this day yet."):L("بحمّل…","Loading…"))+"</div>")+"</div>"; }
+  return '<div class="card ss-live"><div class="ss-lh"><div class="card-t">'+esc(L("لقطات اليوم","Today's snapshots"))+'</div><span class="seg">'+[["cum","من أول اليوم لحد اللقطة","Since midnight"],["diff","الفرق بين اللقطات","Change"]].map(x=>'<button class="'+(SS.mode===x[0]?"on":"")+'" data-a="ssMode" data-k="'+x[0]+'">'+esc(L(x[1],x[2]))+"</button>").join("")+"</span></div>"+
+    schBar()+(rows&&rows.length? ssCmpBlock(D)+ssSheetBody(D)+ssChart(D) : '<div class="hint">'+esc(rows?L("مفيش لقطات لليوم ده لسه.","No snapshots for this day yet."):L("بحمّل…","Loading…"))+"</div>")+"</div>"; }
 
 ACT.ssTab=t=>{ SS.tab=t.dataset.k; render(); }; ACT.ssMode=t=>{ SS.mode=t.dataset.k; render(); };
 CHG.ssDay=v=>{ SS.day=v; ssLoad(v); }; CHG.ssHr=v=>{ SS.hour=v; render(); };
