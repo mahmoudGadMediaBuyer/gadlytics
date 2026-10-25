@@ -7831,6 +7831,7 @@ document.head.insertAdjacentHTML("beforeend","<style>"+`
 .ma-adv{text-align:center;border-inline-start:1px solid var(--line-2);background:color-mix(in srgb,var(--ink-3) 5%,transparent)}
 .ma-idle{background:color-mix(in srgb,#EF9F27 22%,transparent)}
 .ma-new{font-size:10px;font-weight:700;color:var(--cyan);border:1px solid currentColor;border-radius:999px;padding:0 6px}
+.ma-dk{display:flex;gap:3px;justify-content:center;margin-top:5px}.ma-dk .btn{padding:1px 7px;font-size:11px}.ma-dk .btn.on{border-color:var(--cyan);color:var(--cyan)}
 .ma-st{font-size:10.5px;color:var(--ink-3);margin-top:2px;direction:rtl}
 .md-t tr:hover td{background:color-mix(in srgb,var(--ink-3) 6%,transparent)}
 .md-cre{font-weight:700;font-size:13px;white-space:nowrap}
@@ -8155,17 +8156,23 @@ function maAgg(vs){ const a={spend:0,orders:0,revenue:0}; vs.forEach(v=>{ a.spen
 /** التقييم = ROAS الفيديو مقارنة بمتوسط مشروعه، وبشرط صرف معتبر */
 function maRate(x,avg){ if(!x.spend) return null; if(x.spend<300||!avg) return ["بيانات قليلة","Too early","#888780"];
   const r=(x.roas||0)/avg; return r>=1.15? ["قوي","Strong","#1D9E75"] : r>=0.85? ["متوسط","Average","#BA7517"] : ["ضعيف","Weak","#E24B4A"]; }
+/** القرار: اللي إنت حطيته، وإلا اقتراح من الأداء (قوي = يكمل، ضعيف = يقف، غير كده يتراقب) */
+function maDec(v){ const d=(MA.data.N[v.id]||{}).decision; if(d) return {k:d,auto:false};
+  return {k: v.rate&&v.rate[1]==="Strong"? "keep" : v.rate&&v.rate[1]==="Weak"? "stop" : "watch", auto:true}; }
+const MA_DEC={keep:["هيكمل","Keep","#1D9E75"],stop:["مش هيكمل","Stop","#E24B4A"],watch:["يتراقب","Watch","#888780"]};
 function maChip(r){ return r? '<span class="md-rate" style="color:'+r[2]+'">'+esc(L(r[0],r[1]))+"</span>" : ""; }
 function maPerf(x){ return x.spend? '<div class="md-perf">ROAS '+(x.roas==null?"—":x.roas.toFixed(2)+"x")+" · "+fnum(x.spend,0)+" · "+fnum(x.orders,0)+esc(L(" طلب"," orders"))+"</div>" : ""; }
-function renderMediaAuto(){
+function renderMediaAuto(mode){ const MG=mode==="manage";
   if(!MA.data){ setTimeout(()=>maLoad(),0);
     return card(L("إدارة الميديا","Media"),"",'<div class="hint">'+esc(MA.err||L("بحمّل الميديا…","Loading media…"))+"</div>"); }
   const D=MA.data, q=MA.q.trim().toLowerCase();
-  const base=D.media.map(maVid).filter(v=>(!MA.proj||(v.m.project||"—")===MA.proj)&&(!MA.adv||(v.m.advertiser||"—")===MA.adv)&&(!MA.plat||v.plats[MA.plat])
+  const base=D.media.map(maVid).filter(v=>(!MG||v.uploaded)&&(!MA.proj||(v.m.project||"—")===MA.proj)&&(!MA.adv||(v.m.advertiser||"—")===MA.adv)&&(!MA.plat||v.plats[MA.plat])
     &&(!q||[v.id,v.hook,v.m.advertiser,v.m.project,v.camps.join(" ")].some(x=>x&&String(x).toLowerCase().indexOf(q)>=0)));
   const pAvg={}; [...new Set(base.map(v=>v.m.project||"—"))].forEach(p=>{ pAvg[p]=maAgg(base.filter(v=>(v.m.project||"—")===p)).roas; });
-  base.forEach(v=>{ v.rate=maRate(v,pAvg[v.m.project||"—"]); });
-  const ST=[["","الإجمالي","All",()=>true,""],["new","جديد (٣ أيام)","New (3 days)",v=>v.isNew,"var(--cyan)"],
+  base.forEach(v=>{ v.rate=maRate(v,pAvg[v.m.project||"—"]); v.dec=maDec(v); });
+  const ST=MG? [["","الإجمالي","All",()=>true,""],["keep","هيكمل","Keep",v=>v.dec.k==="keep","#1D9E75"],["stop","مش هيكمل","Stop",v=>v.dec.k==="stop","#E24B4A"],
+    ["watch","يتراقب","Watch",v=>v.dec.k==="watch","#888780"],["auto","اقتراح لسه ما اتأكدش","Unconfirmed",v=>v.dec.auto&&v.dec.k!=="watch","#EF9F27"],
+    ["new","اتطلق آخر ٣ أيام","Launched last 3 days",v=>v.first&&diffDays(v.first,todayISO())<3,"var(--cyan)"]] : [["","الإجمالي","All",()=>true,""],["new","جديد (٣ أيام)","New (3 days)",v=>v.isNew,"var(--cyan)"],
     ["idle","لسه ما اتطلقش","Not launched",v=>!v.launched,"#EF9F27"],["live","اتطلق","Launched",v=>v.launched,"var(--good)"],
     ["strong","قوي","Strong",v=>v.rate&&v.rate[1]==="Strong","#1D9E75"],["weak","ضعيف","Weak",v=>v.rate&&v.rate[1]==="Weak","#E24B4A"]];
   const stF=(ST.find(s=>s[0]===MA.st)||ST[0])[3], vids=base.filter(stF);
@@ -8182,20 +8189,23 @@ function renderMediaAuto(){
   if(!vids.length) return h+emptyBox(L("مفيش فيديوهات بالفلاتر دي.","No videos with these filters."),'<button class="btn" data-a="maClear">'+esc(L("شيل الفلاتر","Clear filters"))+"</button>");
   const byP={}; vids.forEach(v=>{ const p=v.m.project||"—"; (byP[p]=byP[p]||[]).push(v); });
   const pOrder=Object.keys(byP).sort((a,b)=>String(byP[b][0].m.created_at).localeCompare(String(byP[a][0].m.created_at)));
-  const head='<tr><th>'+esc(L("الأداء","Performance"))+"</th><th>"+esc(L("اسم الحملة","Campaign"))+"</th><th>"+esc(L("إطلاق الحملة","Launched"))+"</th><th>"+esc(L("رفع الميديا","Uploaded"))+"</th>"+
+  const head='<tr>'+(MG?"<th>"+esc(L("القرار","Decision"))+"</th>":"")+'<th>'+esc(L("الأداء","Performance"))+"</th><th>"+esc(L("اسم الحملة","Campaign"))+"</th><th>"+esc(L("إطلاق الحملة","Launched"))+"</th><th>"+esc(L("رفع الميديا","Uploaded"))+"</th>"+
     MA_PL.slice().reverse().map(p=>"<th>"+esc(L(p[1],p[2]))+"</th>").join("")+"<th>"+esc(L("تاريخ الإطلاق","Launch date"))+"</th><th>"+esc(L("الهوك","Hook"))+"</th><th>"+esc(L("رقم الفيديو","Video ID"))+"</th><th>"+esc(L("المشهور","Creator"))+"</th></tr>";
   const chk=on=>'<span class="md-chk'+(on?" on":"")+'">'+(on?"✓":"")+"</span>";
   h+='<div class="tw"><table class="md-t ma-t">';
   let shown=0;
   pOrder.forEach(p=>{ if(shown>=600) return; const pv=byP[p], pa=maAgg(pv);
-    h+='<tr class="ma-ph"><td colspan="12"><b>'+esc(L("مشروع ","Project "))+esc(p)+"</b>"+
+    h+='<tr class="ma-ph"><td colspan="'+(MG?13:12)+'"><b>'+esc(L("مشروع ","Project "))+esc(p)+"</b>"+
       '<span class="ma-pst">'+pv.length+esc(L(" فيديو"," videos"))+" · "+pv.filter(v=>v.launched).length+esc(L(" اتطلق"," launched"))+
       (pa.spend?" · "+esc(L("صرف ","spend "))+fnum(pa.spend,0)+" · "+fnum(pa.orders,0)+esc(L(" طلب"," orders"))+" · ROAS "+(pa.roas==null?"—":pa.roas.toFixed(2)+"x"):"")+"</span></td></tr>"+head;
     const byA={}; pv.forEach(v=>{ const a=v.m.advertiser||"—"; (byA[a]=byA[a]||[]).push(v); });
     Object.keys(byA).sort((a,b)=>maAgg(byA[b]).spend-maAgg(byA[a]).spend||String(byA[b][0].m.created_at).localeCompare(String(byA[a][0].m.created_at))).forEach(a=>{
       const av=byA[a], aa=maAgg(av), ar=maRate(aa,pAvg[p]);
       av.forEach((v,i)=>{ if(shown>=600) return; shown++;
+        const dc=MA_DEC[v.dec.k];
         h+="<tr"+(i===0?' class="grp"':"")+">"+
+          (MG? '<td style="white-space:nowrap"><span class="md-rate" style="color:'+dc[2]+(v.dec.auto?";border-style:dashed":"")+'" title="'+esc(v.dec.auto?L("اقتراح من الأداء — أكّده أو غيّره","Suggested from performance — confirm or change"):L("قرارك","Your decision"))+'">'+esc(L(dc[0],dc[1]))+"</span>"+
+            '<div class="ma-dk">'+["keep","watch","stop"].map(k=>'<button class="btn btn-s'+(!v.dec.auto&&v.dec.k===k?" on":"")+'" data-a="maDecSet" data-id="'+esc(v.id)+'" data-k="'+k+'" title="'+esc(L(MA_DEC[k][0],MA_DEC[k][1]))+'">'+(k==="keep"?"✓":k==="stop"?"✕":"…")+"</button>").join("")+"</div></td>" : "")+
           "<td>"+maChip(v.rate)+maPerf(v)+"</td>"+
           '<td class="md-vid"'+(v.camps.length>3?' title="'+esc(v.camps.join("\n"))+'"':"")+">"+(v.camps.slice(-3).map(esc).join("<br>")||"—")+(v.camps.length>3?'<div class="ma-st">+'+(v.camps.length-3)+esc(L(" حملات تانية"," more"))+"</div>":"")+"</td>"+
           "<td>"+chk(v.launched)+"</td><td>"+chk(v.uploaded)+"</td>"+
@@ -8209,6 +8219,8 @@ function renderMediaAuto(){
           "</tr>"; }); }); });
   h+="</table></div>";
   if(shown>=600) h+='<div class="hint">'+esc(L("ظاهر أول ٦٠٠ فيديو — استخدم الفلاتر عشان تضيّق.","Showing the first 600 videos — use the filters to narrow down."))+"</div>";
+  if(MG) h+='<div class="hint" style="margin-top:12px">'+esc(L("هنا الفيديوهات اللي اتطلقت بس. القرار المتقطّع = اقتراح من الأداء (قوي ← هيكمل، ضعيف ← مش هيكمل، غير كده يتراقب). دوس ✓ أو ✕ أو … عشان تثبّت قرارك، ودوسة تانية على نفس الزرار ترجّعه للاقتراح.",
+    "Launched videos only. A dashed decision is a suggestion from performance; click ✓ / ✕ / … to set yours, click again to go back to the suggestion."))+"</div>";
   h+='<div class="hint" style="margin-top:12px">'+esc(L(
     "الفيديوهات بتيجي لوحدها من بورد Airtable (آخر مزامنة: ","Videos come from the Airtable board automatically (last sync: "))+
     esc(D.synced? new Date(D.synced).toLocaleString(EN()?"en-GB":"ar-EG",{dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Riyadh"}) : "—")+
@@ -8222,6 +8234,10 @@ CHG.maPlat=v=>{ MA.plat=v||""; render(); };
 ACT.maSt=t=>{ MA.st=MA.st===t.dataset.s? "" : t.dataset.s; render(); };
 ACT.maClear=()=>{ MA.q=""; MA.proj=""; MA.adv=""; MA.plat=""; MA.st=""; render(); };
 ACT.maReload=()=>maLoad(true);
+ACT.maDecSet=async t=>{ const id=t.dataset.id, k=t.dataset.k, cur=(MA.data.N[id]||{}).decision, n=Object.assign({},MA.data.N[id]||{});
+  if(cur===k) delete n.decision; else n.decision=k;   // دوسة تانية على نفس القرار بترجّعه للاقتراح
+  try{ await DB.doc("media_notes/"+id).set(n); MA.data.N[id]=n; render(); }
+  catch(e){ toast(L("مقدرتش أحفظ: ","Couldn't save: ")+(e.message||e),true); } };
 ACT.maHook=t=>{ const id=t.dataset.id, m=MA.data.media.find(x=>x.creative_id===id)||{}, cur=(MA.data.N[id]||{}).hook||m.hook||"";
   modal(L("هوك الفيديو ","Hook · ")+id+(m.advertiser?" — "+m.advertiser:""),
     '<textarea class="inp" id="maHookT" style="min-height:90px;width:100%;direction:rtl;text-align:right;font-family:var(--f-ui);font-size:14px">'+esc(cur)+"</textarea>"+
@@ -8232,6 +8248,7 @@ ACT.maHookSave=async t=>{ const id=t.dataset.id, v=(($("#maHookT")||{}).value||"
   catch(e){ toast(L("مقدرتش أحفظ: ","Couldn't save: ")+(e.message||e),true); } };
 
 function renderCreatives(){
+  if(window.SUPA_DB&&SUPA_DB.client) return renderMediaAuto("manage");
   const all=S.creatives||[], list=creativeList();
   const f=S.mf;
   let h='<div class="md-bar">'+
@@ -10377,7 +10394,7 @@ function crSumm(items){ const h=crAvg(items,"hook"), d=crAvg(items,"hold"), r=cr
   return '<span class="cr-sm">'+(h!=null?"Hook "+fnum(h,1)+"%":"")+(d!=null?" · Hold "+fnum(d,1)+"%":"")+(r!=null?" · ROAS "+fnum(r,2)+"x":"")+"</span>"; }
 function crDistinct(k){ return [...new Set((S.lib||[]).filter(c=>inScope(c.clientId)).map(crN).map(n=>n[k]).filter(Boolean))].sort(); }
 function renderLibrary(){
-  if(window.SUPA_DB&&SUPA_DB.client) return renderMediaAuto();
+  if(window.SUPA_DB&&SUPA_DB.client) return renderMediaAuto("lib");
   const f=S.crf, list=crList(), all=(S.lib||[]).filter(c=>inScope(c.clientId)).map(crN);
   const cnt=s=>all.filter(n=>n.status===s).length, late=all.filter(crLateSort).length;
   let h='<div class="tv-top"><div class="tv-stats">'+CR_ST.slice(0,5).map(s=>'<button class="tv-stat'+(f.status===s[0]?" on":"")+'" data-a="lbfSt" data-s="'+s[0]+'"><b style="color:'+s[3]+'">'+cnt(s[0])+"</b><span>"+esc(L(s[1],s[2]))+"</span></button>").join("")+
