@@ -32,9 +32,9 @@
 .ss-best td{box-shadow:inset 0 0 0 999px rgba(29,158,117,.16)}.ss-worst td{box-shadow:inset 0 0 0 999px rgba(226,75,74,.14)}
 .ss-legend{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:10px;font-size:12.5px}.ss-legend .ss-best,.ss-legend .ss-worst{padding:4px 10px;border-radius:8px;font-weight:700}
 .ss-legend .ss-best{background:rgba(29,158,117,.16);color:#1D9E75}.ss-legend .ss-worst{background:rgba(226,75,74,.14);color:#E24B4A}
-.ss-chw{margin-top:16px}.ss-ch{width:100%;height:auto;display:block}.ss-gl{stroke:rgba(128,128,128,.2)}.ss-ax{font-size:11px;fill:currentColor;opacity:.6}
-.ss-ch .ss-bs{fill:rgba(128,128,128,.45)}.ss-ch .ss-br{fill:#7F77DD}.ss-lr{fill:none;stroke:#EF9F27;stroke-width:2.5}.ss-dot{fill:#EF9F27}.ss-dot.ss-g{fill:#1D9E75}.ss-dot.ss-b{fill:#E24B4A}
-.ss-lg{display:flex;gap:14px;font-size:12px;margin-bottom:4px}.ss-lg i{display:inline-block;width:12px;height:10px;border-radius:3px;margin-inline-end:5px;vertical-align:middle}.ss-lg i.ss-bs{background:rgba(128,128,128,.45)}.ss-lg i.ss-br{background:#7F77DD}.ss-lg i.ss-lr{background:#EF9F27;height:3px}
+.ss-chw{margin-top:16px}.ss-ch{width:100%;height:auto;max-height:260px;display:block}.ss-gl{stroke:rgba(128,128,128,.2)}.ss-ax{font-size:11px;fill:currentColor;opacity:.6}
+.ss-ch .ss-bs{fill:#B4B2A9}.ss-ch .ss-br{fill:#7F77DD}.ss-lr{fill:none;stroke:#EF9F27;stroke-width:2.5}.ss-dot{fill:#EF9F27}.ss-dot.ss-g{fill:#1D9E75}.ss-dot.ss-b{fill:#E24B4A}
+.ss-lg{display:flex;gap:14px;font-size:12px;margin-bottom:4px}.ss-lg i{display:inline-block;width:12px;height:10px;border-radius:3px;margin-inline-end:5px;vertical-align:middle}.ss-lg i.ss-bs{background:#B4B2A9}.ss-lg i.ss-br{background:#7F77DD}.ss-lg i.ss-lr{background:#EF9F27;height:3px}
 .sch{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 12px;margin-bottom:12px;border-radius:10px;background:rgba(70,95,255,.08)}.sch-l{font-size:13px;margin-inline-end:auto}.sch-l b{font-size:18px;font-variant-numeric:tabular-nums;margin:0 4px}.sch-f{font-size:12.5px;display:flex;gap:6px;align-items:center}
 </style>
 <style>/* معاينة التقرير ورقة بيضا دايماً، حتى في الوضع الليلي */
@@ -11158,7 +11158,7 @@ function ssSheetBody(day){
 function ssChart(day){   // صعود ونزول اليوم: صرف وإيراد كل فترة + خط الـ ROAS
   const rows=SS.rows[day]; if(!rows||!rows.length) return "";
   const v=ssDiff(ssGrid(rows)).map(r=>{ const t=ssTot(r.v); return {t:r.t,s:t.s,r:t.r,ro:t.s>=50? t.r/t.s : null}; });
-  const W=980,H=230,P={l:46,r:46,t:16,b:30}, n=v.length, bw=(W-P.l-P.r)/n, mx=Math.max(1,...v.map(x=>Math.max(x.s,x.r))), mr=Math.max(1,...v.map(x=>x.ro||0));
+  const W=1300,H=230,P={l:56,r:50,t:14,b:28}, n=v.length, bw=(W-P.l-P.r)/n, mx=Math.max(1,...v.map(x=>Math.max(x.s,x.r))), mr=Math.max(1,...v.map(x=>x.ro||0));
   const y=x=>H-P.b-(x/mx)*(H-P.t-P.b), yr=x=>H-P.b-(x/mr)*(H-P.t-P.b), cx=i=>P.l+bw*i+bw/2;
   let s='<svg viewBox="0 0 '+W+" "+H+'" class="ss-ch" role="img" aria-label="day chart">';
   [0,.5,1].forEach(f=>{ const yy=y(mx*f); s+='<line x1="'+P.l+'" x2="'+(W-P.r)+'" y1="'+yy+'" y2="'+yy+'" class="ss-gl"/><text x="'+(P.l-6)+'" y="'+(yy+4)+'" class="ss-ax" text-anchor="end">'+fnum(mx*f,0)+'</text><text x="'+(W-P.r+6)+'" y="'+(yr(mr*f)+4)+'" class="ss-ax">'+(mr*f).toFixed(1)+"x</text>"; });
