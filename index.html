@@ -10900,16 +10900,16 @@ const EX_CREATIVE_DIMS={creative:1,influencer:1,content_type:1,ad_size:1};
 const EX_SUM=["spend","revenue","impressions","reach","clicks","link_clicks","landing_page_views","video_plays","video_2s","video_6s","thruplays","video_p25","video_p50","video_p75","video_p100","view_content","add_to_cart","initiate_checkout","add_payment_info","purchases"];
 const EX_COLS={
   base:[["spend","الصرف","Spend","cur"],["revenue","الإيراد","Revenue","cur"],["roas","ROAS","ROAS","x"],["purchases","الطلبات","Orders","n"],["cpa","تكلفة الطلب","CPA","cur2"],["aov","متوسط الطلب","AOV","cur2"],
-    ["impressions","الظهور","Impr.","n"],["cpm","CPM","CPM","cur2"],["clicks","النقرات","Clicks","n"],["ctr","CTR","CTR","pct"],["cpc","CPC","CPC","cur2"]],
-  funnel:[["clicks","النقرات","Clicks","n"],["landing_page_views","زيارات الصفحة","LP views","n"],["view_content","مشاهدة منتج","View content","n"],["add_to_cart","إضافة للسلة","Add to cart","n"],["initiate_checkout","بدء الدفع","Checkout","n"],["purchases","الطلبات","Purchases","n"],
+    ["impressions","الظهور","Impr.","n"],["cpm","CPM","CPM","cur2"],["clk","النقرات","Clicks","n"],["ctr","CTR","CTR","pct"],["cpc","CPC","CPC","cur2"]],
+  funnel:[["clk","النقرات","Clicks","n"],["landing_page_views","زيارات الصفحة","LP views","n"],["view_content","مشاهدة منتج","View content","n"],["add_to_cart","إضافة للسلة","Add to cart","n"],["initiate_checkout","بدء الدفع","Checkout","n"],["purchases","الطلبات","Purchases","n"],
     ["r_click_vc","نقرة ← مشاهدة","Click→VC","pct"],["r_vc_atc","مشاهدة ← سلة","VC→ATC","pct"],["r_atc_ic","سلة ← دفع","ATC→Checkout","pct"],["r_ic_pur","دفع ← شراء","Checkout→Buy","pct"],["cvr","نقرة ← شراء","Click→Buy","pct"],["cost_atc","تكلفة السلة","Cost/ATC","cur2"],["cost_ic","تكلفة بدء الدفع","Cost/Checkout","cur2"]],
   video:[["impressions","الظهور","Impr.","n"],["video_plays","مشاهدات","Plays","n"],["hook","Hook rate","Hook rate","pct"],["video_2s","٢ ثانية","2s views","n"],["video_6s","٦ ثواني","6s views","n"],["thruplays","ThruPlay","ThruPlay","n"],
     ["q25","وصلوا ٢٥٪","25%","pct"],["q50","وصلوا ٥٠٪","50%","pct"],["q75","وصلوا ٧٥٪","75%","pct"],["hold","كمّلوا للآخر","Hold (100%)","pct"],["spend","الصرف","Spend","cur"],["roas","ROAS","ROAS","x"]]};
 function exDerive(a){ const d=(x,y)=>y? x/y : null;
-  return Object.assign(a,{roas:d(a.revenue,a.spend),cpa:d(a.spend,a.purchases),aov:d(a.revenue,a.purchases),cpm:d(a.spend*1000,a.impressions),ctr:d((a.link_clicks||a.clicks)*100,a.impressions),cpc:d(a.spend,a.link_clicks||a.clicks),
-    r_click_vc:d(a.view_content*100,a.link_clicks||a.clicks),r_vc_atc:d(a.add_to_cart*100,a.view_content),r_atc_ic:d(a.initiate_checkout*100,a.add_to_cart),r_ic_pur:d(a.purchases*100,a.initiate_checkout),cvr:d(a.purchases*100,a.link_clicks||a.clicks),
+  return Object.assign(a,{roas:d(a.revenue,a.spend),cpa:d(a.spend,a.purchases),aov:d(a.revenue,a.purchases),cpm:d(a.spend*1000,a.impressions),ctr:d(a.clk*100,a.impressions),cpc:d(a.spend,a.clk),
+    r_click_vc:d(a.view_content*100,a.clk),r_vc_atc:d(a.add_to_cart*100,a.view_content),r_atc_ic:d(a.initiate_checkout*100,a.add_to_cart),r_ic_pur:d(a.purchases*100,a.initiate_checkout),cvr:d(a.purchases*100,a.clk),
     cost_atc:d(a.spend,a.add_to_cart),cost_ic:d(a.spend,a.initiate_checkout),hook:d((a.video_2s||a.video_plays)*100,a.impressions),q25:d(a.video_p25*100,a.video_plays),q50:d(a.video_p50*100,a.video_plays),q75:d(a.video_p75*100,a.video_plays),hold:d(a.video_p100*100,a.video_plays)}); }
-function exAgg(rows){ const a={n:rows.length}; EX_SUM.forEach(k=>a[k]=0); rows.forEach(r=>EX_SUM.forEach(k=>{ a[k]+=+r[k]||0; })); return exDerive(a); }
+function exAgg(rows){ const a={n:rows.length,clk:0}; EX_SUM.forEach(k=>a[k]=0); rows.forEach(r=>{ EX_SUM.forEach(k=>{ a[k]+=+r[k]||0; }); a.clk+=(+r.link_clicks>0?+r.link_clicks:+r.clicks||0); }); return exDerive(a); }   // clk: نقرات الرابط، ولو المنصة مبتبعتهاش ناخد كل النقرات
 function exFmt(v,t){ if(v==null||!isFinite(v)) return "—";
   return t==="cur"? fnum(v,0) : t==="cur2"? fnum(v,v<10?2:1) : t==="x"? v.toFixed(2)+"x" : t==="pct"? fnum(v,v<1?2:1)+"%" : fnum(v,0); }
 function exWeekStart(d){ return addDays(d,-parseISO(d).getDay()); }
