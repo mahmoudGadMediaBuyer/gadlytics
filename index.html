@@ -7170,7 +7170,7 @@ async function acsLoad(a,b,c,d){ const k=a+"|"+b+"|"+(c||""); if(ACS.key===k||AC
   ACS.busy=false; render(); }
 function acsAgg(rows,kz,dim){ const cm=exCrMap(rows), sc=exScope(rows,dim), g=exGroup(sc,dim), kg=exKzGroup((kz||[]).filter(k=>["meta","tiktok","snap"].indexOf(k.platform)>=0),dim,cm);
   Object.keys(kg).forEach(k=>{ if(!g[k]) g[k]=[]; }); const o={}; Object.keys(g).forEach(k=>{ o[k]=exUseKz(exAgg(g[k]),kg[k]); }); return o; }
-function acsChip(ro,avg){ if(ro==null) return ""; const r=avg? ro/avg : 1; const c= r>=1.15? ["ممتاز","Strong","#1D9E75"] : r>=0.9? ["كويس","OK","#888780"] : ["ضعيف","Weak","#E24B4A"];
+function acsChip(ro,avg){ if(ro==null||!avg) return ""; const r=ro/avg; const c= r>=1.15? ["ممتاز","Strong","#1D9E75"] : r>=0.9? ["كويس","OK","#888780"] : ["ضعيف","Weak","#E24B4A"];
   return '<span class="acs-chip" style="color:'+c[2]+';border-color:'+c[2]+'">'+esc(L(c[0],c[1]))+"</span>"; }
 function acsName(rows,k,dim){ const r=rows.find(x=>dim==="campaign"? (x.camp_no||x.campaign_name)===k : dim==="creative"? x.creative_id===k : x.influencer===k);
   if(!r) return k; const ex=dim==="campaign"? [r.variation||r.product] : dim==="creative"? [r.influencer,r.variation||r.product] : [];
