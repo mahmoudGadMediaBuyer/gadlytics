@@ -7825,6 +7825,13 @@ document.head.insertAdjacentHTML("beforeend","<style>"+`
 .md-t td{padding:7px 8px;border-bottom:1px solid color-mix(in srgb,var(--line) 55%,transparent);
   vertical-align:top}
 .md-t tr.grp td{border-top:2px solid var(--line-2)}
+.ma-t td{vertical-align:middle}.ma-t th{text-align:center}.ma-t td:not(.md-hook):not(.ma-adv){text-align:center}
+.ma-ph td{padding:16px 8px 8px!important;border-bottom:none!important;font-size:15px;background:transparent!important}
+.ma-pst{margin-inline-start:12px;font-size:12px;font-weight:500;color:var(--ink-2)}
+.ma-adv{text-align:center;border-inline-start:1px solid var(--line-2);background:color-mix(in srgb,var(--ink-3) 5%,transparent)}
+.ma-idle{background:color-mix(in srgb,#EF9F27 22%,transparent)}
+.ma-new{font-size:10px;font-weight:700;color:var(--cyan);border:1px solid currentColor;border-radius:999px;padding:0 6px}
+.ma-st{font-size:10.5px;color:var(--ink-3);margin-top:2px;direction:rtl}
 .md-t tr:hover td{background:color-mix(in srgb,var(--ink-3) 6%,transparent)}
 .md-cre{font-weight:700;font-size:13px;white-space:nowrap}
 .md-proj{display:inline-block;margin-top:4px;padding:0 7px;border-radius:999px;font-size:10.5px;color:var(--ink-2);border:1px solid var(--line)}
@@ -8120,7 +8127,112 @@ function creativeList(){
     : (a.videoId||"")<(b.videoId||"")?-1:1);
 }
 
+/* ── إدارة الميديا (نسخة الموقع): الفيديوهات بتتسحب أوتوماتيك من بورد Airtable،
+   واستخدامها وأداءها من المنصات (الصرف) وخزامى (الطلبات والإيراد). الهوك بس اللي بيتكتب هنا. */
+const MA={data:null,busy:false,err:"",q:"",proj:"",adv:"",st:"",plat:""};
+const MA_PL=[["meta","ميتا","Meta"],["tiktok","تيك توك","TikTok"],["snap","سناب","Snap"]];
+async function maLoad(force){ if(MA.busy||(MA.data&&!force)) return; MA.busy=true; MA.err="";
+  try{ const sb=SUPA_DB.client, cl=(S.ws&&clientById(S.ws))||S.cfg.clients[0]||{}, cname=cl.name||"ملبي";
+    const all=async q=>{ const out=[]; for(let i=0;;i+=1000){ const r=await q().range(i,i+999); if(r.error) throw r.error; out.push(...r.data); if(r.data.length<1000) break; } return out; };
+    const media=await all(()=>sb.from("media").select("*").eq("client",cname).order("created_at",{ascending:false}));
+    const perf=await all(()=>sb.from("v_media_perf").select("*").order("creative_id"));
+    const notes=await all(()=>sb.from("docs").select("path,data").eq("coll","media_notes").order("path"));
+    const P={}; perf.forEach(p=>{ (P[p.creative_id]=P[p.creative_id]||[]).push(p); });
+    const N={}; notes.forEach(n=>{ N[n.path.split("/")[1]]=n.data||{}; });
+    MA.data={media:media,P:P,N:N,synced:media.reduce((m,x)=>x.synced_at>m?x.synced_at:m,"")};
+  }catch(e){ MA.err=e.message||String(e); }
+  MA.busy=false; render(); }
+function maVid(m){ const ps=MA.data.P[m.creative_id]||[], n=MA.data.N[m.creative_id]||{};
+  const v={id:m.creative_id,m:m,hook:n.hook||m.hook||"",plats:{},spend:0,orders:0,revenue:0,first:null,camps:[]};
+  ps.forEach(p=>{ v.plats[p.platform]=1; v.spend+=+p.spend||0; v.orders+=+p.orders||0; v.revenue+=+p.revenue||0;
+    const f=p.first_day||p.kz_first; if(f&&(!v.first||f<v.first)) v.first=f;
+    (p.camps||[]).forEach(c=>{ if(v.camps.indexOf(c)<0) v.camps.push(c); }); });
+  v.camps.sort(); v.uploaded=ps.length>0; v.launched=v.spend>0;
+  v.roas=v.spend? v.revenue/v.spend : null; v.cpa=v.orders? v.spend/v.orders : null;
+  v.isNew=m.created_at&&(Date.now()-new Date(m.created_at).getTime())<3*864e5; return v; }
+function maAgg(vs){ const a={spend:0,orders:0,revenue:0}; vs.forEach(v=>{ a.spend+=v.spend; a.orders+=v.orders; a.revenue+=v.revenue; });
+  a.roas=a.spend? a.revenue/a.spend : null; return a; }
+/** التقييم = ROAS الفيديو مقارنة بمتوسط مشروعه، وبشرط صرف معتبر */
+function maRate(x,avg){ if(!x.spend) return null; if(x.spend<300||!avg) return ["بيانات قليلة","Too early","#888780"];
+  const r=(x.roas||0)/avg; return r>=1.15? ["قوي","Strong","#1D9E75"] : r>=0.85? ["متوسط","Average","#BA7517"] : ["ضعيف","Weak","#E24B4A"]; }
+function maChip(r){ return r? '<span class="md-rate" style="color:'+r[2]+'">'+esc(L(r[0],r[1]))+"</span>" : ""; }
+function maPerf(x){ return x.spend? '<div class="md-perf">ROAS '+(x.roas==null?"—":x.roas.toFixed(2)+"x")+" · "+fnum(x.spend,0)+" · "+fnum(x.orders,0)+esc(L(" طلب"," orders"))+"</div>" : ""; }
+function renderMediaAuto(){
+  if(!MA.data){ setTimeout(()=>maLoad(),0);
+    return card(L("إدارة الميديا","Media"),"",'<div class="hint">'+esc(MA.err||L("بحمّل الميديا…","Loading media…"))+"</div>"); }
+  const D=MA.data, q=MA.q.trim().toLowerCase();
+  const base=D.media.map(maVid).filter(v=>(!MA.proj||(v.m.project||"—")===MA.proj)&&(!MA.adv||(v.m.advertiser||"—")===MA.adv)&&(!MA.plat||v.plats[MA.plat])
+    &&(!q||[v.id,v.hook,v.m.advertiser,v.m.project,v.camps.join(" ")].some(x=>x&&String(x).toLowerCase().indexOf(q)>=0)));
+  const pAvg={}; [...new Set(base.map(v=>v.m.project||"—"))].forEach(p=>{ pAvg[p]=maAgg(base.filter(v=>(v.m.project||"—")===p)).roas; });
+  base.forEach(v=>{ v.rate=maRate(v,pAvg[v.m.project||"—"]); });
+  const ST=[["","الإجمالي","All",()=>true,""],["new","جديد (٣ أيام)","New (3 days)",v=>v.isNew,"var(--cyan)"],
+    ["idle","لسه ما اتطلقش","Not launched",v=>!v.launched,"#EF9F27"],["live","اتطلق","Launched",v=>v.launched,"var(--good)"],
+    ["strong","قوي","Strong",v=>v.rate&&v.rate[1]==="Strong","#1D9E75"],["weak","ضعيف","Weak",v=>v.rate&&v.rate[1]==="Weak","#E24B4A"]];
+  const stF=(ST.find(s=>s[0]===MA.st)||ST[0])[3], vids=base.filter(stF);
+  const opt=(arr,cur)=>arr.map(x=>'<option value="'+esc(x)+'"'+(cur===x?" selected":"")+">"+esc(x)+"</option>").join("");
+  const projects=[...new Set(D.media.map(m=>m.project||"—"))].sort(), advs=[...new Set(D.media.map(m=>m.advertiser||"—"))].sort();
+  let h='<div class="md-bar">'+
+    '<input class="inp" style="width:220px" placeholder="'+esc(L("بحث برقم الفيديو أو المشهور أو الهوك أو الحملة","Search ID, creator, hook or campaign"))+'" data-c="maQ" value="'+esc(MA.q)+'">'+
+    '<select class="sel" data-c="maProj"><option value="">'+esc(L("كل المشاريع","All projects"))+"</option>"+opt(projects,MA.proj)+"</select>"+
+    '<select class="sel" data-c="maAdv"><option value="">'+esc(L("كل المعلنين","All creators"))+"</option>"+opt(advs,MA.adv)+"</select>"+
+    '<select class="sel" data-c="maPlat"><option value="">'+esc(L("كل المنصات","All platforms"))+"</option>"+MA_PL.map(p=>'<option value="'+p[0]+'"'+(MA.plat===p[0]?" selected":"")+">"+esc(L(p[1],p[2]))+"</option>").join("")+"</select>"+
+    (MA.q||MA.proj||MA.adv||MA.plat||MA.st?'<button class="btn btn-s" data-a="maClear">'+esc(L("مسح الفلاتر","Clear"))+"</button>":"")+
+    '<button class="btn btn-s" data-a="maReload" style="margin-inline-start:auto">'+esc(MA.busy?L("بيحدّث…","Refreshing…"):L("↻ تحديث","↻ Refresh"))+"</button></div>";
+  h+='<div class="md-sum">'+ST.map(s=>'<div class="md-s pick'+(MA.st===s[0]?" on":"")+'" data-a="maSt" data-s="'+s[0]+'"><div class="l">'+esc(L(s[1],s[2]))+'</div><div class="n"'+(s[4]?' style="color:'+s[4]+'"':"")+">"+base.filter(s[3]).length+"</div></div>").join("")+"</div>";
+  if(!vids.length) return h+emptyBox(L("مفيش فيديوهات بالفلاتر دي.","No videos with these filters."),'<button class="btn" data-a="maClear">'+esc(L("شيل الفلاتر","Clear filters"))+"</button>");
+  const byP={}; vids.forEach(v=>{ const p=v.m.project||"—"; (byP[p]=byP[p]||[]).push(v); });
+  const pOrder=Object.keys(byP).sort((a,b)=>String(byP[b][0].m.created_at).localeCompare(String(byP[a][0].m.created_at)));
+  const head='<tr><th>'+esc(L("الأداء","Performance"))+"</th><th>"+esc(L("اسم الحملة","Campaign"))+"</th><th>"+esc(L("إطلاق الحملة","Launched"))+"</th><th>"+esc(L("رفع الميديا","Uploaded"))+"</th>"+
+    MA_PL.slice().reverse().map(p=>"<th>"+esc(L(p[1],p[2]))+"</th>").join("")+"<th>"+esc(L("تاريخ الإطلاق","Launch date"))+"</th><th>"+esc(L("الهوك","Hook"))+"</th><th>"+esc(L("رقم الفيديو","Video ID"))+"</th><th>"+esc(L("المشهور","Creator"))+"</th></tr>";
+  const chk=on=>'<span class="md-chk'+(on?" on":"")+'">'+(on?"✓":"")+"</span>";
+  h+='<div class="tw"><table class="md-t ma-t">';
+  let shown=0;
+  pOrder.forEach(p=>{ if(shown>=600) return; const pv=byP[p], pa=maAgg(pv);
+    h+='<tr class="ma-ph"><td colspan="12"><b>'+esc(L("مشروع ","Project "))+esc(p)+"</b>"+
+      '<span class="ma-pst">'+pv.length+esc(L(" فيديو"," videos"))+" · "+pv.filter(v=>v.launched).length+esc(L(" اتطلق"," launched"))+
+      (pa.spend?" · "+esc(L("صرف ","spend "))+fnum(pa.spend,0)+" · "+fnum(pa.orders,0)+esc(L(" طلب"," orders"))+" · ROAS "+(pa.roas==null?"—":pa.roas.toFixed(2)+"x"):"")+"</span></td></tr>"+head;
+    const byA={}; pv.forEach(v=>{ const a=v.m.advertiser||"—"; (byA[a]=byA[a]||[]).push(v); });
+    Object.keys(byA).sort((a,b)=>maAgg(byA[b]).spend-maAgg(byA[a]).spend||String(byA[b][0].m.created_at).localeCompare(String(byA[a][0].m.created_at))).forEach(a=>{
+      const av=byA[a], aa=maAgg(av), ar=maRate(aa,pAvg[p]);
+      av.forEach((v,i)=>{ if(shown>=600) return; shown++;
+        h+="<tr"+(i===0?' class="grp"':"")+">"+
+          "<td>"+maChip(v.rate)+maPerf(v)+"</td>"+
+          '<td class="md-vid">'+(v.camps.map(esc).join("<br>")||"—")+"</td>"+
+          "<td>"+chk(v.launched)+"</td><td>"+chk(v.uploaded)+"</td>"+
+          MA_PL.slice().reverse().map(pl=>"<td>"+chk(v.plats[pl[0]])+"</td>").join("")+
+          '<td style="white-space:nowrap;text-align:center">'+(v.first? esc(rpDayName(v.first))+"<br><b>"+esc(fdate(v.first))+"</b>" : "—")+"</td>"+
+          '<td class="md-hook">'+(v.hook? '<span data-a="maHook" data-id="'+esc(v.id)+'" style="cursor:pointer" title="'+esc(L("دوس تعدّل","Click to edit"))+'">'+esc(v.hook)+"</span>"
+            : '<button class="btn btn-s" data-a="maHook" data-id="'+esc(v.id)+'">'+esc(L("+ الهوك","+ Hook"))+"</button>")+"</td>"+
+          '<td class="md-vid'+(v.launched?"":" ma-idle")+'">'+esc(v.id)+(v.m.url?' <a href="'+esc(v.m.url)+'" target="_blank" rel="noopener" title="'+esc(L("افتح الفيديو","Open video"))+'">▶</a>':"")+
+            (v.isNew?' <span class="ma-new">'+esc(L("جديد","New"))+"</span>":"")+(v.m.status?'<div class="ma-st">'+esc(v.m.status)+"</div>":"")+"</td>"+
+          (i===0? '<td class="md-cre ma-adv" rowspan="'+av.length+'">'+esc(a)+'<div style="margin-top:6px">'+maChip(ar)+"</div>"+maPerf(aa)+"</td>" : "")+
+          "</tr>"; }); }); });
+  h+="</table></div>";
+  if(shown>=600) h+='<div class="hint">'+esc(L("ظاهر أول ٦٠٠ فيديو — استخدم الفلاتر عشان تضيّق.","Showing the first 600 videos — use the filters to narrow down."))+"</div>";
+  h+='<div class="hint" style="margin-top:12px">'+esc(L(
+    "الفيديوهات بتيجي لوحدها من بورد Airtable (آخر مزامنة: ","Videos come from the Airtable board automatically (last sync: "))+
+    esc(D.synced? new Date(D.synced).toLocaleString(EN()?"en-GB":"ar-EG",{dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Riyadh"}) : "—")+
+    esc(L("). المنصات ورفع الميديا وإطلاق الحملة واسمها وتاريخ الإطلاق بتتحسب من المنصات وخزامى. الأداء = ROAS الفيديو (إيراد خزامى ÷ صرف المنصات) مقارنة بمتوسط مشروعه، وبيحتاج صرف ٣٠٠ ريال على الأقل. رقم الفيديو البرتقالي = لسه ما اتطلقش. الهوك بس اللي بتكتبه إنت.",
+      "). Platforms, upload, launch, campaign and launch date come from the platforms and Khzama. Performance = the video's ROAS vs its project average (min 300 SAR spend). Orange ID = not launched yet. Only the hook is typed by you."))+"</div>";
+  return h; }
+CHG.maQ=v=>{ MA.q=v||""; render(); };
+CHG.maProj=v=>{ MA.proj=v||""; MA.adv=""; render(); };
+CHG.maAdv=v=>{ MA.adv=v||""; render(); };
+CHG.maPlat=v=>{ MA.plat=v||""; render(); };
+ACT.maSt=t=>{ MA.st=MA.st===t.dataset.s? "" : t.dataset.s; render(); };
+ACT.maClear=()=>{ MA.q=""; MA.proj=""; MA.adv=""; MA.plat=""; MA.st=""; render(); };
+ACT.maReload=()=>maLoad(true);
+ACT.maHook=t=>{ const id=t.dataset.id, m=MA.data.media.find(x=>x.creative_id===id)||{}, cur=(MA.data.N[id]||{}).hook||m.hook||"";
+  modal(L("هوك الفيديو ","Hook · ")+id+(m.advertiser?" — "+m.advertiser:""),
+    '<textarea class="inp" id="maHookT" style="min-height:90px;width:100%;direction:rtl;text-align:right;font-family:var(--f-ui);font-size:14px">'+esc(cur)+"</textarea>"+
+    (m.url?'<div style="margin-top:8px"><a href="'+esc(m.url)+'" target="_blank" rel="noopener">'+esc(L("▶ افتح الفيديو","▶ Open video"))+"</a></div>":""),
+    '<button class="btn btn-p" data-a="maHookSave" data-id="'+esc(id)+'">'+esc(L("حفظ","Save"))+"</button>"); };
+ACT.maHookSave=async t=>{ const id=t.dataset.id, v=(($("#maHookT")||{}).value||"").trim(), n=Object.assign({},MA.data.N[id]||{},{hook:v});
+  try{ await DB.doc("media_notes/"+id).set(n); MA.data.N[id]=n; closeModal(); render(); toast(L("اتحفظ","Saved")); }
+  catch(e){ toast(L("مقدرتش أحفظ: ","Couldn't save: ")+(e.message||e),true); } };
+
 function renderCreatives(){
+  if(window.SUPA_DB&&SUPA_DB.client) return renderMediaAuto();
   const all=S.creatives||[], list=creativeList();
   const f=S.mf;
   let h='<div class="md-bar">'+
