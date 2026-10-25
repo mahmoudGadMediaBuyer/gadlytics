@@ -38,7 +38,7 @@
 .ss-chw{margin-top:16px}.ss-ch{width:100%;height:auto;max-height:260px;display:block}.ss-gl{stroke:rgba(128,128,128,.2)}.ss-ax{font-size:11px;fill:currentColor;opacity:.6}
 .ss-ch .ss-bs{fill:#B4B2A9}.ss-ch .ss-br{fill:#7F77DD}.ss-lr{fill:none;stroke:#EF9F27;stroke-width:2.5}.ss-dot{fill:#EF9F27}.ss-dot.ss-g{fill:#1D9E75}.ss-dot.ss-b{fill:#E24B4A}
 .ss-lg{display:flex;gap:14px;font-size:12px;margin-bottom:4px}.ss-lg i{display:inline-block;width:12px;height:10px;border-radius:3px;margin-inline-end:5px;vertical-align:middle}.ss-lg i.ss-bs{background:#B4B2A9}.ss-lg i.ss-br{background:#7F77DD}.ss-lg i.ss-lr{background:#EF9F27;height:3px}
-.sch{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 12px;margin-bottom:12px;border-radius:10px;background:rgba(70,95,255,.08)}.sch-l{font-size:13px;margin-inline-end:auto}.sch-l b{font-size:18px;font-variant-numeric:tabular-nums;margin:0 4px}.sch-f{font-size:12.5px;display:flex;gap:6px;align-items:center}
+.sch{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 12px;margin:12px 0;border-radius:10px;background:rgba(70,95,255,.08)}.sch-l{font-size:13px;margin-inline-end:auto}.sch-l b{font-size:18px;font-variant-numeric:tabular-nums;margin:0 4px}.sch-f{font-size:12.5px;display:flex;gap:6px;align-items:center}
 </style>
 <style>/* معاينة التقرير ورقة بيضا دايماً، حتى في الوضع الليلي */
 .rp-prev .rp-tb th,.rp-prev .rp-tb td{color:#131A32!important;background:transparent;opacity:1!important}
@@ -4456,7 +4456,7 @@ function stateAt(date,msOfDay){
 function renderLive(){
   const D=S.liveDate;
   _roundShown=false;
-  return livePlatBar()+ssLiveBlock(D)+sectionsBlock("live",{from:D,to:D,cmp:[addDays(D,-1),addDays(D,-1)]});
+  return ssLiveBlock(D)+livePlatBar()+sectionsBlock("live",{from:D,to:D,cmp:[addDays(D,-1),addDays(D,-1)]});
 }
 /* ── المنصات الظاهرة في صفحة اليوم مباشر (بتتحفظ) ── */
 function livePlats(){ return (S.cfg.settings.livePlats||[]).filter(id=>S.cfg.platforms.some(p=>p.id===id&&!isAcct(id))); }
@@ -11214,7 +11214,7 @@ function ssLiveBlock(D){   // شيت اللقطات + الشارت جوه «ال
   if(!SS.rows[D]&&!SS.busy) setTimeout(()=>ssLoad(D),0);
   const rows=SS.rows[D];
   return '<div class="card ss-live"><div class="ss-lh"><div class="card-t">'+esc(L("لقطات اليوم","Today's snapshots"))+'</div><span class="seg">'+[["cum","من أول اليوم لحد اللقطة","Since midnight"],["diff","الفرق بين اللقطات","Change"]].map(x=>'<button class="'+(SS.mode===x[0]?"on":"")+'" data-a="ssMode" data-k="'+x[0]+'">'+esc(L(x[1],x[2]))+"</button>").join("")+"</span></div>"+
-    schBar()+(rows&&rows.length? ssCmpBlock(D)+ssSheetBody(D)+ssChart(D) : '<div class="hint">'+esc(rows?L("مفيش لقطات لليوم ده لسه.","No snapshots for this day yet."):L("بحمّل…","Loading…"))+"</div>")+"</div>"; }
+    (rows&&rows.length? ssSheetBody(D)+schBar()+ssCmpBlock(D)+ssChart(D) : schBar()+ '<div class="hint">'+esc(rows?L("مفيش لقطات لليوم ده لسه.","No snapshots for this day yet."):L("بحمّل…","Loading…"))+"</div>")+"</div>"; }
 
 ACT.ssTab=t=>{ SS.tab=t.dataset.k; render(); }; ACT.ssMode=t=>{ SS.mode=t.dataset.k; render(); };
 CHG.ssDay=v=>{ SS.day=v; ssLoad(v); }; CHG.ssHr=v=>{ SS.hour=v; render(); };
