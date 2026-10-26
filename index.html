@@ -8188,6 +8188,8 @@ async function maLoad(force){ if(MA.busy||(MA.data&&!force)) return; MA.busy=tru
     const media=await all(()=>sb.from("media").select("*").eq("client",cname).order("created_at",{ascending:false}));
     const perf=await all(()=>sb.from("v_media_perf").select("*").order("creative_id"));
     const notes=await all(()=>sb.from("docs").select("path,data").eq("coll","media_notes").order("path"));
+    const disp={}, one=v=>{ v=String(v||"").trim(); if(!v) return v; const k=arKey(v); return disp[k]||(disp[k]=v); };
+    media.forEach(m=>{ m.advertiser=one(m.advertiser); m.project=one(m.project); });
     const P={}; perf.forEach(p=>{ (P[p.creative_id]=P[p.creative_id]||[]).push(p); });
     const N={}; notes.forEach(n=>{ N[n.path.split("/")[1]]=n.data||{}; });
     MA.data={media:media,P:P,N:N,synced:media.reduce((m,x)=>x.synced_at>m?x.synced_at:m,"")};
@@ -8616,7 +8618,7 @@ function rcBody(){
   const vr=exScope(cur,"creative").filter(mine), cm=exCrMap(vr), vg=exGroup(vr,"creative"), vk=exKzGroup(kz,"creative",cm); Object.keys(vk).forEach(k=>{ if(!vg[k]) vg[k]=[]; });
   const vl=Object.keys(vg).filter(k=>k!=="—").map(k=>({k:k,v:exUseKz(exAgg(vg[k]),vk[k])})).sort((x,y)=>y.v.spend-x.v.spend).slice(0,10);
   if(vl.length) h+='<b>'+esc(L("الفيديوهات اللي فيها","Videos in it"))+'</b><div class="tw"><table class="an-tbl"><tr><th>'+esc(L("الفيديو","Video"))+"</th><th>"+esc(L("المعلن","Creator"))+'</th><th class="num">'+esc(L("الصرف","Spend"))+'</th><th class="num">'+esc(L("الطلبات","Orders"))+'</th><th class="num">'+esc(L("الإيراد","Revenue"))+'</th><th class="num">ROAS</th></tr>'+
-    vl.map(x=>'<tr><td class="num">'+esc(x.k)+"</td><td>"+esc(exAttr(x.k,"advertiser")||(cm[x.k]||{}).influencer||"—")+'</td><td class="num">'+exFmt(x.v.spend,"cur")+'</td><td class="num">'+exFmt(x.v.purchases,"n")+'</td><td class="num">'+exFmt(x.v.revenue,"cur")+'</td><td class="num" style="color:'+(x.v.roas!=null&&ar&&x.v.roas>=ar?"var(--good)":"var(--bad)")+'">'+exFmt(x.v.roas,"x")+"</td></tr>").join("")+"</table></div>";
+    vl.map(x=>'<tr><td class="num">'+esc(x.k)+"</td><td>"+esc(exInf(exAttr(x.k,"advertiser")||(cm[x.k]||{}).influencer)||"—")+'</td><td class="num">'+exFmt(x.v.spend,"cur")+'</td><td class="num">'+exFmt(x.v.purchases,"n")+'</td><td class="num">'+exFmt(x.v.revenue,"cur")+'</td><td class="num" style="color:'+(x.v.roas!=null&&ar&&x.v.roas>=ar?"var(--good)":"var(--bad)")+'">'+exFmt(x.v.roas,"x")+"</td></tr>").join("")+"</table></div>";
   return h+'<div class="hint" style="margin-top:10px">'+esc(L("الصرف وباقي الأرقام من المنصة، والطلبات والإيراد والـ ROAS والـ CPA من خزامى. «المنصة» = متوسط كل حملات نفس المنصة في نفس الفترة.","Spend and delivery from the platform; orders, revenue, ROAS and CPA from Khzama. «platform» = average of all campaigns on the same platform in the same period."))+"</div>"; }
 
 function renderRoster(){
@@ -11304,8 +11306,11 @@ function exKey(r,dim){ switch(dim){
   case "day": return r.date; case "week": return exWeekStart(r.date); case "month": return r.date.slice(0,7);
   case "weekday": return String(parseISO(r.date).getDay());
   case "season": return exAttr(r.creative_id,"season")||r.season||"—";
-  case "project": return exAttr(r.creative_id,"project")||"—";
-  case "advertiser": return exAttr(r.creative_id,"advertiser")||r.influencer||"—";
+  case "project": return exVar(exAttr(r.creative_id,"project")||r.variation)||"—";
+  case "advertiser": return exInf(exAttr(r.creative_id,"advertiser")||r.influencer)||"—";
+  case "influencer": return exInf(r.influencer||exAttr(r.creative_id,"advertiser"))||"—";
+  case "product": return exProd(r.product)||"—";
+  case "variation": return exVar(r.variation)||"—";
   default: return r[dim]||"—"; } }
 function exLabel(k,dim){
   if(dim==="platform") return (platById(k)||{}).name||k;
@@ -11329,9 +11334,23 @@ async function exFetch(from,to){
   for(;;){ let q=sb.from("khzama_link_daily").select("date,platform,camp_no,creative_id,code,product,rest,donations,amount").gte("date",from).lte("date",to).order("date").order("link_id").range(ki,ki+999);
     if(cid) q=q.eq("client_id",cid);
     const r=await q; if(r.error) break; kz.push(...r.data); if(r.data.length<1000) break; ki+=1000; }
-  if(!EX.md){ const md={}; for(let mi=0;;mi+=1000){ const r=await sb.from("media").select("creative_id,advertiser,project,season,product,style").order("creative_id").range(mi,mi+999);
-      if(r.error) break; r.data.forEach(m=>{ md[m.creative_id]=m; }); if(r.data.length<1000) break; } EX.md=md; }
+  if(!EX.md){ const md={}, al={inf:{},prod:{},vr:{},disp:{}}; for(let mi=0;;mi+=1000){ const r=await sb.from("media").select("creative_id,advertiser,project,season,product,style,launch_url").order("creative_id").range(mi,mi+999);
+      if(r.error) break; r.data.forEach(m=>{ md[m.creative_id]=m; exAliasAdd(al,m); }); if(r.data.length<1000) break; } EX.md=md; EX.alias=al; }
   out.kz=kz; EX.cache[k]=out; return out; }
+/* نفس الشخص أو المنتج مكتوب بالعربي مرة وبالإنجليزي مرة (Mnswr-Alsalmy = منصور السالمي):
+   القاموس جاي من بورد Airtable (لينك Launch فيه الكود والاسم العربي)، وكل الأسماء بتتوحّد على الاسم العربي */
+function arKey(s){ return String(s||"").trim().replace(/[\u064B-\u0652\u0640]/g,"").replace(/[أإآ]/g,"ا").replace(/ة/g,"ه").replace(/ى/g,"ي").replace(/\s+/g," ").toLowerCase(); }
+function latKey(s){ return String(s||"").trim().toLowerCase().replace(/\s+ad$/,"").replace(/[\s_-]*\d+$/,"").replace(/\s*-\s*/g,"-").replace(/[\s_]+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,""); }
+function exAliasAdd(al,m){ const disp=v=>{ v=String(v||"").trim(); if(!v) return ""; const k=arKey(v); return al.disp[k]||(al.disp[k]=v); };
+  if(m.advertiser) disp(m.advertiser); if(m.project) disp(m.project); if(m.product) disp(m.product);
+  if(!m.launch_url) return; let q; try{ q=new URL(m.launch_url).searchParams; }catch(e){ return; }
+  const pair=(code,ar,map)=>{ code=q.get(code); ar=q.get(ar); if(code&&ar&&String(ar).trim()) map[latKey(code)]=disp(ar); };
+  pair("prefill_AdvertiserCode","prefill_InfluencerAr",al.inf); pair("prefill_ProductCode","prefill_ProductAr",al.prod); pair("prefill_ProjectCode","prefill_VariationAr",al.vr); }
+function exNorm(raw,map){ if(raw==null) return null; raw=String(raw).trim(); if(!raw) return null; const al=EX.alias; if(!al) return raw;
+  if(raw.indexOf("~")>=0){ const u=[...new Set(raw.split("~").map(x=>exNorm(x,map)).filter(Boolean))]; return u.join(" + "); }
+  if(/[\u0600-\u06FF]/.test(raw)) return al.disp[arKey(raw)]||raw;
+  return (map&&map[latKey(raw)])||raw; }
+const exInf=r=>exNorm(r,EX.alias&&EX.alias.inf), exProd=r=>exNorm(r,EX.alias&&EX.alias.prod), exVar=r=>exNorm(r,EX.alias&&EX.alias.vr);
 /** صفات الفيديو من بورد Airtable (المعلن، المشروع، الموسم…) بالـ Creative ID */
 function exAttr(cr,f){ const m=cr&&EX.md&&EX.md[cr]; return (m&&m[f])||null; }
 /** فلاتر الحملة/الموسم/المشروع/المعلن — بتتطبق على أرقام المنصات وخزامى بنفس الطريقة */
@@ -11347,10 +11366,11 @@ function exCrMap(rows){ const m={}; rows.forEach(r=>{ if(r.creative_id&&!m[r.cre
 function exKzKey(k,dim,cm){ const a=k.creative_id&&cm[k.creative_id];
   switch(dim){ case "platform": return k.platform||"—"; case "campaign": return k.camp_no||"—"; case "creative": return k.creative_id||"—";
     case "day": return k.date; case "week": return exWeekStart(k.date); case "month": return k.date.slice(0,7); case "weekday": return String(parseISO(k.date).getDay());
-    case "account": return null; case "product": return k.product||(a&&a.product)||"—";
+    case "account": return null; case "product": return exProd(k.product||(a&&a.product))||"—";
     case "season": return exAttr(k.creative_id,"season")||(a&&a.season)||"—";
-    case "project": return exAttr(k.creative_id,"project")||"—";
-    case "advertiser": return exAttr(k.creative_id,"advertiser")||(a&&a.influencer)||"—";
+    case "project": return exVar(exAttr(k.creative_id,"project")||(a&&a.variation))||"—";
+    case "advertiser": case "influencer": return exInf(exAttr(k.creative_id,"advertiser")||(a&&a.influencer))||"—";
+    case "variation": return exVar(a&&a.variation)||"—";
     default: return a? (a[dim]||"—") : "—"; } }
 function exKzFilter(kz,cm){ const q=EX.q.trim().toLowerCase(); cm=cm||{}; return (kz||[]).filter(k=>k.platform&&["meta","tiktok","snap","google"].indexOf(k.platform)>=0&&(!EX.plats.length||EX.plats.indexOf(k.platform)>=0)&&exFF(d=>exKzKey(k,d,cm))&&(EX.qk==null||exKzKey(k,EX.qdim,cm)===EX.qk)&&(!q||[k.camp_no,k.creative_id,k.product,k.rest,exAttr(k.creative_id,"advertiser")].some(x=>x&&String(x).toLowerCase().indexOf(q)>=0))); }
 function exKzGroup(kz,dim,cm){ const g={}; kz.forEach(k=>{ const key=exKzKey(k,dim,cm); if(key==null) return; const o=g[key]||(g[key]={n:0,a:0}); o.n+=+k.donations||0; o.a+=+k.amount||0; }); return g; }
