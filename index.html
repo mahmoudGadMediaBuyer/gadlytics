@@ -7708,7 +7708,8 @@ async function aiInit(){
       return s;
     }catch(e){ return null; }
   })();
-  return AI.ready;
+  const r=await AI.ready; if(!r) AI.ready=null;   // على الموقع الاتصال بيجهز بعد تسجيل الدخول — منحفظش «مش متاح» للأبد
+  return r;
 }
 function aiRender(){
   const b=$("#aiBody"); if(!b) return;
