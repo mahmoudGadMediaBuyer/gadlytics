@@ -11232,7 +11232,7 @@ function exScope(rows,dim){   // للفيديو والمشهور: فيديوها
   const smart=new Set(rows.filter(r=>r.level==="material"&&r.ad_id).map(r=>r.account_id+"|"+r.ad_id)), hasMat=rows.some(r=>r.level==="material");
   return rows.filter(r=> r.level==="material" || (r.level==="ad" && !smart.has(r.account_id+"|"+r.ad_id) && !(hasMat&&r.platform==="tiktok"&&!smart.size&&/Smart:ON/i.test(r.campaign_name||"")))); }
 function exFilter(rows){ const q=EX.q.trim().toLowerCase();
-  return rows.filter(r=>(!EX.plats.length||EX.plats.indexOf(r.platform)>=0)&&exFF(d=>exKey(r,d))&&(!q||[r.campaign_name,r.ad_name,r.video_name,r.creative_id,r.influencer,r.product,r.variation].some(x=>x&&String(x).toLowerCase().indexOf(q)>=0))); }
+  return rows.filter(r=>(!EX.plats.length||EX.plats.indexOf(r.platform)>=0)&&exFF(d=>exKey(r,d))&&(EX.qk==null||exKey(r,EX.qdim)===EX.qk)&&(!q||[r.campaign_name,r.ad_name,r.video_name,r.creative_id,r.influencer,r.product,r.variation].some(x=>x&&String(x).toLowerCase().indexOf(q)>=0))); }
 async function exFetch(from,to){
   const k=from+"|"+to; if(EX.cache[k]) return EX.cache[k];
   const sb=window.SUPA_DB&&SUPA_DB.client; if(!sb) throw new Error("site-only");
@@ -11267,7 +11267,7 @@ function exKzKey(k,dim,cm){ const a=k.creative_id&&cm[k.creative_id];
     case "project": return exAttr(k.creative_id,"project")||"—";
     case "advertiser": return exAttr(k.creative_id,"advertiser")||(a&&a.influencer)||"—";
     default: return a? (a[dim]||"—") : "—"; } }
-function exKzFilter(kz,cm){ const q=EX.q.trim().toLowerCase(); cm=cm||{}; return (kz||[]).filter(k=>k.platform&&["meta","tiktok","snap","google"].indexOf(k.platform)>=0&&(!EX.plats.length||EX.plats.indexOf(k.platform)>=0)&&exFF(d=>exKzKey(k,d,cm))&&(!q||[k.camp_no,k.creative_id,k.product,k.rest,exAttr(k.creative_id,"advertiser")].some(x=>x&&String(x).toLowerCase().indexOf(q)>=0))); }
+function exKzFilter(kz,cm){ const q=EX.q.trim().toLowerCase(); cm=cm||{}; return (kz||[]).filter(k=>k.platform&&["meta","tiktok","snap","google"].indexOf(k.platform)>=0&&(!EX.plats.length||EX.plats.indexOf(k.platform)>=0)&&exFF(d=>exKzKey(k,d,cm))&&(EX.qk==null||exKzKey(k,EX.qdim,cm)===EX.qk)&&(!q||[k.camp_no,k.creative_id,k.product,k.rest,exAttr(k.creative_id,"advertiser")].some(x=>x&&String(x).toLowerCase().indexOf(q)>=0))); }
 function exKzGroup(kz,dim,cm){ const g={}; kz.forEach(k=>{ const key=exKzKey(k,dim,cm); if(key==null) return; const o=g[key]||(g[key]={n:0,a:0}); o.n+=+k.donations||0; o.a+=+k.amount||0; }); return g; }
 function exUseKz(v,z){ v.purchases=z?z.n:0; v.revenue=z?z.a:0; return exDerive(v); }   // الطلبات والإيراد من خزامى، والباقي من المنصات
 function exGroup(rows,dim){ const g={}; rows.forEach(r=>{ const k=exKey(r,dim); (g[k]=g[k]||[]).push(r); }); return g; }
@@ -11282,7 +11282,7 @@ function renderExplorer(){
     '<label class="fld"><span>'+esc(L("قارن بـ","Compare with"))+'</span><select class="sel" data-c="exCmp">'+selOpts([["none","بدون مقارنة","No comparison"],["prev","الفترة اللي قبلها","Previous period"],["year","نفس الفترة السنة اللي فاتت","Same period last year"],["custom","فترة أختارها","Custom"]],EX.cmp)+"</select></label>"+
     (EX.cmp==="custom"?'<label class="fld"><span>'+esc(L("مقارنة من","Compare from"))+'</span><input class="inp" type="date" data-c="exCF" value="'+esc(EX.cfrom)+'"></label><label class="fld"><span>'+esc(L("إلى","To"))+'</span><input class="inp" type="date" data-c="exCT" value="'+esc(EX.cto)+'"></label>':"")+
     '<label class="fld"><span>'+esc(L("قسّم حسب","Break down by"))+'</span><select class="sel" data-c="exDim">'+selOpts(EX_DIMS,EX.dim)+"</select></label>"+
-    '<label class="fld ex-q"><span>'+esc(L("دوّر","Search"))+'</span><input class="inp" data-c="exQ" placeholder="'+esc(L("Creative ID، مشهور، حملة…","Creative ID, influencer, campaign…"))+'" value="'+esc(EX.q)+'"></label>'+
+    '<label class="fld ex-q"><span>'+esc(L("دوّر","Search"))+'</span><input class="inp" data-c="exQ" list="exQList" placeholder="'+esc(L("اختار من القايمة أو اكتب…","Pick from the list or type…"))+'" value="'+esc(EX.qk&&EX.qdim===EX.dim?exLabel(EX.qk,EX.dim):EX.q)+'"></label>'+
     '<div class="ex-row"><div class="chips"><button class="chip'+(EX.plats.length?"":" on")+'" data-a="exPl" data-id="">'+esc(L("كل المنصات","All"))+"</button>"+
       ["meta","tiktok","snap","google"].filter(id=>platById(id)).map(id=>'<button class="chip'+(EX.plats.indexOf(id)>=0?" on":"")+'" data-a="exPl" data-id="'+id+'"><i class="sw" style="background:'+platById(id).color+'"></i>'+esc(platById(id).name)+"</button>").join("")+"</div>"+
     '<span class="seg">'+[["base","أساسي","Core"],["funnel","القمع","Funnel"],["video","الفيديو","Video"]].map(x=>'<button data-a="exCols" data-k="'+x[0]+'">'+esc(L(x[1],x[2]))+"</button>").join("")+"</span>"+
@@ -11294,9 +11294,11 @@ function renderExplorer(){
   if(!cur) return h+'<div class="empty">'+esc(L("بحمّل الأرقام…","Loading…"))+"</div>";
   { const cm0=exCrMap(cur), FF=[["campaign","الحملة","Campaign"],["season","الموسم","Season"],["project","المشروع","Project"],["advertiser","المعلن","Creator"]];
     const vals=d=>{ const s=new Set(); exScope(cur,d).forEach(r=>s.add(exKey(r,d))); (cur.kz||[]).forEach(k=>{ if(+k.donations||+k.amount) s.add(exKzKey(k,d,cm0)); }); s.delete("—"); s.delete(null); return [...s].sort(); };
+    EX.qmap={}; const qv=vals(EX.dim); qv.forEach(k=>{ EX.qmap[exLabel(k,EX.dim)]=k; });
+    const dlist='<datalist id="exQList">'+qv.map(k=>'<option value="'+esc(exLabel(k,EX.dim))+'">').join("")+"</datalist>";
     h=h.replace(/<\/div>$/,"")+'<div class="ex-row ex-ff">'+FF.map(f=>'<label class="fld"><span>'+esc(L(f[1],f[2]))+'</span><select class="sel" data-c="exFF" data-k="'+f[0]+'"><option value="">'+esc(L("الكل","All"))+"</option>"+
       vals(f[0]).map(v=>'<option value="'+esc(v)+'"'+(EX.ff[f[0]]===v?" selected":"")+">"+esc(v)+"</option>").join("")+"</select></label>").join("")+
-      (Object.values(EX.ff).some(Boolean)?'<button class="btn btn-s" data-a="exFFClear">'+esc(L("مسح الفلاتر","Clear filters"))+"</button>":"")+"</div></div>"; }
+      (Object.values(EX.ff).some(Boolean)||EX.qk!=null||EX.q?'<button class="btn btn-s" data-a="exFFClear">'+esc(L("مسح الفلاتر","Clear filters"))+"</button>":"")+"</div></div>"+dlist; }
   const scope=exFilter(exScope(cur,EX.dim)), pscope=prv?exFilter(exScope(prv,EX.dim)):null, cm=exCrMap(cur.concat(prv||[]));
   const kzC=exKzFilter(cur.kz,cm), kzP=prv?exKzFilter(prv.kz,cm):null, sumKz=kz=>({n:kz.reduce((a,k)=>a+(+k.donations||0),0),a:kz.reduce((a,k)=>a+(+k.amount||0),0)});
   const tot=exUseKz(exAgg(scope),sumKz(kzC)), ptot=pscope?exUseKz(exAgg(pscope),sumKz(kzP)):null;
@@ -11362,8 +11364,9 @@ function renderExplorer(){
 CHG.exF=v=>{ EX.from=v; EX.sel=null; exLoad(); }; CHG.exT=v=>{ EX.to=v; EX.sel=null; exLoad(); };
 CHG.exCmp=v=>{ EX.cmp=v; exLoad(); }; CHG.exCF=v=>{ EX.cfrom=v; exLoad(); }; CHG.exCT=v=>{ EX.cto=v; exLoad(); };
 CHG.exFF=(v,t)=>{ EX.ff[t.dataset.k]=v||""; EX.sel=null; render(); };
-ACT.exFFClear=()=>{ Object.keys(EX.ff).forEach(k=>EX.ff[k]=""); EX.sel=null; render(); };
-CHG.exDim=v=>{ EX.dim=v; EX.sel=null; EX.sort="spend"; EX.dir=-1; render(); }; CHG.exQ=v=>{ EX.q=v; EX.sel=null; render(); };
+ACT.exFFClear=()=>{ Object.keys(EX.ff).forEach(k=>EX.ff[k]=""); EX.qk=null; EX.q=""; EX.sel=null; render(); };
+CHG.exDim=v=>{ EX.dim=v; EX.sel=null; EX.sort="spend"; EX.dir=-1; EX.qk=null; EX.q=""; render(); };
+CHG.exQ=v=>{ v=String(v||"").trim(); const k=(EX.qmap||{})[v]; if(k!=null){ EX.qk=k; EX.qdim=EX.dim; EX.q=""; } else { EX.qk=null; EX.q=v; } EX.sel=null; render(); };
 ACT.exPl=t=>{ const id=t.dataset.id, a=EX.plats; if(!id) a.length=0; else { const i=a.indexOf(id); i<0?a.push(id):a.splice(i,1); } render(); };
 ACT.exCols=t=>{ exMetSet(EX_COLS[t.dataset.k].map(c=>c[0])); render(); };
 ACT.exPick=()=>{ EX.pick=!EX.pick; render(); };
@@ -11865,6 +11868,9 @@ async function boot(){
     }
     else if(window.SUPA_DB&&SUPA_DB.db){ DB=SUPA_DB.db; Store=Remote; STORE_MODE="cloud"; }
   }catch(e){}
+  // نسخة الموقع: لو مقدرناش نوصل لقاعدة البيانات نوقف ونقول كده — عمرنا ما نفتح نسخة فاضية («ضيف أول عميل») بدل بياناتك
+  if(window.SUPA_DB&&STORE_MODE!=="cloud"){ clearTimeout(watchdog);
+    return bootFail("مش قادر أوصل لقاعدة البيانات","Couldn't reach the database. بياناتك محفوظة ومفيش حاجة اتمسحت — اعمل تحديث للصفحة (Cmd+Shift+R)، ولو فضلت كده سجّل دخول تاني."); }
   if(STORE_MODE!=="cloud"&&!lsOK()){ Store=Memory; STORE_MODE="memory"; }
   BOOT_STEP="config";
   let cfg=null, cfgErr=null;
