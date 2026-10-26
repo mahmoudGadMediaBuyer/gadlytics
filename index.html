@@ -7673,6 +7673,31 @@ const AI_RULES_GET=()=>EN()?AI_RULES_EN:AI_RULES_AR;
 function aiTier(){ const v=S.cfg.settings.aiTier; return v==="quick"||v==="complex"? v : "default"; }
 CHG.aiTier=v=>{ S.cfg.settings.aiTier=v; saveCfg(); render(); toast(L("اتغير موديل المساعد","Assistant model changed")); };
 
+/* على الموقع مفيش claude.use — بنعمل نفس الواجهة فوق دالة «ai» في Supabase (اللي بتكلم Claude بمفتاحك)،
+   والأدوات بتشتغل هنا في المتصفح على أرقامك زي ما هي */
+async function siteSample(turns,opts){ opts=opts||{};
+  const tools=opts.tools||[], defs=tools.map(t=>({name:t.name,description:t.description||"",input_schema:t.inputSchema||{type:"object",properties:{}}}));
+  const msgs=(Array.isArray(turns)?turns:[{role:"user",content:String(turns)}]).map(t=>({role:t.role,content:t.content}));
+  for(let round=0;round<8;round++){
+    if(opts.signal&&opts.signal.aborted) throw {code:"cancelled",message:"cancelled"};
+    const r=await SUPA_DB.client.functions.invoke("ai",{body:{messages:msgs,tools:defs,tier:opts.modelTier||"default"}});
+    if(r.error) throw {code:"api",message:L("مقدرتش أوصل للمساعد: ","Couldn't reach the assistant: ")+(r.error.message||r.error)};
+    const d=r.data||{};
+    if(d.error) throw {code:d.code||"api",message:d.code==="no_key"? L("المساعد محتاج مفتاح Claude API يتحط في Supabase الأول (Edge Functions ← Secrets ← ANTHROPIC_API_KEY).","The assistant needs a Claude API key in Supabase first (Edge Functions → Secrets → ANTHROPIC_API_KEY).")
+      : d.code==="bad_key"? L("مفتاح Claude API اللي في Supabase مش شغال — راجعه.","The Claude API key in Supabase is invalid — check it.") : d.error};
+    const content=d.content||[], text=content.filter(c=>c.type==="text").map(c=>c.text).join(""), uses=content.filter(c=>c.type==="tool_use");
+    msgs.push({role:"assistant",content:content});
+    if(!uses.length||d.stop_reason!=="tool_use"){ if(opts.onText) opts.onText({text:text,delta:text}); return {text:text,truncated:d.stop_reason==="max_tokens"}; }
+    const results=[];
+    for(const u of uses){ let out; const t=tools.find(x=>x.name===u.name);
+      try{ out=t? await t.execute(u.input||{},{}) : {error:"unknown tool"}; }catch(e){ out={error:String(e&&e.message||e)}; }
+      results.push({type:"tool_result",tool_use_id:u.id,content:JSON.stringify(out===undefined?null:out).slice(0,30000)}); }
+    msgs.push({role:"user",content:results});
+  }
+  throw {code:"loop",message:L("المساعد لف كتير من غير ما يوصل لإجابة — اسأل بشكل أدق.","The assistant looped without an answer — try a narrower question.")};
+}
+siteSample.limits=async()=>({tools:{maxCount:10},images:false});
+if(window.SUPA_DB&&!window.claude) window.claude={use:async n=>n==="sample"&&window.SUPA_DB&&SUPA_DB.client? siteSample : null};
 async function aiInit(){
   if(AI.ready!==null) return AI.ready;
   AI.ready=(async()=>{
@@ -7819,6 +7844,7 @@ function aiErrMsg(e){
   if(c==="empty_completion") return L("مطلعش رد — صيغ السؤال بشكل تاني.","No answer came back — rephrase the question.");
   if(c==="refused") return L("مقدرش أرد على السؤال ده.","I can't answer that question.");
   if(c==="tools_unavailable") return L("الوصول للأرقام مش متاح في العرض ده.","Access to the numbers isn't available in this view.");
+  if((c==="no_key"||c==="bad_key"||c==="api"||c==="loop")&&e.message) return e.message;   // رسائل نسخة الموقع
   return L("حصلت مشكلة مؤقتة — جرب تاني.","A temporary problem occurred — try again.");
 }
 document.addEventListener("keydown",e=>{
