@@ -10830,7 +10830,7 @@ function renderViewRaw(){
       case "team":     return renderTeam();
       default:
         if(S.view.indexOf("scr_")===0) return renderSections(S.view);
-        return renderSections("overview");
+        return renderOverview();
     }
   }catch(err){
     return '<div class="ins bad"><div class="ins-t">حصل خطأ في العرض</div><div class="ins-b num" style="direction:ltr;text-align:left">'+
