@@ -20,7 +20,7 @@
 .lb-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}.lb-fl{border-top:1px solid var(--line);padding-top:8px}
 .lb-cols{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.lb-ci{display:flex;gap:2px;align-items:center}.lb-ci .btn{padding:0 6px}
 .lb-tw{max-height:70vh;overflow:auto}.lb-t th{position:sticky;top:0;z-index:2;background:var(--ground-1,#121826);cursor:pointer;white-space:nowrap}
-.lb-t tr[data-a="lbOpen"]{cursor:pointer}.lb-t tr[data-a="lbOpen"]:hover td{background:rgba(70,95,255,.07)}
+.lb-t tr[data-a="clbOpen"]{cursor:pointer}.lb-t tr[data-a="clbOpen"]:hover td{background:rgba(70,95,255,.07)}
 .lb-t td{white-space:nowrap;max-width:260px;overflow:hidden;text-overflow:ellipsis}.lb-t td.lb-hook{white-space:normal;min-width:220px;max-width:340px;line-height:1.6}
 .lb-g td{background:color-mix(in srgb,var(--cyan) 7%,transparent);cursor:pointer}.lb-g.l1 td{padding-inline-start:28px;background:color-mix(in srgb,var(--cyan) 3%,transparent)}
 .lb-kv th{white-space:nowrap;text-align:start;width:150px}.lb-hk{margin-bottom:12px;line-height:1.8}
@@ -10601,7 +10601,7 @@ function renderCreativeLibrary(){
   let h='<div class="card lb-ctl"><div class="lb-row">'+
     '<input class="inp" style="width:230px" data-c="lbQ" placeholder="'+esc(L("دوّر في كل الأعمدة…","Search all columns…"))+'" value="'+esc(LB.q)+'">'+
     '<label class="fld"><span>'+esc(L("أرقام الأداء","Performance"))+'</span><select class="sel" data-c="lbPer">'+selOpts([["all","كل الوقت","All time"],["range","فترة","Date range"]],LB.per)+"</select></label>"+
-    (LB.per==="range"?'<label class="fld"><span>'+esc(L("من","From"))+'</span><input class="inp" type="date" data-c="lbF" value="'+esc(LB.from)+'"></label><label class="fld"><span>'+esc(L("إلى","To"))+'</span><input class="inp" type="date" data-c="lbT" value="'+esc(LB.to)+'"></label>':"")+
+    (LB.per==="range"?'<label class="fld"><span>'+esc(L("من","From"))+'</span><input class="inp" type="date" data-c="clbFrom" value="'+esc(LB.from)+'"></label><label class="fld"><span>'+esc(L("إلى","To"))+'</span><input class="inp" type="date" data-c="lbT" value="'+esc(LB.to)+'"></label>':"")+
     '<button class="btn btn-s'+(LB.pick?" btn-p":"")+'" data-a="lbPick">☰ '+esc(L("الأعمدة","Columns"))+" ("+LB.cols.length+")</button>"+
     '<button class="btn btn-s" data-a="lbAddF">+ '+esc(L("فلتر","Filter"))+"</button>"+
     '<button class="btn btn-p btn-s" data-a="lbSync" style="margin-inline-start:auto">'+esc(LB.syncing?L("بيحدّث من Airtable…","Syncing from Airtable…"):L("↻ تحديث المكتبة","↻ Refresh library"))+"</button></div>";
@@ -10626,7 +10626,7 @@ function renderCreativeLibrary(){
   /* الجدول */
   const cols=LB.cols.filter(k=>colsAll.indexOf(k)>=0);
   const head="<tr>"+cols.map(k=>'<th data-a="lbSort" data-k="'+esc(k)+'" class="'+(LB_NUM[k]?"num":"")+'">'+esc(lbLabel(k))+(s.k===k?(s.dir<0?" ▾":" ▴"):"")+"</th>").join("")+"</tr>";
-  const rowH=r=>'<tr data-a="lbOpen" data-id="'+esc(r.__id)+'">'+cols.map(k=>'<td class="'+(LB_NUM[k]?"num":"")+(k==="_hook"?" lb-hook":"")+'">'+lbFmt(k,r[k])+"</td>").join("")+"</tr>";
+  const rowH=r=>'<tr data-a="clbOpen" data-id="'+esc(r.__id)+'">'+cols.map(k=>'<td class="'+(LB_NUM[k]?"num":"")+(k==="_hook"?" lb-hook":"")+'">'+lbFmt(k,r[k])+"</td>").join("")+"</tr>";
   const g=LB.groups.filter(Boolean); let body="", shown=0;
   const grp=(list,lvl,path)=>{ if(lvl>=g.length){ list.forEach(r=>{ if(shown<800){ body+=rowH(r); shown++; } }); return; }
     const by={}; list.forEach(r=>{ const k=r[g[lvl]]==null||r[g[lvl]]===""?"—":String(r[g[lvl]]); (by[k]=by[k]||[]).push(r); });
@@ -10643,7 +10643,7 @@ function renderCreativeLibrary(){
   return h; }
 CHG.lbQ=v=>{ LB.q=v||""; render(); };
 CHG.lbPer=v=>{ LB.per=v; if(v==="range"&&!LB.from){ LB.to=todayISO(); LB.from=addDays(LB.to,-29); } render(); };
-CHG.lbF=v=>{ LB.from=v; render(); }; CHG.lbT=v=>{ LB.to=v; render(); };
+CHG.clbFrom=v=>{ LB.from=v; render(); }; CHG.lbT=v=>{ LB.to=v; render(); };
 CHG.lbG=(v,t)=>{ LB.groups[+t.dataset.i]=v||""; if(!LB.groups[0]) LB.groups=[]; LB.open={}; render(); };
 CHG.lbFF=(v,t)=>{ LB.filters[+t.dataset.i].f=v; LB.filters[+t.dataset.i].v=""; render(); };
 CHG.lbFO=(v,t)=>{ LB.filters[+t.dataset.i].op=v; render(); };
@@ -10661,7 +10661,7 @@ ACT.lbSync=async()=>{ if(LB.syncing) return; LB.syncing=true; LB.msg=""; render(
     LB.msg=L("اتحدثت من Airtable — ","Synced from Airtable — ")+fnum(r.data.ok,0)+L(" سجل"," records"); LB.data=null; }
   catch(e){ LB.msg=L("مقدرتش أحدّث: ","Couldn't sync: ")+(e.message||e); }
   LB.syncing=false; if(!LB.data) await lbLoad(true); else render(); };
-ACT.lbOpen=t=>{ const id=t.dataset.id, r=lbRows().find(x=>x.__id===id); if(!r) return;
+ACT.clbOpen=t=>{ const id=t.dataset.id, r=lbRows().find(x=>x.__id===id); if(!r) return;
   const pf=(LB.data.P[id]||[]);
   const fields=LB_AT.filter(k=>r[k]!=null&&r[k]!=="").map(k=>"<tr><th>"+esc(k)+"</th><td>"+lbFmt(k,r[k])+"</td></tr>").join("");
   const perf=pf.length? '<table class="an-tbl"><tr><th>'+esc(L("المنصة","Platform"))+'</th><th class="num">'+esc(L("الصرف","Spend"))+'</th><th class="num">'+esc(L("الطلبات","Orders"))+'</th><th class="num">'+esc(L("الإيراد","Revenue"))+'</th><th class="num">ROAS</th><th>'+esc(L("من — لحد","From — to"))+"</th><th>"+esc(L("الحملات","Campaigns"))+"</th></tr>"+
