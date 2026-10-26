@@ -12,6 +12,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GADLYTICS</title>
 <style>.ex-ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}.ex-ctl .fld{display:flex;flex-direction:column;gap:4px;font-size:12px}.ex-q{flex:1;min-width:200px}.ex-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;width:100%}.ex-kpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:12px 0}.ex-t tr.on td{background:color-mix(in srgb,var(--cyan) 10%,transparent)}.ex-k{max-width:340px;white-space:normal;word-break:break-word}.ex-tot td{font-weight:800}.ex-up{color:var(--good,#12a150)}.ex-dn{color:var(--bad,#d23)}.sb-ctl{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}.sb-ctl .fld{display:flex;flex-direction:column;gap:4px;font-size:12px;min-width:220px}.sb-grid{direction:rtl;display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-top:12px}.sb-c{border-radius:14px;padding:14px}.sb-h{font-weight:800;font-size:15px}.sb-h span{font-size:11px;font-weight:700}.sb-l{font-size:12px;margin-top:8px}.sb-v{font-size:21px;font-weight:800;font-variant-numeric:tabular-nums}.sb-r{display:flex;justify-content:space-between;gap:8px;margin-top:10px;font-size:13px}.sb-r b{font-weight:800}.sb-tot{grid-column:span 1}.ex-pick{width:100%;border-top:1px solid var(--line,#e5e7eb);padding-top:10px}.ex-pick .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.cf{display:flex;flex-direction:column;gap:6px;margin:8px 0}.cf-row{display:grid;grid-template-columns:110px 1fr 70px 52px;gap:8px;align-items:center;font-size:12.5px}.cf-bar{height:12px;background:var(--line,rgba(127,127,127,.15));border-radius:6px;overflow:hidden}.cf-bar i{display:block;height:100%;background:linear-gradient(90deg,#465FFF,#1D9E75);border-radius:6px}
+.ms{position:relative}.ms-b{min-width:150px;text-align:start;cursor:pointer}.ms-b.on{border-color:var(--cyan);color:var(--cyan)}
+.ms-p{position:absolute;z-index:40;top:100%;inset-inline-start:0;margin-top:4px;width:300px;max-width:80vw;background:var(--ground-1,#121826);border:1px solid var(--line-2,rgba(127,127,127,.3));border-radius:12px;padding:8px;box-shadow:0 14px 40px rgba(0,0,0,.35)}
+.ms-l{max-height:280px;overflow:auto;margin:6px 0;display:flex;flex-direction:column;gap:2px}.ms-l label{display:flex;gap:8px;align-items:center;padding:4px 6px;border-radius:6px;cursor:pointer;font-size:12.5px;direction:ltr;justify-content:flex-end}
+.ms-l label:hover{background:rgba(127,127,127,.12)}.ms-f{display:flex;justify-content:space-between;gap:6px}
 .ex-drill{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}</style>
 <style>.ss-live{margin-bottom:14px}.ss-lh{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
 .ss-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}.ss-kc{border:1px solid var(--line,rgba(128,128,128,.22));border-radius:12px;padding:12px}
@@ -11267,7 +11271,7 @@ function renderLinks(){
 CHG.lnk=(v,t)=>{ const c=clientById(t.dataset.id); if(!c) return; c.links=Object.assign({},c.links||{}); const x=String(v||"").trim(); if(x) c.links[t.dataset.k]=x; else delete c.links[t.dataset.k]; saveCfg(); toast(L("اتحفظ","Saved")); };
 
 /* ══════════════════ المحلل: أرقام كل إعلان وفيديو من جدول ad_daily (نسخة الموقع) ══════════════════ */
-const EX={ff:{campaign:"",season:"",project:"",advertiser:""},md:null,met:null,pick:false,from:"",to:"",cmp:"prev",cfrom:"",cto:"",dim:"platform",plats:[],q:"",sort:"spend",dir:-1,cols:"base",sel:null,cache:{},busy:false,err:""};
+const EX={ff:{campaign:[],season:[],project:[],advertiser:[]},ffOpen:null,md:null,met:null,pick:false,from:"",to:"",cmp:"prev",cfrom:"",cto:"",dim:"platform",plats:[],q:"",sort:"spend",dir:-1,cols:"base",sel:null,cache:{},busy:false,err:""};
 const EX_DIMS=[["platform","المنصة","Platform"],["account","الحساب","Account"],["campaign","الحملة","Campaign"],["creative","الفيديو (Creative ID)","Video"],["influencer","المشهور","Influencer"],["advertiser","المعلن (Airtable)","Creator (Airtable)"],["project","المشروع","Project"],["season","الموسم","Season"],
   ["product","المنتج","Product"],["variation","الفاريشن","Variation"],["content_type","نوع المحتوى","Content type"],["ad_size","المقاس","Size"],
   ["day","اليوم","Day"],["week","الأسبوع","Week"],["month","الشهر","Month"],["weekday","يوم الأسبوع","Weekday"]];
@@ -11330,7 +11334,7 @@ async function exFetch(from,to){
 /** صفات الفيديو من بورد Airtable (المعلن، المشروع، الموسم…) بالـ Creative ID */
 function exAttr(cr,f){ const m=cr&&EX.md&&EX.md[cr]; return (m&&m[f])||null; }
 /** فلاتر الحملة/الموسم/المشروع/المعلن — بتتطبق على أرقام المنصات وخزامى بنفس الطريقة */
-function exFF(get){ return Object.keys(EX.ff).every(d=>!EX.ff[d]||get(d)===EX.ff[d]); }
+function exFF(get){ return Object.keys(EX.ff).every(d=>!EX.ff[d].length||EX.ff[d].indexOf(get(d))>=0); }
 function exRange(){ const t=todayISO(); if(!EX.from){ EX.from=t.slice(0,8)+"01"; EX.to=t; }
   let cf=null, ct=null; const len=diffDays(EX.from,EX.to)+1;
   if(EX.cmp==="prev"){ ct=addDays(EX.from,-1); cf=addDays(ct,-(len-1)); } else if(EX.cmp==="year"){ cf=addDays(EX.from,-364); ct=addDays(EX.to,-364); } else if(EX.cmp==="custom"&&EX.cfrom&&EX.cto){ cf=EX.cfrom; ct=EX.cto; }
@@ -11374,17 +11378,22 @@ function renderExplorer(){
   if(!cur) return h+'<div class="empty">'+esc(L("بحمّل الأرقام…","Loading…"))+"</div>";
   { const cm0=exCrMap(cur), FF=[["campaign","الحملة","Campaign"],["season","الموسم","Season"],["project","المشروع","Project"],["advertiser","المعلن","Creator"]];
     // القايمة بتتبع المنصة والفلاتر التانية المختارة (من غير الفلتر نفسه) — عشان متشوفش حملات منصة تانية
-    const okPl=p=>!EX.plats.length||EX.plats.indexOf(p)>=0, ffBut=(d,get)=>Object.keys(EX.ff).every(f=>f===d||!EX.ff[f]||get(f)===EX.ff[f]);
+    const okPl=p=>!EX.plats.length||EX.plats.indexOf(p)>=0, ffBut=(d,get)=>Object.keys(EX.ff).every(f=>f===d||!EX.ff[f].length||EX.ff[f].indexOf(get(f))>=0);
     const vals=d=>{ const s=new Set();
       exScope(cur,d).forEach(r=>{ if(okPl(r.platform)&&ffBut(d,f=>exKey(r,f))) s.add(exKey(r,d)); });
       (cur.kz||[]).forEach(k=>{ if((+k.donations||+k.amount)&&okPl(k.platform)&&ffBut(d,f=>exKzKey(k,f,cm0))) s.add(exKzKey(k,d,cm0)); });
       s.delete("—"); s.delete(null); return [...s].sort(); };
-    Object.keys(EX.ff).forEach(f=>{ if(EX.ff[f]&&vals(f).indexOf(EX.ff[f])<0) EX.ff[f]=""; });
+    Object.keys(EX.ff).forEach(f=>{ if(EX.ff[f].length){ const ok=vals(f); EX.ff[f]=EX.ff[f].filter(v=>ok.indexOf(v)>=0); } });
     EX.qmap={}; const qv=vals(EX.dim); qv.forEach(k=>{ EX.qmap[exLabel(k,EX.dim)]=k; });
     const dlist='<datalist id="exQList">'+qv.map(k=>'<option value="'+esc(exLabel(k,EX.dim))+'">').join("")+"</datalist>";
-    h=h.replace(/<\/div>$/,"")+'<div class="ex-row ex-ff">'+FF.map(f=>'<label class="fld"><span>'+esc(L(f[1],f[2]))+'</span><select class="sel" data-c="exFF" data-k="'+f[0]+'"><option value="">'+esc(L("الكل","All"))+"</option>"+
-      vals(f[0]).map(v=>'<option value="'+esc(v)+'"'+(EX.ff[f[0]]===v?" selected":"")+">"+esc(v)+"</option>").join("")+"</select></label>").join("")+
-      (Object.values(EX.ff).some(Boolean)||EX.qk!=null||EX.q?'<button class="btn btn-s" data-a="exFFClear">'+esc(L("مسح الفلاتر","Clear filters"))+"</button>":"")+"</div></div>"+dlist; }
+    // قايمة باختيار متعدد: زرار بيفتح لستة فيها بحث وعلامات صح — والفلتر بيتطبق لما تدوس «تم»
+    const ms=f=>{ const sel=EX.ff[f[0]], lab=!sel.length? L("الكل","All") : sel.length===1? sel[0] : sel.length+L(" مختارين"," selected"), open=EX.ffOpen===f[0];
+      return '<div class="fld ms"><span>'+esc(L(f[1],f[2]))+'</span><button class="sel ms-b'+(sel.length?" on":"")+'" data-a="exMsOpen" data-k="'+f[0]+'">'+esc(lab)+"</button>"+
+        (open?'<div class="ms-p"><input class="inp" placeholder="'+esc(L("دوّر في القايمة…","Search the list…"))+'" oninput="var q=this.value.toLowerCase();this.parentNode.querySelectorAll(\'label\').forEach(function(l){l.style.display=l.textContent.toLowerCase().indexOf(q)>=0?\'\':\'none\'})">'+
+          '<div class="ms-l">'+vals(f[0]).map(v=>'<label><input type="checkbox" data-a="exMsTog" data-k="'+f[0]+'" data-v="'+esc(v)+'"'+(sel.indexOf(v)>=0?" checked":"")+"> "+esc(v)+"</label>").join("")+"</div>"+
+          '<div class="ms-f"><button class="btn btn-s" data-a="exMsNone" data-k="'+f[0]+'">'+esc(L("الكل","All"))+'</button><button class="btn btn-s btn-p" data-a="exMsDone">'+esc(L("تم","Done"))+"</button></div></div>":"")+"</div>"; };
+    h=h.replace(/<\/div>$/,"")+'<div class="ex-row ex-ff">'+FF.map(ms).join("")+
+      (Object.values(EX.ff).some(a=>a.length)||EX.qk!=null||EX.q?'<button class="btn btn-s" data-a="exFFClear">'+esc(L("مسح الفلاتر","Clear filters"))+"</button>":"")+"</div></div>"+dlist; }
   const scope=exFilter(exScope(cur,EX.dim)), pscope=prv?exFilter(exScope(prv,EX.dim)):null, cm=exCrMap(cur.concat(prv||[]));
   const kzC=exKzFilter(cur.kz,cm), kzP=prv?exKzFilter(prv.kz,cm):null, sumKz=kz=>({n:kz.reduce((a,k)=>a+(+k.donations||0),0),a:kz.reduce((a,k)=>a+(+k.amount||0),0)});
   const tot=exUseKz(exAgg(scope),sumKz(kzC)), ptot=pscope?exUseKz(exAgg(pscope),sumKz(kzP)):null;
@@ -11450,7 +11459,13 @@ function renderExplorer(){
 CHG.exF=v=>{ EX.from=v; EX.sel=null; exLoad(); }; CHG.exT=v=>{ EX.to=v; EX.sel=null; exLoad(); };
 CHG.exCmp=v=>{ EX.cmp=v; exLoad(); }; CHG.exCF=v=>{ EX.cfrom=v; exLoad(); }; CHG.exCT=v=>{ EX.cto=v; exLoad(); };
 CHG.exFF=(v,t)=>{ EX.ff[t.dataset.k]=v||""; EX.sel=null; render(); };
-ACT.exFFClear=()=>{ Object.keys(EX.ff).forEach(k=>EX.ff[k]=""); EX.qk=null; EX.q=""; EX.sel=null; render(); };
+ACT.exFFClear=()=>{ Object.keys(EX.ff).forEach(k=>EX.ff[k]=[]); EX.ffOpen=null; EX.qk=null; EX.q=""; EX.sel=null; render(); };
+ACT.exMsOpen=t=>{ EX.ffOpen=EX.ffOpen===t.dataset.k? null : t.dataset.k; render(); };
+ACT.exMsTog=t=>{ const a=EX.ff[t.dataset.k], v=t.dataset.v, i=a.indexOf(v), on=i<0;   // بيتطبق مع «تم»
+  if(on) a.push(v); else a.splice(i,1);
+  setTimeout(()=>{ t.checked=on; },0); };   // الضغطة بتتلغي من المستمع العام، فبنرجّع العلامة بإيدينا
+ACT.exMsNone=t=>{ EX.ff[t.dataset.k]=[]; EX.ffOpen=null; EX.sel=null; render(); };
+ACT.exMsDone=()=>{ EX.ffOpen=null; EX.sel=null; render(); };
 CHG.exDim=v=>{ EX.dim=v; EX.sel=null; EX.sort="spend"; EX.dir=-1; EX.qk=null; EX.q=""; render(); };
 CHG.exQ=v=>{ v=String(v||"").trim(); const k=(EX.qmap||{})[v]; if(k!=null){ EX.qk=k; EX.qdim=EX.dim; EX.q=""; } else { EX.qk=null; EX.q=v; } EX.sel=null; render(); };
 ACT.exPl=t=>{ const id=t.dataset.id, a=EX.plats; if(!id) a.length=0; else { const i=a.indexOf(id); i<0?a.push(id):a.splice(i,1); } render(); };
