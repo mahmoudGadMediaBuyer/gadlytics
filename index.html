@@ -7700,13 +7700,14 @@ async function siteSample(turns,opts){ opts=opts||{};
   throw {code:"loop",message:L("المساعد لف كتير من غير ما يوصل لإجابة — اسأل بشكل أدق.","The assistant looped without an answer — try a narrower question.")};
 }
 siteSample.limits=async()=>({tools:{maxCount:10},images:false});
-if(window.SUPA_DB&&!window.claude) window.claude={use:async n=>n==="sample"&&window.SUPA_DB&&SUPA_DB.client? siteSample : null};
 async function aiInit(){
   if(AI.ready!==null) return AI.ready;
   AI.ready=(async()=>{
     try{
-      if(!window.claude||typeof claude.use!=="function") return null;
-      const s=await claude.use("sample"); if(!s) return null;
+      let s=null;
+      if(window.claude&&typeof claude.use==="function") s=await claude.use("sample");
+      else if(window.SUPA_DB&&SUPA_DB.client) s=siteSample;   // نسخة الموقع: المساعد عن طريق دالة «ai» في Supabase
+      if(!s) return null;
       try{ AI.limits=await s.limits(); }catch(e){ AI.limits=null; }
       return s;
     }catch(e){ return null; }
