@@ -2943,7 +2943,19 @@ async function wipeDemo(){
   saveCfg(); rebuildFacts(); return ids.length;
 }
 
-function renderOverview(){ return renderSections("overview"); }
+/* «نظرة عامة» = الملخص اليومي + الأرقام + الاستنتاجات في شاشة واحدة:
+   النهارده ← ملخص اليوم لحد دلوقتي، امبارح ← تقرير الإقفال، وتحت دايماً أرقام الفترة وكل الاستنتاجات */
+function renderOverview(){
+  const [from,to]=resolveRange(), T=todayISO(), Y=addDays(T,-1), ctx={from:from,to:to,cmp:resolveCmp(from,to)};
+  let top="";
+  try{ if(from===to&&to===T) top=secBrief({type:"brief",title:L("ملخص النهارده","Today's brief"),date:T},ctx);
+       else if(from===to&&to===Y) top=secEod({type:"eod",title:L("تقرير إقفال امبارح","Yesterday's closing report"),date:Y},ctx); }catch(e){ top=""; }
+  const open=S.ovMore!==false;
+  const more='<div class="card ov-more"><div class="card-h"><div class="card-t">'+esc(L("كل الاستنتاجات والتحليل","All insights & analysis"))+"</div>"+
+    '<div class="card-x"><button class="btn btn-s" data-a="ovMore">'+esc(open?L("إخفاء","Hide"):L("اعرض","Show"))+"</button></div></div>"+
+    (open? renderInsightsCore()+'<div style="margin-top:14px">'+sectionsBlock("insights",ctx)+"</div>" : "")+"</div>";
+  return (top?'<div style="margin-bottom:14px">'+top+"</div>":"")+renderSections("overview")+'<div style="margin-top:14px">'+more+"</div>"; }
+ACT.ovMore=()=>{ S.ovMore=S.ovMore===false; render(); };
 
 function dimTable(rows,cols,nameFn,colorFn){
   if(!rows.length) return '<div class="empty">مفيش بيانات</div>';
@@ -5511,7 +5523,7 @@ function updateStoreState(){
 /* ══════════════════ 18. الأحداث ══════════════════ */
 /* ACT و CHG اتعرّفوا فوق مع الحالة عشان أي وحدة تقدر تعلّق عليهم */
 
-ACT.go=t=>{ S.edit=false; S.view=t.dataset.v; if(t.dataset.tab) S.setupTab=t.dataset.tab;
+ACT.go=t=>{ S.edit=false; S.view=t.dataset.v; if(S.view==="brief"||S.view==="insights"){ if(S.view==="brief") S.f.preset="today"; S.view="overview"; } if(t.dataset.tab) S.setupTab=t.dataset.tab;
   if(t.dataset.scr) S.adminScreen=t.dataset.scr; refresh(); };
 ACT.stab=t=>{ S.setupTab=t.dataset.t; render(); };
 ACT.togC=t=>{ const i=S.f.clients.indexOf(t.dataset.id);
@@ -10908,8 +10920,8 @@ function navHTML(){
   if(SIMPLE()) return work+perfG+planG+grp(L("الإدارة","Management"),[I.team,I.perf,I.admin])+
     (cs.length?grp(L("شاشاتي","My screens"),cs.map(v=>it(v.id,v.name,"screen"))):"")+modeBar();
   return work+
-    grp(L("متابعة","Monitor"),[it("actions",L("مركز الإجراءات","Action Center")),it("live",L("اليوم مباشر","Live Today")),it("brief",L("الملخص اليومي","Daily brief"))])+
-    grp(L("تحليل","Analyze"),[it("overview",L("نظرة عامة","Overview")),it("compare",L("مقارنة فترات","Compare")),it("explorer",L("المحلل","Analyzer"),"insights"),it("analyze",L("تحليل الحملات","Campaign analysis"),"insights"),it("insights",L("استنتاجات","Insights")),I.rep])+
+    grp(L("متابعة","Monitor"),[it("actions",L("مركز الإجراءات","Action Center")),it("live",L("اليوم مباشر","Live Today"))])+
+    grp(L("تحليل","Analyze"),[it("overview",L("نظرة عامة","Overview")),it("compare",L("مقارنة فترات","Compare")),it("explorer",L("المحلل","Analyzer"),"insights"),it("analyze",L("تحليل الحملات","Campaign analysis"),"insights"),I.rep])+
     grp(L("تشغيل","Operate"),[it("entry",L("إدخال البيانات","Data entry")),it("roster",L("إدارة الحملات","Campaign roster")),I.plans,I.media,I.cr,I.ap,
       it("changes",L("سجل التغييرات","Change log")),it("experiments",L("التجارب","Experiments"))])+
     grp(L("الإدارة","Management"),[I.team,I.perf])+
