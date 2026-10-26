@@ -8537,10 +8537,12 @@ function rosterClient(){
 }
 
 /* ── ملف الحملة من شيت الحملات: أرقام المنصة + طلبات وإيراد خزامى + مقارنة بمتوسط المنصة + اقتراح ── */
-const RC={code:"",plat:"",win:"7d",busy:false,err:"",first:null};
+const RC={code:"",plat:"",win:"7d",from:"",to:"",busy:false,err:"",first:null};
 function rcRange(){ const T=todayISO();
   if(RC.win==="today") return [T,T]; if(RC.win==="yesterday") return [addDays(T,-1),addDays(T,-1)];
-  if(RC.win==="life") return [RC.first||addDays(T,-29),T]; return [addDays(T,-6),T]; }
+  if(RC.win==="life") return [RC.first||addDays(T,-29),T];
+  if(RC.win==="custom"&&RC.from&&RC.to) return RC.from<=RC.to? [RC.from,RC.to] : [RC.to,RC.from];
+  return [addDays(T,-6),T]; }
 async function rcLoad(){ RC.busy=true; RC.err=""; rcPaint();
   try{ if(RC.first==null){ const r=await SUPA_DB.client.from("ad_daily").select("date").eq("camp_no",RC.code).order("date").limit(1);
       const k=await SUPA_DB.client.from("khzama_link_daily").select("date").eq("camp_no",RC.code).order("date").limit(1);
@@ -8549,11 +8551,15 @@ async function rcLoad(){ RC.busy=true; RC.err=""; rcPaint();
   catch(e){ RC.err=e.message==="site-only"? L("ملف الحملة بيقرا من الداتا بيز — افتحه من رابط الموقع.","Opens from the site link only.") : (e.message||String(e)); }
   RC.busy=false; rcPaint(); }
 ACT.rsCamp=t=>{ RC.code=t.dataset.i; RC.plat=t.dataset.p||""; RC.win="7d"; RC.first=null; rcPaint(); rcLoad(); };
-ACT.rcWin=t=>{ RC.win=t.dataset.w; rcLoad(); };
+ACT.rcWin=t=>{ RC.win=t.dataset.w;
+  if(RC.win==="custom"&&!RC.from){ const [a,b]=[addDays(todayISO(),-6),todayISO()]; RC.from=a; RC.to=b; } rcLoad(); };
+CHG.rcF=v=>{ RC.from=v; RC.win="custom"; rcLoad(); }; CHG.rcT=v=>{ RC.to=v; RC.win="custom"; rcLoad(); };
 function rcPaint(){ modal(L("ملف الحملة · ","Campaign file · ")+RC.code,'<div id="rcBody">'+rcBody()+"</div>",""); }
 function rcBody(){
-  const wins=[["today","النهارده","Today"],["yesterday","امبارح","Yesterday"],["7d","آخر ٧ أيام","Last 7 days"],["life","من أول ما اشتغلت","Since launch"]];
-  let h='<div class="chips" style="margin-bottom:12px">'+wins.map(w=>'<button class="chip'+(RC.win===w[0]?" on":"")+'" data-a="rcWin" data-w="'+w[0]+'">'+esc(L(w[1],w[2]))+"</button>").join("")+"</div>";
+  const wins=[["today","النهارده","Today"],["yesterday","امبارح","Yesterday"],["7d","آخر ٧ أيام","Last 7 days"],["life","من أول ما اشتغلت","Since launch"],["custom","مدة تختارها","Custom"]];
+  let h='<div class="chips" style="margin-bottom:12px">'+wins.map(w=>'<button class="chip'+(RC.win===w[0]?" on":"")+'" data-a="rcWin" data-w="'+w[0]+'">'+esc(L(w[1],w[2]))+"</button>").join("")+"</div>"+
+    (RC.win==="custom"?'<div class="row" style="display:flex;gap:10px;align-items:center;margin:-4px 0 12px;flex-wrap:wrap"><label class="fld"><span>'+esc(L("من","From"))+'</span><input class="inp" type="date" data-c="rcF" value="'+esc(RC.from)+'"'+(RC.first?' min="'+esc(RC.first)+'"':"")+' max="'+todayISO()+'"></label>'+
+      '<label class="fld"><span>'+esc(L("إلى","To"))+'</span><input class="inp" type="date" data-c="rcT" value="'+esc(RC.to)+'" max="'+todayISO()+'"></label></div>':"");
   if(RC.err) return h+'<div class="hint">'+esc(RC.err)+"</div>";
   const [a,b]=rcRange(), cur=EX.cache[a+"|"+b];
   if(RC.busy||!cur) return h+'<div class="empty" style="padding:24px">'+esc(L("بحمّل أرقام الحملة…","Loading the campaign…"))+"</div>";
