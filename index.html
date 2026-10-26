@@ -11347,7 +11347,7 @@ function exAliasAdd(al,m){ const disp=v=>{ v=String(v||"").trim(); if(!v) return
   const pair=(code,ar,map)=>{ code=q.get(code); ar=q.get(ar); if(code&&ar&&String(ar).trim()) map[latKey(code)]=disp(ar); };
   pair("prefill_AdvertiserCode","prefill_InfluencerAr",al.inf); pair("prefill_ProductCode","prefill_ProductAr",al.prod); pair("prefill_ProjectCode","prefill_VariationAr",al.vr); }
 function exNorm(raw,map){ if(raw==null) return null; raw=String(raw).trim(); if(!raw) return null; const al=EX.alias; if(!al) return raw;
-  if(raw.indexOf("~")>=0){ const u=[...new Set(raw.split("~").map(x=>exNorm(x,map)).filter(Boolean))]; return u.join(" + "); }
+  if(raw.indexOf("~")>=0){ const u=[...new Set(raw.split("~").map(x=>exNorm(x,map)).filter(Boolean))].sort((x,y)=>x.localeCompare(y,"ar")); return u.join(" + "); }
   if(/[\u0600-\u06FF]/.test(raw)) return al.disp[arKey(raw)]||raw;
   return (map&&map[latKey(raw)])||raw; }
 const exInf=r=>exNorm(r,EX.alias&&EX.alias.inf), exProd=r=>exNorm(r,EX.alias&&EX.alias.prod), exVar=r=>exNorm(r,EX.alias&&EX.alias.vr);
