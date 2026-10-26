@@ -9544,7 +9544,8 @@ function renderMe(){
   const t=todayISO(), y=addDays(t,-1), C=CURR[S.cfg.settings.currency]||"";
   const ov=id=>({clients:[id],platforms:[],campaign:""});
   const rows=S.cfg.clients.map(c=>({c:c,v:aggFacts(factsIn(t,t,ov(c.id))),p:aggFacts(factsIn(y,y,ov(c.id)))}));
-  const tot=rows.reduce((s,r)=>{ s.sp+=+r.v.spend||0; s.rv+=+r.v.revenue||0; return s; },{sp:0,rv:0});
+  const tot=rows.reduce((s,r)=>{ s.sp+=+r.v.spend||0; s.rv+=+r.v.revenue||0; s.ysp+=+r.p.spend||0; s.yrv+=+r.p.revenue||0; return s; },{sp:0,rv:0,ysp:0,yrv:0});
+  const yRo=tot.ysp? tot.yrv/tot.ysp : null;
   const mt=myTasks(), late=mt.filter(taskLate).length, men=myMentions(), unread=chReady()?chTotalUnread():0;
   const tile=(l,v,sub,col)=>'<div class="card kpi"><div class="kpi-l">'+esc(l)+'</div><div class="kpi-v"'+(col?' style="color:'+col+'"':"")+">"+v+'</div><div class="kpi-f"><span class="dlt-c">'+esc(sub||"")+"</span></div></div>";
   let h='<div class="me-hero">'+(ME.id?pav(ME.id,52):"")+'<div><div class="me-hi">'+esc(L("أهلاً ","Hi "))+esc(ME.id?pname(ME.id):"")+"</div>"+
@@ -9553,6 +9554,9 @@ function renderMe(){
     tile(L("عملائي","My clients"),String(S.cfg.clients.length),"")+
     tile(L("صرف النهارده","Spend today"),fcompact(tot.sp,0)+" "+esc(C),"")+
     tile(L("إيراد النهارده","Revenue today"),fcompact(tot.rv,0)+" "+esc(C),tot.sp?"ROAS "+fnum(tot.rv/tot.sp,2)+"x":"")+
+    tile(L("صرف امبارح","Spend yesterday"),fcompact(tot.ysp,0)+" "+esc(C),fdate(y))+
+    tile(L("إيراد امبارح","Revenue yesterday"),fcompact(tot.yrv,0)+" "+esc(C),L("من خزامى","from Khzama"))+
+    tile(L("ROAS امبارح","ROAS yesterday"),yRo==null?"—":fnum(yRo,2)+"x",tot.sp&&yRo!=null?L("النهارده ","today ")+fnum(tot.rv/tot.sp,2)+"x":"",yRo==null?"":yRo>=3?"var(--good)":yRo<1.5?"var(--bad)":"")+
     tile(L("مهامي المفتوحة","My open tasks"),String(mt.length),late?late+L(" متأخرة"," overdue"):L("مفيش متأخر","none overdue"),late?"var(--bad)":"")+
     tile(L("رسايل مش مقروءة","Unread messages"),String(unread),men.length?men.length+L(" منشن"," mentions"):"",unread?"var(--violet)":"")+"</div>";
   h+='<div class="grid me-grid">'+briefCard();
