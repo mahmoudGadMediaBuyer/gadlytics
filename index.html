@@ -7901,6 +7901,8 @@ document.head.insertAdjacentHTML("beforeend","<style>"+`
 .md-s .n{font-family:var(--f-num);font-size:20px;font-weight:700}
 .md-s .l{font-size:11px;color:var(--ink-2)}
 .cmp-col{min-width:150px}
+.rs-id.gone{outline:1.5px solid var(--bad);outline-offset:-1px}
+.rc-dec{border:1.5px solid;border-radius:12px;padding:10px 12px;margin:6px 0}
 .cmp-chip{display:flex;align-items:center;gap:6px;padding:5px 9px;border-radius:8px;margin-bottom:5px;
   border:1px solid var(--line);background:var(--glass);font-size:12px}
 .cmp-chip .id{font-family:var(--f-num);font-weight:600;direction:ltr}
@@ -8534,6 +8536,78 @@ function rosterClient(){
   return S.cfg.clients.length? S.cfg.clients[0].id : null;
 }
 
+/* ── ملف الحملة من شيت الحملات: أرقام المنصة + طلبات وإيراد خزامى + مقارنة بمتوسط المنصة + اقتراح ── */
+const RC={code:"",plat:"",win:"7d",busy:false,err:"",first:null};
+function rcRange(){ const T=todayISO();
+  if(RC.win==="today") return [T,T]; if(RC.win==="yesterday") return [addDays(T,-1),addDays(T,-1)];
+  if(RC.win==="life") return [RC.first||addDays(T,-29),T]; return [addDays(T,-6),T]; }
+async function rcLoad(){ RC.busy=true; RC.err=""; rcPaint();
+  try{ if(RC.first==null){ const r=await SUPA_DB.client.from("ad_daily").select("date").eq("camp_no",RC.code).order("date").limit(1);
+      const k=await SUPA_DB.client.from("khzama_link_daily").select("date").eq("camp_no",RC.code).order("date").limit(1);
+      const ds=[(r.data||[])[0],(k.data||[])[0]].filter(Boolean).map(x=>x.date).sort(); RC.first=ds[0]||""; }
+    const [a,b]=rcRange(); await exFetch(a,b); }
+  catch(e){ RC.err=e.message==="site-only"? L("ملف الحملة بيقرا من الداتا بيز — افتحه من رابط الموقع.","Opens from the site link only.") : (e.message||String(e)); }
+  RC.busy=false; rcPaint(); }
+ACT.rsCamp=t=>{ RC.code=t.dataset.i; RC.plat=t.dataset.p||""; RC.win="7d"; RC.first=null; rcPaint(); rcLoad(); };
+ACT.rcWin=t=>{ RC.win=t.dataset.w; rcLoad(); };
+function rcPaint(){ modal(L("ملف الحملة · ","Campaign file · ")+RC.code,'<div id="rcBody">'+rcBody()+"</div>",""); }
+function rcBody(){
+  const wins=[["today","النهارده","Today"],["yesterday","امبارح","Yesterday"],["7d","آخر ٧ أيام","Last 7 days"],["life","من أول ما اشتغلت","Since launch"]];
+  let h='<div class="chips" style="margin-bottom:12px">'+wins.map(w=>'<button class="chip'+(RC.win===w[0]?" on":"")+'" data-a="rcWin" data-w="'+w[0]+'">'+esc(L(w[1],w[2]))+"</button>").join("")+"</div>";
+  if(RC.err) return h+'<div class="hint">'+esc(RC.err)+"</div>";
+  const [a,b]=rcRange(), cur=EX.cache[a+"|"+b];
+  if(RC.busy||!cur) return h+'<div class="empty" style="padding:24px">'+esc(L("بحمّل أرقام الحملة…","Loading the campaign…"))+"</div>";
+  const mine=r=>(r.camp_no||"")===RC.code;
+  const rows=exScope(cur,"campaign").filter(mine), kz=(cur.kz||[]).filter(mine);
+  const plat=RC.plat||(rows[0]||kz[0]||{}).platform||"";
+  const sumKz=z=>({n:z.reduce((s,k)=>s+(+k.donations||0),0),a:z.reduce((s,k)=>s+(+k.amount||0),0)});
+  const v=exUseKz(exAgg(rows),sumKz(kz));
+  const pr=exScope(cur,"campaign").filter(r=>r.platform===plat), pk=(cur.kz||[]).filter(k=>k.platform===plat&&["meta","tiktok","snap"].indexOf(k.platform)>=0);
+  const avg=exUseKz(exAgg(pr),sumKz(pk));
+  const name=(rows.find(r=>r.campaign_name)||{}).campaign_name||"";
+  const days=new Set(rows.filter(r=>+r.spend>0).map(r=>r.date)).size;
+  h+='<div class="hint" style="margin-bottom:10px">'+esc((platById(plat)||{}).name||plat)+(name?" · "+name:"")+" · "+esc(fdate(a)+" — "+fdate(b))+(RC.first?" · "+esc(L("أول يوم: ","First day: ")+fdate(RC.first)):"")+"</div>";
+  if(!v.spend&&!v.purchases) return h+'<div class="empty" style="padding:24px">'+esc(L("مفيش صرف ولا طلبات للحملة دي في الفترة دي.","No spend or orders for this campaign in this period."))+"</div>";
+  /* الاقتراح */
+  let dec, why=[];
+  const ro=v.roas||0, ar=avg.roas||0;
+  if(v.spend<300||days<2){ dec=["لسه بدري — استنى","Too early — wait","#888780"]; why.push(L("صرفت "+fnum(v.spend,0)+" في "+days+" يوم بس — الأرقام لسه مش كفاية للحكم.","Only "+fnum(v.spend,0)+" spent over "+days+" day(s).")); }
+  else if(ar&&ro>=ar*1.2&&ro>=2){ dec=["زوّد الميزانية","Scale up","#1D9E75"]; why.push(L("ROAS "+ro.toFixed(2)+"x أعلى من متوسط المنصة "+ar.toFixed(2)+"x بـ "+fnum((ro/ar-1)*100,0)+"%.","ROAS above platform average.")); }
+  else if(!ar||ro>=ar*0.85){ dec=["سيبها شغالة","Keep running","#1D9E75"]; why.push(L("ROAS "+ro.toFixed(2)+"x قريب من متوسط المنصة "+(ar?ar.toFixed(2)+"x":"—")+".","ROAS near platform average.")); }
+  else if(ro>=ar*0.6){ dec=["راقبها","Watch","#BA7517"]; why.push(L("ROAS "+ro.toFixed(2)+"x أقل من متوسط المنصة "+ar.toFixed(2)+"x — جرّب كريتيف أو استهداف تاني قبل ما توقفها.","Below average — try new creative before stopping.")); }
+  else { dec=["وقّفها","Stop","#E24B4A"]; why.push(L("ROAS "+ro.toFixed(2)+"x أقل بكتير من متوسط المنصة "+ar.toFixed(2)+"x على صرف "+fnum(v.spend,0)+".","Far below platform average.")); }
+  /* اتجاه آخر ٣ أيام */
+  const byD={}; rows.forEach(r=>{ (byD[r.date]=byD[r.date]||{s:0,r:0}).s+=+r.spend||0; }); kz.forEach(k=>{ (byD[k.date]=byD[k.date]||{s:0,r:0}).r+=+k.amount||0; });
+  const dk=Object.keys(byD).sort();
+  if(dk.length>=5){ const last=dk.slice(-3), early=dk.slice(0,-3), rr=ks=>{ let s=0,r=0; ks.forEach(k=>{ s+=byD[k].s; r+=byD[k].r; }); return s? r/s : null; };
+    const l=rr(last), e=rr(early); if(l!=null&&e!=null&&e>0){ const ch=(l/e-1)*100; if(Math.abs(ch)>=15) why.push(L("آخر ٣ أيام الـ ROAS "+(ch>0?"طالع":"نازل")+" "+fnum(Math.abs(ch),0)+"% عن اللي قبلهم ("+l.toFixed(2)+"x مقابل "+e.toFixed(2)+"x).","Last 3 days ROAS "+(ch>0?"up":"down")+" "+fnum(Math.abs(ch),0)+"%.")); } }
+  /* أضعف خطوة في القمع مقارنة بالمنصة */
+  const steps=[["r_click_vc","نقرة ← مشاهدة المنتج","Click → view"],["r_vc_atc","مشاهدة ← سلة","View → cart"],["r_atc_ic","سلة ← دفع","Cart → checkout"],["cvr","نقرة ← طلب","Click → order"]];
+  let worst=null; steps.forEach(st=>{ const x=v[st[0]], y=avg[st[0]]; if(x!=null&&y){ const g=x/y; if(!worst||g<worst.g) worst={g:g,st:st,x:x,y:y}; } });
+  if(worst&&worst.g<0.75) why.push(L("أضعف خطوة: "+worst.st[1]+" "+fnum(worst.x,1)+"% مقابل "+fnum(worst.y,1)+"% في المنصة.","Weakest step: "+worst.st[2]+"."));
+  h+='<div class="rc-dec" style="border-color:'+dec[2]+'"><b style="color:'+dec[2]+'">'+esc(L("الاقتراح: ","Suggestion: ")+L(dec[0],dec[1]))+"</b>"+why.map(w=>'<div class="hint" style="margin-top:4px">• '+esc(w)+"</div>").join("")+
+    '<div class="hint" style="margin-top:6px;opacity:.7">'+esc(L("اقتراح بس — القرار والتنفيذ عندك.","A suggestion only — the decision is yours."))+"</div></div>";
+  /* الأرقام مقابل متوسط المنصة */
+  const K=[["spend","الصرف","Spend","cur",0],["impressions","الظهور","Impressions","n",0],["clk","النقرات","Clicks","n",0],["ctr","CTR","CTR","pct",0],["cpm","CPM","CPM","cur2",1],["cpc","CPC","CPC","cur2",1],
+    ["purchases","الطلبات (خزامى)","Orders (Khzama)","n",0],["revenue","الإيراد (خزامى)","Revenue (Khzama)","cur",0],["roas","ROAS","ROAS","x",0],["cpa","تكلفة الطلب","CPA","cur2",1],["aov","متوسط الطلب","AOV","cur",0],["cvr","نقرة ← طلب","Click → order","pct",0]];
+  const tot=new Set(["spend","impressions","clk","purchases","revenue"]);
+  h+='<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:12px 0">'+K.map(k=>{ const x=v[k[0]], y=avg[k[0]];
+      let cmp=""; if(!tot.has(k[0])&&x!=null&&y){ const g=(x/y-1)*100, good=k[4]? g<0 : g>0; cmp='<small class="'+(good?"ex-up":"ex-dn")+'">'+(g>0?"▲":"▼")+fnum(Math.abs(g),0)+"%</small> "; }
+      return '<div class="bf-k"><div class="l">'+esc(L(k[1],k[2]))+'</div><div class="v" style="font-size:18px">'+exFmt(x,k[3])+'</div><div class="l">'+cmp+(tot.has(k[0])?"":esc(L("المنصة ","platform "))+exFmt(y,k[3]))+"</div></div>"; }).join("")+"</div>";
+  /* يوم بيوم */
+  if(dk.length>1){ const W=640,H=110,bw=W/dk.length,top=Math.max(1,...dk.map(d=>Math.max(byD[d].s,byD[d].r)));
+    h+='<b>'+esc(L("يوم بيوم","Day by day"))+'</b> <small class="muted"><span style="color:#465FFF">■</span> '+esc(L("الصرف","Spend"))+' · <span style="color:#1D9E75">■</span> '+esc(L("إيراد خزامى","Khzama revenue"))+"</small>"+
+      '<svg viewBox="0 0 '+W+" "+(H+16)+'" style="width:100%;max-height:150px;margin:6px 0 12px">'+dk.map((d,i)=>{ const s1=byD[d].s/top*H, r1=byD[d].r/top*H, x0=i*bw;
+        return '<rect x="'+(x0+bw*.1).toFixed(1)+'" y="'+(H-s1).toFixed(1)+'" width="'+(bw*.38).toFixed(1)+'" height="'+s1.toFixed(1)+'" fill="#465FFF" rx="2"><title>'+fdate(d)+" · "+fnum(byD[d].s,0)+"</title></rect>"+
+          '<rect x="'+(x0+bw*.52).toFixed(1)+'" y="'+(H-r1).toFixed(1)+'" width="'+(bw*.38).toFixed(1)+'" height="'+r1.toFixed(1)+'" fill="#1D9E75" rx="2"><title>'+fdate(d)+" · "+fnum(byD[d].r,0)+"</title></rect>"+
+          (dk.length<=21||i%Math.ceil(dk.length/21)===0?'<text x="'+(x0+bw/2).toFixed(1)+'" y="'+(H+12)+'" font-size="9" text-anchor="middle" fill="currentColor" opacity=".55">'+d.slice(5)+"</text>":""); }).join("")+"</svg>"; }
+  /* الفيديوهات */
+  const vr=exScope(cur,"creative").filter(mine), cm=exCrMap(vr), vg=exGroup(vr,"creative"), vk=exKzGroup(kz,"creative",cm); Object.keys(vk).forEach(k=>{ if(!vg[k]) vg[k]=[]; });
+  const vl=Object.keys(vg).filter(k=>k!=="—").map(k=>({k:k,v:exUseKz(exAgg(vg[k]),vk[k])})).sort((x,y)=>y.v.spend-x.v.spend).slice(0,10);
+  if(vl.length) h+='<b>'+esc(L("الفيديوهات اللي فيها","Videos in it"))+'</b><div class="tw"><table class="an-tbl"><tr><th>'+esc(L("الفيديو","Video"))+"</th><th>"+esc(L("المعلن","Creator"))+'</th><th class="num">'+esc(L("الصرف","Spend"))+'</th><th class="num">'+esc(L("الطلبات","Orders"))+'</th><th class="num">ROAS</th></tr>'+
+    vl.map(x=>'<tr><td class="num">'+esc(x.k)+"</td><td>"+esc(exAttr(x.k,"advertiser")||(cm[x.k]||{}).influencer||"—")+'</td><td class="num">'+exFmt(x.v.spend,"cur")+'</td><td class="num">'+exFmt(x.v.purchases,"n")+'</td><td class="num" style="color:'+(x.v.roas!=null&&ar&&x.v.roas>=ar?"var(--good)":"var(--bad)")+'">'+exFmt(x.v.roas,"x")+"</td></tr>").join("")+"</table></div>";
+  return h+'<div class="hint" style="margin-top:10px">'+esc(L("الصرف وباقي الأرقام من المنصة، والطلبات والإيراد والـ ROAS والـ CPA من خزامى. «المنصة» = متوسط كل حملات نفس المنصة في نفس الفترة.","Spend and delivery from the platform; orders, revenue, ROAS and CPA from Khzama. «platform» = average of all campaigns on the same platform in the same period."))+"</div>"; }
+
 function renderRoster(){
   if(!S.cfg.clients.length) return emptyBox(L("محتاج تضيف عميل الأول.","Add a client first."),
     '<button class="btn btn-p" data-a="go" data-v="admin" data-tab="clients">'+
@@ -8615,14 +8689,14 @@ function renderRoster(){
       days.map(d=>{
         const ids=rosterIds(cid,d,p.id), prev=rosterIds(cid,addDays(d,-1),p.id);
         const shown=q? ids.filter(x=>String(x).indexOf(q)>=0) : ids;
-        const nxt=addDays(d,1), nxtIds=rosterIds(cid,nxt,p.id);
+        const nxt=addDays(d,1), nxtIds=rosterIds(cid,nxt,p.id), nxtHas=(S.roster||[]).some(x=>x.clientId===cid&&x.date===nxt);
         const allNext=shown.length>0&&shown.every(x=>nxtIds.includes(x));
         return '<td class="rs-c'+(d===focus?" rs-now":"")+'">'+
           shown.map(id=>{
             const carried=prev.includes(id);
             const already=nxtIds.includes(id);
-            return '<div class="rs-id '+(carried?"keep":"new")+(q&&String(id).indexOf(q)>=0?" hit":"")+
-              '"><span>'+esc(id)+"</span>"+
+            return '<div class="rs-id '+(carried?"keep":"new")+(nxtHas&&!already?" gone":"")+(q&&String(id).indexOf(q)>=0?" hit":"")+
+              '"'+(nxtHas&&!already?' title="'+esc(L("اشتغلت اليوم ده ومترحّلتش لليوم اللي بعده","Ran this day and didn't carry to the next"))+'"':"")+'><span data-a="rsCamp" data-i="'+esc(id)+'" data-p="'+p.id+'" style="cursor:pointer;text-decoration:underline dotted" title="'+esc(L("افتح ملف الحملة","Open the campaign file"))+'">'+esc(id)+"</span>"+
               '<button class="rs-nx'+(already?" done":"")+'" data-a="rsNext" data-p="'+p.id+
                 '" data-i="'+esc(id)+'" data-d="'+esc(d)+'" title="'+
                 esc(already? L("موجودة بالفعل في اليوم اللي بعده","Already on the next day")
