@@ -12254,7 +12254,7 @@ function rfCard(){ if(!(window.SUPA_DB&&SUPA_DB.client)) return "";
   if(!RF.fresh&&!RF.loading) setTimeout(rfFresh,0);
   const F=RF.fresh||{}, Y=addDays(todayISO(),-1);
   const day=(lab,d)=>{ const late=d&&d<addDays(Y,-1), none=!d;
-    return '<div class="rf-s'+(late||none?" late":"")+'"><span>'+esc(lab)+"</span><b>"+(d?esc(fdate(String(d).slice(0,10))):"—")+"</b>"+(late?'<small>'+esc(L("متأخر ","behind ")+diffDays(String(d).slice(0,10),Y)+L(" يوم"," day(s)"))+"</small>":"")+"</div>"; };
+    return '<div class="rf-s'+(late||none?" late":"")+'"><span>'+esc(lab)+"</span><b>"+(d?esc(fdate(String(d).slice(0,10))):"—")+"</b>"+(late?'<small>'+esc(L("متأخر ","behind ")+rfDays(diffDays(String(d).slice(0,10),Y)))+"</small>":"")+"</div>"; };
   const pr=F.pr, pend=pr&&pr.status==="pending";
   return '<div class="card rf-card"><div class="rf-top"><div><div class="card-t">'+esc(L("تحديث السيستم","System refresh"))+'</div><div class="hint">'+
       esc(L("بضغطة: المكتبة من Airtable، وكل الأرقام من الداتا بيز، وطلب سحب جديد من المنصات وخزامى.","One click: library from Airtable, every number reloaded, and a fresh pull requested from the platforms and Khzama."))+"</div></div>"+
@@ -12264,11 +12264,12 @@ function rfCard(){ if(!(window.SUPA_DB&&SUPA_DB.client)) return "";
     (pend?'<div class="hint rf-pend">⏳ '+esc(L("فيه طلب سحب من المنصات وخزامى من ","A platform & Khzama pull was requested ")+rfAgo(pr.at)+L(" — Claude بيسحبه مع السحب الجاي، أو قوله «اسحب دلوقتي».",". Claude runs it with the next pull, or tell Claude «pull now»."))+"</div>":
       pr&&pr.done_at?'<div class="hint">✓ '+esc(L("آخر طلب سحب اتنفّذ ","Last pull request done ")+rfAgo(pr.done_at))+"</div>":"")+
     (RF.log.length&&!RF.busy?'<div class="rf-log">'+RF.log.map(x=>'<span class="'+(x[0]==="ok"?"ok":"bad")+'">'+(x[0]==="ok"?"✓ ":"✕ ")+esc(x[1])+"</span>").join("")+"</div>":"")+"</div>"; }
-function rfAgo(ts){ if(!ts) return ""; const m=Math.round((Date.now()-ts)/60000); return m<60? L(m+" دقيقة",m+" min ago") : m<1440? L(Math.round(m/60)+" ساعة",Math.round(m/60)+" h ago") : L(Math.round(m/1440)+" يوم",Math.round(m/1440)+" d ago"); }
+function rfDays(n){ return L(n===1?"يوم":n===2?"يومين":n<=10?n+" أيام":n+" يوم",n+" day"+(n===1?"":"s")); }
+function rfAgo(ts){ if(!ts) return ""; const m=Math.round((Date.now()-ts)/60000); return m<1? L("لحظات","moments ago") : m<60? L(m+" دقيقة",m+" min ago") : m<1440? L(Math.round(m/60)+" ساعة",Math.round(m/60)+" h ago") : L(Math.round(m/1440)+" يوم",Math.round(m/1440)+" d ago"); }
 ACT.rfAll=async()=>{ if(RF.busy||!(window.SUPA_DB&&SUPA_DB.client)) return; RF.busy=true; RF.log=[];
   const step=async(lab,fn)=>{ RF.step=lab; render(); try{ const m=await fn(); RF.log.push(["ok",lab+(m?" — "+m:"")]); }catch(e){ RF.log.push(["bad",lab+" — "+((e&&e.message)||e)]); } };
   await step(L("مكتبة الكريتيف من Airtable","Creative library from Airtable"),async()=>{ const r=await SUPA_DB.client.functions.invoke("media-sync",{body:{}});
-    if(r.error||(r.data&&r.data.error)) throw new Error((r.data&&r.data.error)||r.error.message); return fnum(r.data.ok,0)+L(" فيديو"," videos"); });
+    if(r.error||(r.data&&r.data.error)) throw new Error((r.data&&r.data.error)||r.error.message); return fnum(r.data.ok,0)+L(" سجل"," records"); });
   await step(L("كل الأرقام من الداتا بيز","All numbers from the database"),async()=>{
     EX.cache={}; EX.md=null; MX.cache={}; FT.data=null; LB.data=null; MA.data=null; EXV.list=null; if(typeof SB!=="undefined"){ SB.data={}; SB.periods=null; }
     await reload(); try{ S.changes=await Store.getColl("changes"); }catch(e){} });
