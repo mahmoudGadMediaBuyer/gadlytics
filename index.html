@@ -316,6 +316,8 @@ textarea.inp{resize:vertical;min-height:96px;font-family:var(--f-num);font-size:
 /* ── الفريق والمجتمع ── */
 .pav{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;color:#fff;font-weight:700;flex:none;object-fit:cover;vertical-align:middle}
 .nav-me{display:flex;align-items:center;gap:10px;padding:10px 10px 12px;margin:-6px 0 10px;border-bottom:1px solid var(--line)}
+.nav-me[data-a],.tb-me[data-a],.rail-me[data-a]{cursor:pointer;border-radius:10px}.nav-me[data-a]:hover,.tb-me[data-a]:hover,.rail-me[data-a]:hover{background:var(--bg-2,rgba(127,127,127,.08))}
+.pf-c{width:20px;height:20px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}.pf-c.on{border-color:var(--ink);box-shadow:0 0 0 2px var(--card,#fff) inset}
 .nav-me b{display:block;font-size:13px}.nav-me small{display:block;font-size:11px;color:var(--ink-3)}
 .chat{display:grid;grid-template-columns:260px minmax(0,1fr);height:calc(100vh - 190px);min-height:520px;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--ground-1)}
 .ch-side{border-inline-end:1px solid var(--line);padding:14px 10px;overflow:auto;background:var(--ground-2)}
@@ -9369,6 +9371,7 @@ function pname(id){
   const p=PROF[id], m=TEAM.members[id];
   if(p&&p.name) return p.name;
   if(m&&m.email) return String(m.email).split("@")[0];
+  if(id===ME.id&&ME.email) return String(ME.email).split("@")[0];
   if(id===ME.id) return L("أنت","You");
   if(id===TEAM.ownerId) return L("المالك","Owner");
   return L("عضو","Member");
@@ -9445,7 +9448,7 @@ async function initIdentity(){
     try{ USER=await Promise.race([claude.use("user"),new Promise(r=>setTimeout(()=>r(null),6000))]); }catch(e){ USER=null; }
   }
   if(USER){ try{ const me=await USER.me(); ME.id=me.id||null; ME.isOwner=!!me.isOwner; ME.canEdit=!!me.canEdit; ME.email=me.email||null; }catch(e){} }
-  else ME.id="local-owner";
+  else { ME.id="local-owner"; await loadSiteProfile(); }
   try{ await withTimeout(loadTeam(),10000,"meta"); }catch(e){}
   resolveRole();
   if(ME.role==="owner"&&ME.id&&TEAM.ownerId!==ME.id){ TEAM.ownerId=ME.id; saveTeam(); }
@@ -9489,6 +9492,78 @@ async function loadProfiles(){
   } finally { _profBusy=false; }
 }
 function schedProfiles(){ clearTimeout(_profT); _profT=setTimeout(()=>loadProfiles().then(ch=>{ if(ch) render(); }),350); }
+
+/* ── ملفي الشخصي (نسخة الموقع): الاسم والصورة والبيانات في docs/profiles/<uid> ── */
+let SITE_UID=null;
+function meSub(){ const p=PROF[ME.id]; return (p&&p.title)||roleName(ROLE_NAMES[ME.role]?ME.role:"member"); }
+function meVis(){ return !!ME.id&&(!!USER||!!SITE_UID); }
+async function loadSiteProfile(){
+  if(!window.SUPA_DB||!SUPA_DB.client) return;
+  try{
+    const u=((await SUPA_DB.client.auth.getUser()).data||{}).user; if(!u) return;
+    SITE_UID=u.id; ME.email=u.email||null;
+    const p=(await RT.get("profiles/"+u.id).catch(()=>null))||{};
+    PROF[ME.id]={name:p.name||"",avatarUrl:p.avatar||"",color:p.color||"",email:u.email||null,title:p.title||"",phone:p.phone||"",bio:p.bio||""};
+  }catch(e){}
+}
+let PF=null;
+function pfAvatar(){ const b=$("#pfAv"); if(!b) return;
+  b.innerHTML=PF.avatar? '<img class="pav" src="'+esc(PF.avatar)+'" alt="" style="width:84px;height:84px">'
+    : '<span class="pav" style="width:84px;height:84px;font-size:34px;background:'+esc(PF.color||pcolor(ME.id))+'">'+esc((PF.name||pname(ME.id)).slice(0,1))+"</span>"; }
+ACT.profEdit=()=>{
+  if(!SITE_UID) return toast(L("الاسم والصورة هنا جايين من حسابك على Claude","Name and photo come from your Claude account here"));
+  const p=PROF[ME.id]||{}; PF={name:p.name||"",avatar:p.avatarUrl||"",color:p.color||"",title:p.title||"",phone:p.phone||"",bio:p.bio||""};
+  const COLS=["#1D9E75","#185FA5","#7F77DD","#D85A30","#BA7517","#D4537E","#0F6E56","#5F5E5A"];
+  modal(L("ملفي الشخصي","My profile"),
+    '<div class="form">'+
+    '<div style="display:flex;align-items:center;gap:16px;margin-bottom:14px"><div id="pfAv"></div><div style="display:flex;flex-direction:column;gap:8px">'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-s" data-a="pfPick">'+esc(L("📷 غيّر الصورة","📷 Change photo"))+'</button><button class="btn btn-s" data-a="pfNoPic">'+esc(L("شيل الصورة","Remove photo"))+"</button></div>"+
+      '<div style="display:flex;gap:6px;align-items:center"><span class="hint" style="margin:0">'+esc(L("لون الحروف:","Initials colour:"))+"</span>"+
+        COLS.map(c=>'<button class="pf-c'+(PF.color===c?" on":"")+'" data-a="pfColor" data-c="'+c+'" style="background:'+c+'" aria-label="'+c+'"></button>').join("")+"</div>"+
+    "</div></div>"+
+    '<div class="frow"><div class="fld"><label>'+esc(L("الاسم","Name"))+'</label><input class="inp" id="pfN" maxlength="60" value="'+esc(PF.name)+'" placeholder="'+esc(L("اسمك اللي هيظهر","Your display name"))+'"></div>'+
+      '<div class="fld"><label>'+esc(L("المسمى الوظيفي","Job title"))+'</label><input class="inp" id="pfT" maxlength="60" value="'+esc(PF.title)+'" placeholder="'+esc(L("ميديا باير","Media buyer"))+'"></div></div>'+
+    '<div class="frow"><div class="fld"><label>'+esc(L("الإيميل (للدخول)","Email (sign-in)"))+'</label><input class="inp num" value="'+esc(ME.email||"")+'" disabled style="direction:ltr"></div>'+
+      '<div class="fld"><label>'+esc(L("الموبايل","Phone"))+'</label><input class="inp num" id="pfP" maxlength="25" value="'+esc(PF.phone)+'" placeholder="+9665…" style="direction:ltr"></div></div>'+
+    '<div class="fld"><label>'+esc(L("نبذة","About"))+'</label><textarea class="inp" id="pfB" rows="2" maxlength="300">'+esc(PF.bio)+"</textarea></div>"+
+    '<details style="margin-top:6px"><summary style="cursor:pointer;font-weight:600">'+esc(L("تغيير الباسورد","Change password"))+"</summary>"+
+      '<div class="frow" style="margin-top:10px"><div class="fld"><label>'+esc(L("الباسورد الجديد","New password"))+'</label><input class="inp" id="pfW1" type="password" autocomplete="new-password" style="direction:ltr"></div>'+
+      '<div class="fld"><label>'+esc(L("اكتبه تاني","Repeat it"))+'</label><input class="inp" id="pfW2" type="password" autocomplete="new-password" style="direction:ltr"></div></div>'+
+      '<div class="hint">'+esc(L("8 حروف على الأقل. سيبه فاضي لو مش عايز تغيّره.","At least 8 characters. Leave empty to keep it."))+"</div></details>"+
+    "</div>",
+    '<button class="btn" data-a="pfOut" style="margin-inline-end:auto">'+esc(L("تسجيل خروج","Sign out"))+'</button><button class="btn" data-a="mclose">'+esc(L("إلغاء","Cancel"))+'</button><button class="btn btn-p" data-a="pfSave">'+esc(L("حفظ","Save"))+"</button>");
+  pfAvatar();
+};
+ACT.pfColor=t=>{ PF.color=t.dataset.c; document.querySelectorAll(".pf-c").forEach(b=>b.classList.toggle("on",b.dataset.c===PF.color)); pfAvatar(); };
+ACT.pfNoPic=()=>{ PF.avatar=""; pfAvatar(); };
+ACT.pfPick=()=>{ // الـ input برّه الصفحة عشان مايتمنعش من الـ click delegation
+  const i=document.createElement("input"); i.type="file"; i.accept="image/*";
+  i.onchange=()=>{ const f=i.files&&i.files[0]; if(!f) return;
+    if(!/^image\//.test(f.type)) return toast(L("اختار صورة","Pick an image"),true);
+    const url=URL.createObjectURL(f), img=new Image();
+    img.onload=()=>{ const S2=192, c=document.createElement("canvas"); c.width=c.height=S2;
+      const k=Math.min(img.width,img.height), x=(img.width-k)/2, y=(img.height-k)/2;
+      c.getContext("2d").drawImage(img,x,y,k,k,0,0,S2,S2); URL.revokeObjectURL(url);
+      PF.avatar=c.toDataURL("image/jpeg",0.85); pfAvatar(); };
+    img.onerror=()=>{ URL.revokeObjectURL(url); toast(L("مش قادر أقرا الصورة دي","Couldn't read that image"),true); };
+    img.src=url; };
+  i.click();
+};
+ACT.pfSave=async t=>{
+  const v=id=>(($("#"+id)||{}).value||"").trim();
+  const w1=($("#pfW1")||{}).value||"", w2=($("#pfW2")||{}).value||"";
+  if(w1||w2){ if(w1.length<8) return toast(L("الباسورد لازم 8 حروف على الأقل","Password must be at least 8 characters"),true);
+    if(w1!==w2) return toast(L("الباسوردين مش زي بعض","Passwords don't match"),true); }
+  const d={name:v("pfN"),title:v("pfT"),phone:v("pfP"),bio:v("pfB"),avatar:PF.avatar||"",color:PF.color||"",at:Date.now()};
+  t.disabled=true;
+  try{
+    await RT.set("profiles/"+SITE_UID,d);
+    if(w1){ const r=await SUPA_DB.client.auth.updateUser({password:w1}); if(r.error) throw r.error; }
+  }catch(e){ t.disabled=false; return toast(L("ماتحفظش: ","Not saved: ")+((e&&e.message)||e),true); }
+  PROF[ME.id]=Object.assign({},PROF[ME.id]||{},{name:d.name,avatarUrl:d.avatar,color:d.color,title:d.title,phone:d.phone,bio:d.bio,email:ME.email});
+  closeModal(); render(); toast(w1?L("اتحفظ — والباسورد اتغيّر","Saved — password changed"):L("اتحفظ ملفك","Profile saved"));
+};
+ACT.pfOut=()=>{ if(window.SUPA_DB&&SUPA_DB.signOut) SUPA_DB.signOut(); };
 
 /* ══════════ المجتمع (قنوات + رسائل مباشرة + منشن) ══════════ */
 const CH={chans:{},msgs:{},unsub:{},cur:null,read:{},started:false,seen:new Set(),first:{},draft:{},pick:{},sending:false,seeded:false};
@@ -9732,8 +9807,9 @@ function renderMe(){
   const yRo=tot.ysp? tot.yrv/tot.ysp : null;
   const mt=myTasks(), late=mt.filter(taskLate).length, men=myMentions(), unread=chReady()?chTotalUnread():0;
   const tile=(l,v,sub,col)=>'<div class="card kpi"><div class="kpi-l">'+esc(l)+'</div><div class="kpi-v"'+(col?' style="color:'+col+'"':"")+">"+v+'</div><div class="kpi-f"><span class="dlt-c">'+esc(sub||"")+"</span></div></div>";
-  let h='<div class="me-hero">'+(ME.id?pav(ME.id,52):"")+'<div><div class="me-hi">'+esc(L("أهلاً ","Hi "))+esc(ME.id?pname(ME.id):"")+"</div>"+
-    '<div class="hint">'+esc(roleName(ME.role==="owner"?"owner":ME.role==="admin"?"admin":"member"))+" · "+esc(isMember()?L("بتتابع ","You follow ")+S.cfg.clients.length+L(" عميل"," clients"):L("كل العملاء والفريق","All clients and the team"))+"</div></div></div>";
+  let h='<div class="me-hero">'+(ME.id?pav(ME.id,52):"")+'<div style="flex:1"><div class="me-hi">'+esc(L("أهلاً ","Hi "))+esc(ME.id?pname(ME.id):"")+"</div>"+
+    '<div class="hint">'+esc(roleName(ME.role==="owner"?"owner":ME.role==="admin"?"admin":"member"))+" · "+esc(isMember()?L("بتتابع ","You follow ")+S.cfg.clients.length+L(" عميل"," clients"):L("كل العملاء والفريق","All clients and the team"))+"</div></div>"+
+    (SITE_UID?'<button class="btn btn-s" data-a="profEdit">✎ '+esc(L("تعديل ملفي","Edit profile"))+"</button>":"")+"</div>";
   h+='<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-bottom:14px">'+
     tile(L("عملائي","My clients"),String(S.cfg.clients.length),"")+
     tile(L("صرف النهارده","Spend today"),fcompact(tot.sp,0)+" "+esc(C),"")+
@@ -11321,7 +11397,7 @@ function navHTML(){
   const it=(v,label,icon)=>'<button class="nav-i'+(S.view===v?" on":"")+'" data-a="go" data-v="'+esc(v)+'" aria-label="'+esc(label)+'">'+ic(icon||v)+esc(label)+
     (v==="actions"?badge():v==="tasks"?tb():v==="chat"?cb():v==="approvals"?ab():v==="team"&&CLAIMS.length?'<span class="nav-b">'+CLAIMS.length+"</span>":"")+"</button>";
   const grp=(t,items)=>'<div class="nav-h">'+esc(t)+"</div>"+items.join("");
-  const who=USER&&ME.id? '<div class="nav-me">'+pav(ME.id,30)+'<div><b>'+esc(pname(ME.id))+"</b><small>"+esc(isPending()?L("في انتظار الموافقة","Awaiting approval"):roleName(ROLE_NAMES[ME.role]?ME.role:"member"))+"</small></div></div>" : "";
+  const who=meVis()? '<div class="nav-me" data-a="profEdit" title="'+esc(L("ملفي الشخصي","My profile"))+'">'+pav(ME.id,30)+'<div><b>'+esc(pname(ME.id))+"</b><small>"+esc(isPending()?L("في انتظار الموافقة","Awaiting approval"):meSub())+"</small></div></div>" : "";
   if(isPending()) return who;
   const I={me:it("me",L("لوحتي","My dashboard")),tasks:it("tasks",L("المهام","Tasks")),chat:it("chat",L("المجتمع","Community")),live:it("live",L("اليوم","Today")),ov:it("overview",L("الأرقام","Numbers")),
     entry:it("entry",L("إدخال البيانات","Data entry")),rep:it("reports",L("التقارير","Reports")),plans:it("plans",L("الميديا بلان","Media plans")),cr:it("library",L("مكتبة الكريتيف","Creative library")),media:it("creatives",L("إدارة الميديا","Media management")),
@@ -11976,7 +12052,7 @@ function tbRight(){
   return '<button class="tb-ib" data-a="go" data-v="me" title="'+esc(L("التنبيهات","Notifications"))+'">'+ic("bell")+(n?'<span class="dotn">'+n+"</span>":"")+"</button>"+
     '<button class="tb-ib" data-a="langToggle" id="langBtn" title="Language"></button>'+
     '<button class="tb-ib" data-a="themeCycle" id="themeBtn" title="تبديل الثيم"></button>'+
-    (USER&&ME.id?'<div class="tb-me">'+pav(ME.id,40)+"<div><b>"+esc(pname(ME.id))+"</b><small>"+esc(isPending()?L("في انتظار الموافقة","Awaiting approval"):roleName(ROLE_NAMES[ME.role]?ME.role:"member"))+"</small></div></div>":"");
+    (meVis()?'<div class="tb-me" data-a="profEdit" title="'+esc(L("ملفي الشخصي","My profile"))+'">'+pav(ME.id,40)+"<div><b>"+esc(pname(ME.id))+"</b><small>"+esc(isPending()?L("في انتظار الموافقة","Awaiting approval"):meSub())+"</small></div></div>":"");
 }
 document.addEventListener("input",e=>{ if(!e.target||e.target.id!=="navQ") return; const q=e.target.value.trim();
   document.querySelectorAll("#nav .nav-i").forEach(b=>b.classList.toggle("q-no",!!q&&b.textContent.indexOf(q)<0));
@@ -11986,7 +12062,7 @@ document.addEventListener("keydown",e=>{ const t=e.target;
   if(e.key==="/"&&!/INPUT|TEXTAREA|SELECT/.test((t&&t.tagName)||"")&&!(t&&t.isContentEditable)){ const q=document.getElementById("navQ"); if(q){ e.preventDefault(); q.focus(); } } });
 function render(){
   $("#topbar").innerHTML=topbarHTML();
-  { const m=$("#railMe"); if(m) m.innerHTML=(USER&&ME.id&&!isPending())? '<div class="rail-me">'+pav(ME.id,36)+'<div><b>'+esc(pname(ME.id))+"</b><small>"+esc(roleName(ROLE_NAMES[ME.role]?ME.role:"member"))+"</small></div></div>" : ""; }
+  { const m=$("#railMe"); if(m) m.innerHTML=(meVis()&&!isPending())? '<div class="rail-me" data-a="profEdit" title="'+esc(L("ملفي الشخصي","My profile"))+'">'+pav(ME.id,36)+'<div><b>'+esc(pname(ME.id))+"</b><small>"+esc(meSub())+"</small></div></div>" : ""; }
   const cs=(S.cfg.screens||[]);
   $("#nav").innerHTML=navHTML();
   document.querySelectorAll("#nav .nav-i[data-v]").forEach(b=>{ const k=(b.dataset.v.indexOf("scr_")===0?"v:screen":"v:"+b.dataset.v); const t=helpWhat(k); if(t) b.title=t; });
