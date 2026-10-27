@@ -2372,7 +2372,7 @@ const CMPS=[["prev","الفترة السابقة","Previous period"],["prevmonth
 function renderFBar(){
   const host=$("#fbar");
   if(isWelcome()){ host.innerHTML=""; return; }
-  if(["entry","admin","actions","roster","creatives","changes","experiments","brief","me","chat","team","pending","tasks","plans","approvals","perf","reports","portal","library"].indexOf(S.view)>=0||isPending()||isClient()){ host.innerHTML=""; return; }
+  if(["entry","admin","actions","roster","creatives","changes","experiments","brief","me","chat","team","pending","tasks","plans","approvals","perf","reports","portal","library","site"].indexOf(S.view)>=0||isPending()||isClient()){ host.innerHTML=""; return; }
   if(S.view==="live"){
     host.innerHTML='<div class="fbar"><div class="fgrp"><span class="flab">'+esc(L("اليوم","Day"))+'</span>'+
       '<input class="inp" type="date" data-c="liveDate" value="'+S.liveDate+'" max="'+todayISO()+'"></div>'+
@@ -11373,6 +11373,7 @@ function headerFor(){
       L("فرضية، مجموعتين، ونتيجة محسوبة من بياناتك","A hypothesis, two groups, a result from your data")],
     compare:[L("مقارنة الفترات","Compare periods"),L("قارن أي فترتين ببعض","Compare any two periods")],
     snapboard:[L("اللقطات","Snapshots"),L("كل لقطة سطر: صرف كل منصة وإيراد خزامى بالأكواد — شوف الفرق بين كل ساعة واللي بعدها، وقارن ساعة على كل الأيام","Each snapshot is a row: spend per platform and Khzama revenue by code")],
+    site:[L("الموقع والقمع","Site & funnel"),L("سلوك الزوار على الموقع من ميكس بانل: القمع والمصادر والحملات والأجهزة وطرق الدفع والساعات","How visitors behave on the site (Mixpanel): funnel, sources, campaigns, devices, payments, hours")],
     explorer:[L("المحلل","Analyzer"),L("كل إعلان وفيديو ومشهور على كل المنصات — قسّم وقارن ودوس على أي سطر للتفاصيل","Every ad, video and influencer across platforms — break down, compare, drill in")],
     analyze:[L("تحليل الحملات","Campaign analysis"),L("كل أرقام الحملة في مكان واحد: المسار، الأيام، الساعات، المنصات","Every number for a campaign: funnel, days, hours, platforms")],
     insights:[L("الاستنتاجات","Insights"),
@@ -11984,7 +11985,8 @@ function renderSite(){
       mxTable([L("المصدر","Source"),L("طلبات المنصة","Platform orders"),L("دفع ميكس بانل","Mixpanel paid"),L("تبرعات خزامى","Khzama")],
         ["ME","TT","SC"].map(c=>{ const s=MX_SRC.find(x=>x[0]===c), o=off[c]||{}, v=bySrc[c]||{};
           return mxRow([esc(L(s[1],s[2])),fnum(o.pp||0,0),fnum(v.purchase||0,0),"<b>"+fnum(o.kd||0,0)+"</b>"]); }))+
-      '<div class="hint" style="margin-top:8px">'+esc(L("المنصة بتعدّ زيادة، وميكس بانل بيضيّع اللي اللينك بتاعهم اتشال — خزامى هي الرقم الرسمي.","Platforms over-count, Mixpanel misses visits whose link was dropped — Khzama is the official number."))+"</div>")+"</div>";
+      '<div class="hint" style="margin-top:8px">'+esc(L("المنصة بتعدّ زيادة، وميكس بانل بيضيّع اللي اللينك بتاعهم اتشال — خزامى هي الرقم الرسمي.","Platforms over-count, Mixpanel misses visits whose link was dropped — Khzama is the official number."))+"</div>"+
+      (()=>{ const kd=((D.ad&&D.ad.kz)||[]).map(k=>k.date).sort().pop(), md=D.mx.map(r=>r.date).sort().pop(); return kd!==md? '<div class="hint" style="margin-top:4px;color:var(--warn)">'+esc(L("آخر يوم خزامى متسحب: ","Latest Khzama day pulled: ")+(kd?fdate(kd):"—")+L(" · ميكس بانل لحد "," · Mixpanel up to ")+(md?fdate(md):"—"))+"</div>" : ""; })())+"</div>";
   /* حسب المصدر */
   const srcRows=MX_SRC.map(s=>{ const v=bySrc[s[0]]||{}, o=off[s[0]]||{}; if(!v.page_view&&!v.begin_checkout&&!v.purchase&&!o.kd) return "";
     return mxRow(["<b>"+esc(L(s[1],s[2]))+"</b>",fnum(v.page_view||0,0),fnum(v.view_content||0,0),fnum(v.add_to_cart||0,0),fnum(v.begin_checkout||0,0),fnum(v.purchase||0,0),

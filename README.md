@@ -107,6 +107,7 @@ A video with two influencers shows both names in a fixed order, for example «أ
  Khzama ─────────────────┤  (Claude via Chrome — Khzama has no API)
                          │
  Airtable board ─────────┤  (public shared view, read-only)
+ Mixpanel ───────────────┤  (Claude via MCP, read-only — site behaviour only)
                          ▼
                    Supabase  ──►  GADLYTICS site (display only)
 ```
@@ -121,6 +122,7 @@ A video with two influencers shows both names in a fixed order, for example «أ
 | **Snap (USD account, separate business)** | Ad × day | Local OAuth token, converted to SAR at **3.75** |
 | **Khzama** | Link name × day (orders, revenue) | Read through Chrome, since Khzama has no API |
 | **Airtable creative board** | One row per video, all board columns | Public shared view, via the `media-sync` function |
+| **Mixpanel** (project Molabi) | Site events per day (and per hour): by Khzama link, device, utm source, payment method | Mixpanel MCP connector, five fixed reports named `GAD mx <dim>` |
 
 ### 3.2 Special handling
 
@@ -331,6 +333,49 @@ For cost metrics such as CPA, CPM, CPC and frequency, **lower is better**, so th
   - a day-by-day chart of spend against Khzama revenue.
 - **⇆ Side by side:** two periods next to each other, with every metric and its change, overall and per platform.
 - **CSV export** of the current table.
+
+### 6.6b Site & funnel (الموقع والقمع)
+
+What visitors do **on the store** between the ad click and the donation, from **Mixpanel**. Mixpanel never replaces Khzama: official orders and revenue still come from Khzama, and Mixpanel payments are used only for funnel ratios and comparison.
+
+- **Period:** today, last 7 / 14 / 30 days, or a custom range.
+- **KPI cards:**
+  - Sessions (and per day), page views and checkouts.
+  - Paid (Mixpanel) with its value.
+  - **Site conversion** (paid ÷ sessions) and **checkout completion** (paid ÷ checkouts).
+  - **Khzama donations** (official, your codes only) and checkout errors.
+- **Site notes:** automatic flags.
+  - A source whose visitors reach checkout but nobody pays.
+  - Android converting far below iPhone.
+  - Apple Pay share of payments.
+  - The busiest payment hour.
+  - A large gap between Khzama and Mixpanel for one platform.
+- **On-site funnel:** page view → view content → add to cart → checkout → paid. Shows the % kept at each step, and the biggest drop is highlighted in red.
+- **Tracking health:** platform-reported orders, Mixpanel payments and Khzama donations side by side for Meta, TikTok and Snap. Includes a warning when Khzama data is older than Mixpanel's.
+- **By source:** one row per code: ME / TT / SC / bio / com / DM, other departments, and visits with no link.
+  - The funnel counts at each step.
+  - View→paid and checkout→paid rates.
+  - **Cost per visit** (platform spend ÷ Mixpanel page views).
+  - Khzama donations.
+- **By campaign:** the same funnel per campaign number, sortable by views, checkouts or payments.
+  - A campaign with 3 or more checkouts and no payments shows its completion as a red 0%.
+  - Click a campaign to open its campaign file.
+- **By device** and **payment methods:** Apple Pay, card and bank transfer, with their share and average value.
+- **Hours (Riyadh time):** sessions and payments for each hour of the day.
+- **Day by day:** sessions, view content, checkouts, Mixpanel payments, Khzama donations and conversion.
+
+**Also added to other screens:**
+- **Campaign file:** an "On-site funnel (Mixpanel)" block. It shows each step rate next to the same platform's average.
+- **Creative library → video detail:** the on-site funnel for that video, matched by Creative ID across all pulled days.
+- **Action center:** a "Site yesterday" card comparing yesterday with the 7-day average.
+  - If visitors reached checkout and nobody paid, it says the problem is likely the checkout, not the ads.
+  - If visits are low, it says the problem is upstream (the ads or the spend).
+- **Today live:** a "Site today (Mixpanel)" strip comparing sessions, view content, checkouts and payments with the same hour yesterday.
+
+**Data notes:**
+- Attribution comes from Mixpanel's `affiliate` property. It holds the **same link name as Khzama**, so it survives even when the utm parameters are lost (they are lost on about 58% of visits).
+- Ghost purchases fired by Google Tag Manager's preview page (`gtm-msr.appspot.com`) are excluded at pull time.
+- Only your link codes are stored by name. Other departments' links are summed into "other departments".
 
 ### 6.7 Reports (التقارير)
 
@@ -620,6 +665,7 @@ The thresholds are set in Settings.
 |---|---|---|
 | Platforms + Khzama + daily reports | Daily at 08:30 (last 3 days) | Scheduled task in the Claude app |
 | Airtable creative board | Any time | **↻ Refresh from Airtable** in the library |
+| Mixpanel site behaviour | Daily at 08:30 with the platform pull (last 3 days + today) | Step 3 of the daily-pull runbook |
 | Live snapshots | In season: every 15 min, 24h (currently off) | Scheduled task in the Claude app |
 | Video hooks | When queued | Ask Claude to "write the hooks" |
 | Anything else, immediately | Any time | Ask Claude |
@@ -691,7 +737,8 @@ The ✦ button (bottom-left) opens an assistant that reads your numbers from the
 - the daily-pull and snapshot runbooks;
 - the USD Snap puller;
 - the Airtable sync script;
-- the Whisper hook writer.
+- the Whisper hook writer;
+- the Mixpanel parsers: `mx_prep.py` turns report results into `mx_daily` rows, and `mx_from_log.py` reads report results from the session log so numbers are never retyped.
 
 ---
 
@@ -706,6 +753,7 @@ The ✦ button (bottom-left) opens an assistant that reads your numbers from the
 | `khzama_link_daily` | Khzama orders and revenue per **link name × day**. |
 | `khzama_rev` | Khzama revenue per source code (ME/TT/SC/bio/com/DM) for a date range, with the time it was taken. Used for period snapshot cards. |
 | `snapshots` | Cumulative intraday snapshots for *Today live*. |
+| `mx_daily` | Mixpanel events per day: `dim` = `aff` (Khzama link), `dev` (device), `src` (utm source), `pay` (payment method) or `hour`; `event` = session, page_view, view_content, add_to_cart, begin_checkout, purchase, revenue, checkout_error. |
 | `media` | One row per Airtable video: key fields, every board column (`fields` JSON), and `hook_auto`. |
 
 ### 13.2 Views (all `security_invoker`)
@@ -715,6 +763,7 @@ The ✦ button (bottom-left) opens an assistant that reads your numbers from the
 | `v_media_perf` | Per video × platform: spend, impressions, clicks, views, Khzama orders and revenue, campaigns. Smart+ deduplicated. |
 | `v_media_daily` | Per video × day. Used for "ROAS since entering the stage". |
 | `v_creative` | Creative-level join used by the library. |
+| `v_mx_aff` | Mixpanel funnel per Khzama link, with campaign number, Creative ID and source code (taken from Khzama's parsed link, or parsed from the name). |
 
 ### 13.3 Main `docs` paths
 
