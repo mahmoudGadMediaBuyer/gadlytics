@@ -316,13 +316,19 @@ textarea.inp{resize:vertical;min-height:96px;font-family:var(--f-num);font-size:
 /* ── الفريق والمجتمع ── */
 .pav{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;color:#fff;font-weight:700;flex:none;object-fit:cover;vertical-align:middle}
 .nav-me{display:flex;align-items:center;gap:10px;padding:10px 10px 12px;margin:-6px 0 10px;border-bottom:1px solid var(--line)}
+.rf-card{margin-bottom:14px}.rf-top{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+.rf-btn{font-size:15px;padding:10px 22px}.rf-spin{display:inline-block;animation:rfs 1s linear infinite}@keyframes rfs{to{transform:rotate(360deg)}}
+.rf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.rf-s{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:rgba(127,127,127,.04);display:flex;flex-direction:column;gap:2px}
+.rf-s span{font-size:12px;color:var(--ink-3)}.rf-s b{font-size:15px}.rf-s small{font-size:11.5px;color:var(--bad);font-weight:700}.rf-s.late{border-color:var(--bad)}
+.rf-pend{margin-top:10px;color:var(--warn)}.rf-log{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:10px;font-size:12.5px}.rf-log .ok{color:var(--good)}.rf-log .bad{color:var(--bad)}
 .ft-b{font-size:11.5px;font-weight:700;margin-top:4px;white-space:nowrap}
 .ch-auto{font-size:11px;font-weight:700;color:#7DD3FC;border:1px solid rgba(125,211,252,.5);border-radius:999px;padding:1px 8px;white-space:nowrap}
 .ex-views{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px;font-size:13px}
 .ex-v{display:inline-flex;align-items:center}.ex-v .chip{border-start-end-radius:0;border-end-end-radius:0}
 .ex-vx{border:1px solid var(--line);border-inline-start:0;background:transparent;color:var(--ink-3);border-radius:0 999px 999px 0;padding:3px 9px;cursor:pointer;font-size:14px;line-height:1.4}
 [dir=rtl] .ex-vx{border-radius:999px 0 0 999px}.ex-vx:hover{color:var(--bad)}
-.ex-t tr.ex-sub td{font-size:12px;opacity:.85;background:rgba(127,127,127,.04)}.ex-t tr.ex-sub td.ex-k{padding-inline-start:26px;font-weight:400}
+.ex-t tr.ex-sub td{font-size:12px;opacity:.85;background:rgba(127,127,127,.04)}.ex-t tr.ex-sub td.ex-k{padding-inline-start:26px;font-weight:400;white-space:nowrap}
 .mx-fn{display:flex;flex-direction:column;gap:7px}
 .mx-st{display:grid;grid-template-columns:120px 1fr 54px 120px;align-items:center;gap:8px;font-size:13px}
 .mx-sb{height:14px;background:var(--line);border-radius:7px;overflow:hidden}.mx-sb i{display:block;height:100%;background:var(--cyan,#22b8cf);border-radius:7px}
@@ -9831,6 +9837,7 @@ function renderMe(){
   let h='<div class="me-hero">'+(ME.id?pav(ME.id,52):"")+'<div style="flex:1"><div class="me-hi">'+esc(L("أهلاً ","Hi "))+esc(ME.id?pname(ME.id):"")+"</div>"+
     '<div class="hint">'+esc(roleName(ME.role==="owner"?"owner":ME.role==="admin"?"admin":"member"))+" · "+esc(isMember()?L("بتتابع ","You follow ")+S.cfg.clients.length+L(" عميل"," clients"):L("كل العملاء والفريق","All clients and the team"))+"</div></div>"+
     (SITE_UID?'<button class="btn btn-s" data-a="profEdit">✎ '+esc(L("تعديل ملفي","Edit profile"))+"</button>":"")+"</div>";
+  h+=rfCard();
   h+='<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-bottom:14px">'+
     tile(L("عملائي","My clients"),String(S.cfg.clients.length),"")+
     tile(L("صرف النهارده","Spend today"),fcompact(tot.sp,0)+" "+esc(C),"")+
@@ -12232,6 +12239,43 @@ ACT.wkCopy=()=>{ const W=wkData(); if(!W) return; const C=CURR[S.cfg.settings.cu
     L("التوصيات:","Recommendations:")+"\n"+wkRecs(W).map((x,i)=>(i+1)+". "+x).join("\n");
   try{ navigator.clipboard.writeText(txt); toast(L("الملخص اتنسخ","Summary copied")); }catch(e){ toast(L("مقدرتش أنسخ","Couldn't copy"),true); } };
 ACT.rpMode=t=>{ S.rp.mode=t.dataset.m; render(); };
+
+/* ══════════════════ تحديث السيستم كله (لوحتي) ══════════════════
+   زرار واحد: يحدّث مكتبة الكريتيف من Airtable، ويعيد تحميل كل الأرقام من الداتا بيز (التقارير، المحلل، الموقع،
+   التشبّع، إدارة الميديا، سجل التغييرات)، ويسجّل طلب سحب جديد من المنصات وخزامى — السحب نفسه Claude بيعمله
+   (الموقع مبيكلمش المنصات)، ومع السحب الطلب بيتقفل. وتحت الزرار: آخر يوم وصل من كل مصدر، والقديم بالأحمر. */
+const RF={busy:false,step:"",fresh:null,log:[],loading:false};
+async function rfFresh(){ if(!(window.SUPA_DB&&SUPA_DB.client)||RF.loading) return; RF.loading=true;
+  const sb=SUPA_DB.client, cid=S.ws||(S.cfg.clients[0]||{}).id;
+  const last=async(t,col,ws)=>{ try{ let q=sb.from(t).select(col).order(col,{ascending:false}).limit(1); if(ws&&cid) q=q.eq("client_id",cid); const r=await q; return r.error?null:(((r.data||[])[0]||{})[col]||null); }catch(e){ return null; } };
+  const [ad,kz,mx,md,pr]=await Promise.all([last("ad_daily","date",1),last("khzama_link_daily","date",1),last("mx_daily","date",1),last("media","synced_at"),RT.get("sys/pullreq").catch(()=>null)]);
+  RF.fresh={ad:ad,kz:kz,mx:mx,md:md,pr:pr}; RF.loading=false; render(); }
+function rfCard(){ if(!(window.SUPA_DB&&SUPA_DB.client)) return "";
+  if(!RF.fresh&&!RF.loading) setTimeout(rfFresh,0);
+  const F=RF.fresh||{}, Y=addDays(todayISO(),-1);
+  const day=(lab,d)=>{ const late=d&&d<addDays(Y,-1), none=!d;
+    return '<div class="rf-s'+(late||none?" late":"")+'"><span>'+esc(lab)+"</span><b>"+(d?esc(fdate(String(d).slice(0,10))):"—")+"</b>"+(late?'<small>'+esc(L("متأخر ","behind ")+diffDays(String(d).slice(0,10),Y)+L(" يوم"," day(s)"))+"</small>":"")+"</div>"; };
+  const pr=F.pr, pend=pr&&pr.status==="pending";
+  return '<div class="card rf-card"><div class="rf-top"><div><div class="card-t">'+esc(L("تحديث السيستم","System refresh"))+'</div><div class="hint">'+
+      esc(L("بضغطة: المكتبة من Airtable، وكل الأرقام من الداتا بيز، وطلب سحب جديد من المنصات وخزامى.","One click: library from Airtable, every number reloaded, and a fresh pull requested from the platforms and Khzama."))+"</div></div>"+
+    '<button class="btn btn-p rf-btn" data-a="rfAll"'+(RF.busy?" disabled":"")+">"+(RF.busy?'<span class="rf-spin">↻</span> '+esc(RF.step||L("بحدّث…","Refreshing…")):"↻ "+esc(L("حدّث كل حاجة","Refresh everything")))+"</button></div>"+
+    '<div class="rf-grid">'+day(L("المنصات (صرف)","Platforms (spend)"),F.ad)+day(L("خزامى (طلبات وإيراد)","Khzama (orders & revenue)"),F.kz)+day(L("ميكس بانل (الموقع)","Mixpanel (site)"),F.mx)+
+      '<div class="rf-s"><span>'+esc(L("مكتبة الكريتيف","Creative library"))+"</span><b>"+(F.md?esc(fdate(String(F.md).slice(0,10))+" "+String(new Date(F.md).toTimeString()).slice(0,5)):"—")+"</b></div></div>"+
+    (pend?'<div class="hint rf-pend">⏳ '+esc(L("فيه طلب سحب من المنصات وخزامى من ","A platform & Khzama pull was requested ")+rfAgo(pr.at)+L(" — Claude بيسحبه مع السحب الجاي، أو قوله «اسحب دلوقتي».",". Claude runs it with the next pull, or tell Claude «pull now»."))+"</div>":
+      pr&&pr.done_at?'<div class="hint">✓ '+esc(L("آخر طلب سحب اتنفّذ ","Last pull request done ")+rfAgo(pr.done_at))+"</div>":"")+
+    (RF.log.length&&!RF.busy?'<div class="rf-log">'+RF.log.map(x=>'<span class="'+(x[0]==="ok"?"ok":"bad")+'">'+(x[0]==="ok"?"✓ ":"✕ ")+esc(x[1])+"</span>").join("")+"</div>":"")+"</div>"; }
+function rfAgo(ts){ if(!ts) return ""; const m=Math.round((Date.now()-ts)/60000); return m<60? L(m+" دقيقة",m+" min ago") : m<1440? L(Math.round(m/60)+" ساعة",Math.round(m/60)+" h ago") : L(Math.round(m/1440)+" يوم",Math.round(m/1440)+" d ago"); }
+ACT.rfAll=async()=>{ if(RF.busy||!(window.SUPA_DB&&SUPA_DB.client)) return; RF.busy=true; RF.log=[];
+  const step=async(lab,fn)=>{ RF.step=lab; render(); try{ const m=await fn(); RF.log.push(["ok",lab+(m?" — "+m:"")]); }catch(e){ RF.log.push(["bad",lab+" — "+((e&&e.message)||e)]); } };
+  await step(L("مكتبة الكريتيف من Airtable","Creative library from Airtable"),async()=>{ const r=await SUPA_DB.client.functions.invoke("media-sync",{body:{}});
+    if(r.error||(r.data&&r.data.error)) throw new Error((r.data&&r.data.error)||r.error.message); return fnum(r.data.ok,0)+L(" فيديو"," videos"); });
+  await step(L("كل الأرقام من الداتا بيز","All numbers from the database"),async()=>{
+    EX.cache={}; EX.md=null; MX.cache={}; FT.data=null; LB.data=null; MA.data=null; EXV.list=null; if(typeof SB!=="undefined"){ SB.data={}; SB.periods=null; }
+    await reload(); try{ S.changes=await Store.getColl("changes"); }catch(e){} });
+  await step(L("طلب سحب جديد من المنصات وخزامى","Pull requested from platforms & Khzama"),async()=>{
+    await RT.set("sys/pullreq",{at:Date.now(),by:ME.email||"",status:"pending"}); });
+  RF.fresh=null; RF.busy=false; RF.step=""; await rfFresh(); render();
+  toast(RF.log.every(x=>x[0]==="ok")? L("اتحدّث كل حاجة","Everything refreshed") : L("اتحدّث مع ملاحظات — شوف تحت الزرار","Refreshed with notes — see below the button"),!RF.log.every(x=>x[0]==="ok")); };
 
 /* ══════════════════ اللقطة: صرف كل منصة + إيراد خزامى بالأكواد ══════════════════ */
 const SB={periods:null,sel:"",data:{},busy:false,err:""};

@@ -219,6 +219,14 @@ A personal home screen.
 - **My clients today:** spend, revenue and ROAS per client, compared with yesterday.
 - **My tasks** and **Team** (who is online).
 
+**System refresh (تحديث السيستم)** — at the top of My dashboard:
+
+- **↻ Refresh everything** does three things in order, showing each step:
+  1. Refreshes the **creative library from Airtable**.
+  2. Reloads **every number from the database**: reports, analyzer, site (Mixpanel), creative fatigue, media management and the change log.
+  3. Registers a **new pull request for the platforms and Khzama**. The site cannot talk to the ad platforms itself, so Claude runs the pull: with the next daily pull, or right away when you tell Claude «اسحب دلوقتي». The request then shows as done.
+- Under the button, the **latest day received from each source**: platforms (spend), Khzama (orders and revenue), Mixpanel, and the last Airtable sync. A source more than a day behind turns red with how many days it is late.
+
 ### 6.2 Tasks and Community (المهام / المجتمع)
 
 - **Tasks:** personal tasks or tasks assigned to teammates, with due dates and an overdue flag. A task can be linked to a client.
@@ -324,6 +332,19 @@ The deep-dive tool. It reads **every ad and every video, day by day**.
 
 For cost metrics such as CPA, CPM, CPC and frequency, **lower is better**, so their colouring is inverted.
 
+**Saved views (⭐)**
+
+- "Save this view" stores the breakdowns, filters, platforms, metrics, comparison and period under a name. A period that ends today is saved as rolling ("last N days").
+- One click on a saved view re-applies it; × deletes it. Views are stored in Supabase, so they follow you to any device.
+
+**Two-level breakdown ("Then by")**
+
+- Pick a second dimension (e.g. Platform → Campaign, Influencer → Platform). Each row then shows its top 8 children indented underneath (for the first 60 rows), with the same metrics.
+
+**Platform vs Khzama metrics** (in the metrics picker)
+
+- Platform orders (pixel), Platform ROAS (pixel), and the gap in % between the platform's orders/revenue and Khzama's. Use them to see which platform or campaign over-reports, and by how much.
+
 **Interactions**
 
 - **Click a row** to see its breakdown by platform, campaign, month and video.
@@ -378,6 +399,20 @@ What visitors do **on the store** between the ad click and the donation, from **
 - Only your link codes are stored by name. Other departments' links are summed into "other departments".
 
 ### 6.7 Reports (التقارير)
+
+The screen has two modes at the top: **Custom report** and **Ready weekly summary**.
+
+**Ready weekly summary (الملخص الأسبوعي الجاهز)**
+
+- One full week, Sunday → Saturday (Riyadh), against the week before. Move with "Previous week / Next week".
+- Contents:
+  - KPI cards for the paid platforms: spend, orders and revenue (Khzama), ROAS, CPA, AOV, each with its change; bio / comments / DM orders noted separately.
+  - **Recommendations for next week**, generated from the numbers: scale the best campaign, review the weakest, platforms whose ROAS fell 20%+, the best video to iterate on, fatigued creatives, and checkout completion on the site.
+  - Platforms table with the ROAS change, then best and weakest campaigns, videos and creators (only items with at least 3% of spend).
+  - Site figures from Mixpanel, videos burning out, and the week's changes (manual and automatic).
+- Buttons: **Copy summary** (text for WhatsApp or email), **Print / PDF**, **Download** (a standalone HTML file).
+
+**Custom report**
 
 Ready **daily, weekly and monthly** reports with day names. They have a platform filter and a metric picker with:
 
@@ -477,6 +512,15 @@ A video needs at least **300 SAR of spend** to be rated. Below that it shows "li
 - The ↑ button **lights green** when a video is strong and ready to promote.
 - **Stage cards** at the top show the count, ROAS and spend for each stage. Click one to filter.
 
+**Creative fatigue (🔥)**
+
+- Under the performance rating a video can show **"🔥 Burning out"** or **"Early fatigue"**. Hover it to see why.
+- The check compares the last 3 pulled days with the 7 days before, per video and platform:
+  - **Burning out:** CTR down 20%+ **and** (Hook rate down 15%+ **or** frequency up 25%+ **or** CPM up 25%+).
+  - **Early fatigue:** CTR down 12%+ and one of the others moved 10%+.
+  - It needs at least 100 SAR in the recent window, 200 SAR before it, and enough days; otherwise it says "too little data".
+- The same flag appears as a filterable **Fatigue** column in the creative library, a **Creative fatigue** card in the action center, and a section in the weekly summary.
+
 **Other controls**
 
 - **☰ Columns:** show or hide any column. Your choice is remembered on this browser.
@@ -551,12 +595,13 @@ An Airtable-style board of **every Molabi video**, built to be simpler and faste
 
 - **Approvals (الموافقات):** items waiting for an admin's sign-off.
 - **Change log (سجل التغييرات):**
+  - **Automatic entries from Meta:** the daily pull reads Meta's activity log for both accounts and adds budget changes (first old value → last new value of the day, with the number of edits), real pauses and resumes, new campaigns, ad sets and ads, and creative, targeting and bid changes. Meta's own events (billing, automatic audiences, ad review) and the "Pending Process" flips around every budget edit are ignored. Auto entries carry an "⚙ Auto · Meta" badge and a 3-day measurement window. Filter with All / Manual / Auto.
   - Record any change: budget, creative, targeting, landing page, bid, and so on.
   - The site measures **before against after** on the same scope with windows of equal length.
   - It gives a verdict: worked, failed or inconclusive.
   - It warns when changes overlap, because that makes a verdict unreliable.
   - Changes appear as markers on the trend charts.
-  - Entries are currently added by hand.
+  - Manual entries are added with «+ سجّل تغيير».
 - **Experiments (التجارب):** define a control group and a test group, and get a verdict based on the numbers.
 
 ### 6.14 Team, performance, settings
@@ -738,6 +783,7 @@ The ✦ button (bottom-left) opens an assistant that reads your numbers from the
 - the USD Snap puller;
 - the Airtable sync script;
 - the Whisper hook writer;
+- `meta_changes.py`, which turns Meta activity-log results (read from the session log) into automatic change-log entries;
 - the Mixpanel parsers: `mx_prep.py` turns report results into `mx_daily` rows, and `mx_from_log.py` reads report results from the session log so numbers are never retyped.
 
 ---
@@ -763,6 +809,7 @@ The ✦ button (bottom-left) opens an assistant that reads your numbers from the
 | `v_media_perf` | Per video × platform: spend, impressions, clicks, views, Khzama orders and revenue, campaigns. Smart+ deduplicated. |
 | `v_media_daily` | Per video × day. Used for "ROAS since entering the stage". |
 | `v_creative` | Creative-level join used by the library. |
+| `v_fatigue` | Creative fatigue per video × platform: last 3 days vs the 7 before (CTR, hook rate, frequency and CPM changes, and a status). |
 | `v_mx_aff` | Mixpanel funnel per Khzama link, with campaign number, Creative ID and source code (taken from Khzama's parsed link, or parsed from the name). |
 
 ### 13.3 Main `docs` paths
