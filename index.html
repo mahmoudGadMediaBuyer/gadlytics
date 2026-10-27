@@ -7893,7 +7893,7 @@ document.head.insertAdjacentHTML("beforeend","<style>"+`
 .ma-t td{vertical-align:middle}.ma-t th{text-align:center}.ma-t td:not(.md-hook):not(.ma-adv){text-align:center}
 .ma-ph td{padding:16px 8px 8px!important;border-bottom:none!important;font-size:15px;background:transparent!important}
 .ma-pst{margin-inline-start:12px;font-size:12px;font-weight:500;color:var(--ink-2)}
-.ma-adv{text-align:center;border-inline-start:1px solid var(--line-2);background:color-mix(in srgb,var(--ink-3) 5%,transparent)}
+.ma-adv{text-align:center;border-inline-end:1px solid var(--line-2);background:color-mix(in srgb,var(--ink-3) 5%,transparent)}
 .ma-idle{background:color-mix(in srgb,#EF9F27 22%,transparent)}
 .ma-new{font-size:10px;font-weight:700;color:var(--cyan);border:1px solid currentColor;border-radius:999px;padding:0 6px}
 .ma-dk .btn.ma-ready{border-color:#1D9E75;color:#1D9E75;background:rgba(29,158,117,.12);box-shadow:0 0 0 2px rgba(29,158,117,.25)}
@@ -8216,7 +8216,7 @@ async function maLoad(force){ if(MA.busy||(MA.data&&!force)) return; MA.busy=tru
   }catch(e){ MA.err=e.message||String(e); }
   MA.busy=false; render(); }
 function maVid(m){ const ps=MA.data.P[m.creative_id]||[], n=MA.data.N[m.creative_id]||{};
-  const v={id:m.creative_id,m:m,hook:n.hook||m.hook||"",plats:{},spend:0,orders:0,revenue:0,first:null,camps:[]};
+  const v={id:m.creative_id,m:m,hook:n.hook||m.hook_auto||m.hook||"",hookWanted:!!n.hookWanted,plats:{},spend:0,orders:0,revenue:0,first:null,camps:[]};
   ps.forEach(p=>{ v.plats[p.platform]=1; v.spend+=+p.spend||0; v.orders+=+p.orders||0; v.revenue+=+p.revenue||0;
     const f=p.first_day||p.kz_first; if(f&&(!v.first||f<v.first)) v.first=f;
     (p.camps||[]).forEach(c=>{ if(v.camps.indexOf(c)<0) v.camps.push(c); }); });
@@ -8288,13 +8288,15 @@ function renderMediaAuto(mode){ const MG=mode==="manage";
     ["meta",L("ميتا","Meta"),v=>"<td>"+chk(v.plats.meta)+"</td>"],
     ["first",L("تاريخ الإطلاق","Launch date"),v=>'<td style="white-space:nowrap;text-align:center">'+(v.first? esc(rpDayName(v.first))+"<br><b>"+esc(fdate(v.first))+"</b>" : "—")+"</td>"],
     ["hook",L("الهوك","Hook"),v=>'<td class="md-hook">'+(v.hook? '<span data-a="maHook" data-id="'+esc(v.id)+'" style="cursor:pointer" title="'+esc(L("دوس تعدّل","Click to edit"))+'">'+esc(v.hook)+"</span>"
-      : '<button class="btn btn-s" data-a="maHook" data-id="'+esc(v.id)+'">'+esc(L("+ الهوك","+ Hook"))+"</button>")+"</td>"],
+      : (v.hookWanted? '<span class="ma-st">⏳ '+esc(L("الهوك في الطابور","Hook queued"))+'</span> '
+          : '<button class="btn btn-s" data-a="maHookReq" data-id="'+esc(v.id)+'" title="'+esc(L("Claude يسمع أول ثواني ويكتب الهوك","Claude listens to the first seconds and writes the hook"))+'">🎙 '+esc(L("هوك أوتوماتيك","Auto hook"))+"</button> ")+
+        '<button class="btn btn-s" data-a="maHook" data-id="'+esc(v.id)+'" title="'+esc(L("اكتبه بإيدك","Type it"))+'">✎</button>')+"</td>"],
     ["id",L("رقم الفيديو","Video ID"),v=>'<td class="md-vid'+(v.launched?"":" ma-idle")+'">'+esc(v.id)+(v.m.url?' <a href="'+esc(v.m.url)+'" target="_blank" rel="noopener" title="'+esc(L("افتح الفيديو","Open video"))+'">▶</a>':"")+
       (v.isNew?' <span class="ma-new">'+esc(L("جديد","New"))+"</span>":"")+(v.m.status?'<div class="ma-st">'+esc(v.m.status)+"</div>":"")+"</td>"]].filter(c=>MG||c[0]!=="dec");
-  const vis=maColsGet(), cols=COLS.filter(c=>vis.indexOf(c[0])>=0);
+  const vis=maColsGet(), cols=COLS.filter(c=>vis.indexOf(c[0])>=0).reverse();   // من اليمين: المشهور ← رقم الفيديو ← … ← القرار
   if(MA.pick) h+='<div class="ex-pick" style="margin-bottom:10px"><div class="hint">'+esc(L("دوس على أي عمود تظهره أو تخفيه — اختيارك بيتحفظ.","Click a column to show or hide it — saved."))+'</div><div class="chips">'+
     COLS.map(c=>'<button class="chip'+(vis.indexOf(c[0])>=0?" on":"")+'" data-a="maCol" data-k="'+c[0]+'">'+esc(c[1])+"</button>").join("")+"</div></div>";
-  const head="<tr>"+cols.map(c=>"<th>"+esc(c[1])+"</th>").join("")+"<th>"+esc(L("المشهور","Creator"))+"</th></tr>";
+  const head="<tr><th>"+esc(L("المشهور","Creator"))+"</th>"+cols.map(c=>"<th>"+esc(c[1])+"</th>").join("")+"</tr>";
   h+='<div class="tw"><table class="md-t ma-t">';
   let shown=0;
   pOrder.forEach(p=>{ if(shown>=600) return; const pv=byP[p], pa=maAgg(pv);
@@ -8305,9 +8307,9 @@ function renderMediaAuto(mode){ const MG=mode==="manage";
     Object.keys(byA).sort((a,b)=>maAgg(byA[b]).spend-maAgg(byA[a]).spend||String(byA[b][0].m.created_at).localeCompare(String(byA[a][0].m.created_at))).forEach(a=>{
       const av=byA[a], aa=maAgg(av), ar=maRate(aa,pAvg[p]);
       av.forEach((v,i)=>{ if(shown>=600) return; shown++;
-        h+="<tr"+(i===0?' class="grp"':"")+">"+cols.map(c=>c[2](v)).join("")+
+        h+="<tr"+(i===0?' class="grp"':"")+">"+
           (i===0? '<td class="md-cre ma-adv" rowspan="'+av.length+'">'+esc(a)+'<div style="margin-top:6px">'+maChip(ar)+"</div>"+maPerf(aa)+"</td>" : "")+
-          "</tr>"; }); }); });
+          cols.map(c=>c[2](v)).join("")+"</tr>"; }); }); });
   h+="</table></div>";
   if(shown>=600) h+='<div class="hint">'+esc(L("ظاهر أول ٦٠٠ فيديو — استخدم الفلاتر عشان تضيّق.","Showing the first 600 videos — use the filters to narrow down."))+"</div>";
   if(MG) h+='<div class="hint" style="margin-top:12px">'+esc(L("هنا الفيديوهات اللي اتطلقت بس. القرار المتقطّع = اقتراح من الأداء (قوي ← هيكمل، ضعيف ← مش هيكمل، غير كده يتراقب). دوس ✓ أو ✕ أو … عشان تثبّت قرارك، ودوسة تانية على نفس الزرار ترجّعه للاقتراح.",
@@ -8329,6 +8331,9 @@ const MA_COLS_DEF=["dec","stage","perf","launched","uploaded","snap","tiktok","m
 function maColsGet(){ try{ const v=JSON.parse(localStorage.getItem("gad.maCols")||"null");
     if(Array.isArray(v)){ if(v.indexOf("stage")<0&&!localStorage.getItem("gad.maColsStage")){ v.splice(1,0,"stage"); localStorage.setItem("gad.maCols",JSON.stringify(v)); localStorage.setItem("gad.maColsStage","1"); } return v; } }catch(e){} return MA_COLS_DEF.slice(); }
 ACT.maPick=()=>{ MA.pick=!MA.pick; render(); };
+ACT.maHookReq=async t=>{ const id=t.dataset.id, n=Object.assign({},MA.data.N[id]||{},{hookWanted:true});
+  try{ await DB.doc("media_notes/"+id).set(n); MA.data.N[id]=n; if(LB.data) LB.data.N[id]=n; render(); toast(L("اتضاف للطابور — قول لـ Claude «اكتب الهوكات»","Queued — ask Claude to «write the hooks»")); }
+  catch(e){ toast(L("مقدرتش أحفظ: ","Couldn't save: ")+(e.message||e),true); } };
 ACT.maStage=async t=>{ const id=t.dataset.id, d=+t.dataset.d, n=Object.assign({},MA.data.N[id]||{}), cur=+n.stage||1, nx=Math.min(STAGES[STAGES.length-1],Math.max(1,cur+d)); if(nx===cur) return;
   n.stage=nx; n.stageHist=(n.stageHist||[]).concat([{s:nx,at:todayISO()}]);
   try{ await DB.doc("media_notes/"+id).set(n); MA.data.N[id]=n; if(LB.data) LB.data.N[id]=n; render(); toast(L("اترحّل لـ ","Moved to ")+stageLabel(nx)); }
@@ -10745,6 +10750,7 @@ ACT.lbSelNone=()=>{ LB.sel=new Set(); render(); };
 /** إضافة فيديوهات لإدارة الميديا من المكتبة (حتى لو لسه ما اتطلقتش) — بتبدأ في المرحلة ١ */
 async function lbAddToMg(ids,on){ const T=todayISO(); let ok=0;
   for(const id of ids){ const n=Object.assign({},LB.data.N[id]||{}); n.inMgmt=on;
+    const m=LB.data.media.find(x=>x.creative_id===id)||{}; if(on&&!n.hook&&!m.hook_auto&&!m.hook) n.hookWanted=true;   // الهوك يتكتب أوتوماتيك
     if(on&&!n.stage){ n.stage=1; n.stageHist=(n.stageHist||[]).concat([{s:1,at:T}]); }
     try{ await DB.doc("media_notes/"+id).set(n); LB.data.N[id]=n; if(MA.data) MA.data.N[id]=n; ok++; }catch(e){} }
   return ok; }
