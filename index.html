@@ -8203,11 +8203,13 @@ async function maLoad(force){ if(MA.busy||(MA.data&&!force)) return; MA.busy=tru
     const media=await all(()=>sb.from("media").select("*").eq("client",cname).order("created_at",{ascending:false}));
     const perf=await all(()=>sb.from("v_media_perf").select("*").order("creative_id"));
     const notes=await all(()=>sb.from("docs").select("path,data").eq("coll","media_notes").order("path"));
+    const daily=await all(()=>sb.from("v_media_daily").select("*").order("creative_id").order("date"));
+    const DY={}; daily.forEach(d=>{ (DY[d.creative_id]=DY[d.creative_id]||[]).push(d); });
     const disp={}, one=v=>{ v=String(v||"").trim(); if(!v) return v; const k=arKey(v); return disp[k]||(disp[k]=v); };
     media.forEach(m=>{ m.advertiser=one(m.advertiser); m.project=one(m.project); });
     const P={}; perf.forEach(p=>{ (P[p.creative_id]=P[p.creative_id]||[]).push(p); });
     const N={}; notes.forEach(n=>{ N[n.path.split("/")[1]]=n.data||{}; });
-    MA.data={media:media,P:P,N:N,synced:media.reduce((m,x)=>x.synced_at>m?x.synced_at:m,"")};
+    MA.data={media:media,P:P,N:N,DY:DY,synced:media.reduce((m,x)=>x.synced_at>m?x.synced_at:m,"")};
   }catch(e){ MA.err=e.message||String(e); }
   MA.busy=false; render(); }
 function maVid(m){ const ps=MA.data.P[m.creative_id]||[], n=MA.data.N[m.creative_id]||{};
@@ -8217,7 +8219,10 @@ function maVid(m){ const ps=MA.data.P[m.creative_id]||[], n=MA.data.N[m.creative
     (p.camps||[]).forEach(c=>{ if(v.camps.indexOf(c)<0) v.camps.push(c); }); });
   v.camps.sort(); v.uploaded=ps.length>0; v.launched=v.spend>0;
   v.roas=v.spend? v.revenue/v.spend : null; v.cpa=v.orders? v.spend/v.orders : null;
-  v.isNew=m.created_at&&(Date.now()-new Date(m.created_at).getTime())<3*864e5; return v; }
+  v.isNew=m.created_at&&(Date.now()-new Date(m.created_at).getTime())<3*864e5;
+  const hist=n.stageHist||[]; v.stage=+n.stage||1; v.stageAt=(hist.length? hist[hist.length-1].at : v.first)||"";
+  const sd={sp:0,n:0,a:0}; ((MA.data.DY||{})[m.creative_id]||[]).forEach(d=>{ if(!v.stageAt||d.date>=v.stageAt){ sd.sp+=+d.spend||0; sd.n+=+d.orders||0; sd.a+=+d.revenue||0; } });
+  sd.roas=sd.sp? sd.a/sd.sp : null; v.stagePerf=sd; return v; }
 function maAgg(vs){ const a={spend:0,orders:0,revenue:0}; vs.forEach(v=>{ a.spend+=v.spend; a.orders+=v.orders; a.revenue+=v.revenue; });
   a.roas=a.spend? a.revenue/a.spend : null; return a; }
 /** التقييم = ROAS الفيديو مقارنة بمتوسط مشروعه، وبشرط صرف معتبر */
@@ -8242,7 +8247,7 @@ function renderMediaAuto(mode){ const MG=mode==="manage";
     ["new","اتطلق آخر ٣ أيام","Launched last 3 days",v=>v.first&&diffDays(v.first,todayISO())<3,"var(--cyan)"]] : [["","الإجمالي","All",()=>true,""],["new","جديد (٣ أيام)","New (3 days)",v=>v.isNew,"var(--cyan)"],
     ["idle","لسه ما اتطلقش","Not launched",v=>!v.launched,"#EF9F27"],["live","اتطلق","Launched",v=>v.launched,"var(--good)"],
     ["strong","قوي","Strong",v=>v.rate&&v.rate[1]==="Strong","#1D9E75"],["weak","ضعيف","Weak",v=>v.rate&&v.rate[1]==="Weak","#E24B4A"]];
-  const stF=(ST.find(s=>s[0]===MA.st)||ST[0])[3], vids=base.filter(stF);
+  const stF=(ST.find(s=>s[0]===MA.st)||ST[0])[3], vids=base.filter(v=>stF(v)&&(!MA.stg||v.stage===MA.stg));
   const opt=(arr,cur)=>arr.map(x=>'<option value="'+esc(x)+'"'+(cur===x?" selected":"")+">"+esc(x)+"</option>").join("");
   const projects=[...new Set(D.media.map(m=>m.project||"—"))].sort(), advs=[...new Set(D.media.map(m=>m.advertiser||"—"))].sort();
   let h='<div class="md-bar">'+
@@ -8254,6 +8259,10 @@ function renderMediaAuto(mode){ const MG=mode==="manage";
     '<button class="btn btn-s'+(MA.pick?" btn-p":"")+'" data-a="maPick">☰ '+esc(L("الأعمدة","Columns"))+'</button>'+
     '<button class="btn btn-s" data-a="maReload" style="margin-inline-start:auto">'+esc(MA.busy?L("بيحدّث…","Refreshing…"):L("↻ تحديث","↻ Refresh"))+"</button></div>";
   h+='<div class="md-sum">'+ST.map(s=>'<div class="md-s pick'+(MA.st===s[0]?" on":"")+'" data-a="maSt" data-s="'+s[0]+'"><div class="l">'+esc(L(s[1],s[2]))+'</div><div class="n"'+(s[4]?' style="color:'+s[4]+'"':"")+">"+base.filter(s[3]).length+"</div></div>").join("")+"</div>";
+  if(MG){ const mx=Math.max(3,...base.map(v=>v.stage));
+    h+='<div class="md-sum ma-stg">'+STAGES.filter(n=>n<=mx).map(n=>{ const vs=base.filter(v=>v.stage===n), a=maAgg(vs);
+      return '<div class="md-s pick'+(MA.stg===n?" on":"")+'" data-a="maStageF" data-s="'+n+'"><div class="l">'+esc(stageLabel(n))+'</div><div class="n" style="color:'+stageColor(n)+'">'+vs.length+'</div><div class="l">'+(a.spend?"ROAS "+(a.roas==null?"—":a.roas.toFixed(2)+"x")+" · "+fnum(a.spend,0):"—")+"</div></div>"; }).join("")+
+      '<div class="md-s pick" data-a="stageNames" style="display:grid;place-items:center"><div class="l">✎ '+esc(L("أسماء المراحل","Stage names"))+"</div></div></div>"; }
   if(!vids.length) return h+emptyBox(L("مفيش فيديوهات بالفلاتر دي.","No videos with these filters."),'<button class="btn" data-a="maClear">'+esc(L("شيل الفلاتر","Clear filters"))+"</button>");
   const byP={}; vids.forEach(v=>{ const p=v.m.project||"—"; (byP[p]=byP[p]||[]).push(v); });
   const pOrder=Object.keys(byP).sort((a,b)=>String(byP[b][0].m.created_at).localeCompare(String(byP[a][0].m.created_at)));
@@ -8262,6 +8271,11 @@ function renderMediaAuto(mode){ const MG=mode==="manage";
   const COLS=[
     ["dec",L("القرار","Decision"),v=>{ const dc=MA_DEC[v.dec.k]; return '<td style="white-space:nowrap"><span class="md-rate" style="color:'+dc[2]+(v.dec.auto?";border-style:dashed":"")+'" title="'+esc(v.dec.auto?L("اقتراح من الأداء — أكّده أو غيّره","Suggested from performance — confirm or change"):L("قرارك","Your decision"))+'">'+esc(L(dc[0],dc[1]))+"</span>"+
       '<div class="ma-dk">'+["keep","watch","stop"].map(k=>'<button class="btn btn-s'+(!v.dec.auto&&v.dec.k===k?" on":"")+'" data-a="maDecSet" data-id="'+esc(v.id)+'" data-k="'+k+'" title="'+esc(L(MA_DEC[k][0],MA_DEC[k][1]))+'">'+(k==="keep"?"✓":k==="stop"?"✕":"…")+"</button>").join("")+"</div></td>"; }],
+    ["stage",L("المرحلة","Stage"),v=>{ const sp=v.stagePerf, ready=v.rate&&v.rate[1]==="Strong"&&v.stage<STAGES[STAGES.length-1];
+      return '<td style="white-space:nowrap;text-align:center"><span class="md-stage" style="color:'+stageColor(v.stage)+'">'+v.stage+" · "+esc(stageName(v.stage))+"</span>"+
+        '<div class="ma-dk"><button class="btn btn-s'+(ready?" ma-ready":"")+'" data-a="maStage" data-id="'+esc(v.id)+'" data-d="1" title="'+esc(ready?L("أداؤه قوي — جاهز يترحّل","Strong — ready to promote"):L("رحّله للمرحلة اللي بعدها","Promote"))+'">↑</button>'+
+        (v.stage>1?'<button class="btn btn-s" data-a="maStage" data-id="'+esc(v.id)+'" data-d="-1" title="'+esc(L("رجّعه مرحلة","Demote"))+'">↓</button>':"")+"</div>"+
+        '<div class="ma-st">'+(v.stageAt?esc(L("من ","since ")+fdate(v.stageAt)):"")+(sp.sp?" · ROAS "+sp.roas.toFixed(2)+"x":"")+"</div></td>"; }],
     ["perf",L("الأداء","Performance"),v=>"<td>"+maChip(v.rate)+maPerf(v)+"</td>"],
     ["camps",L("اسم الحملة","Campaign"),v=>'<td class="md-vid"'+(v.camps.length>3?' title="'+esc(v.camps.join("\n"))+'"':"")+">"+(v.camps.slice(-3).map(esc).join("<br>")||"—")+(v.camps.length>3?'<div class="ma-st">+'+(v.camps.length-3)+esc(L(" حملات تانية"," more"))+"</div>":"")+"</td>"],
     ["launched",L("إطلاق الحملة","Launched"),v=>"<td>"+chk(v.launched)+"</td>"],
@@ -8306,11 +8320,17 @@ CHG.maProj=v=>{ MA.proj=v||""; MA.adv=""; render(); };
 CHG.maAdv=v=>{ MA.adv=v||""; render(); };
 CHG.maPlat=v=>{ MA.plat=v||""; render(); };
 ACT.maSt=t=>{ MA.st=MA.st===t.dataset.s? "" : t.dataset.s; render(); };
-ACT.maClear=()=>{ MA.q=""; MA.proj=""; MA.adv=""; MA.plat=""; MA.st=""; render(); };
+ACT.maClear=()=>{ MA.q=""; MA.proj=""; MA.adv=""; MA.plat=""; MA.st=""; MA.stg=0; render(); };
 ACT.maReload=()=>maLoad(true);
-const MA_COLS_DEF=["dec","perf","launched","uploaded","snap","tiktok","meta","first","hook","id"];
-function maColsGet(){ try{ const v=JSON.parse(localStorage.getItem("gad.maCols")||"null"); if(Array.isArray(v)) return v; }catch(e){} return MA_COLS_DEF.slice(); }
+const MA_COLS_DEF=["dec","stage","perf","launched","uploaded","snap","tiktok","meta","first","hook","id"];
+function maColsGet(){ try{ const v=JSON.parse(localStorage.getItem("gad.maCols")||"null");
+    if(Array.isArray(v)){ if(v.indexOf("stage")<0&&!localStorage.getItem("gad.maColsStage")){ v.splice(1,0,"stage"); localStorage.setItem("gad.maCols",JSON.stringify(v)); localStorage.setItem("gad.maColsStage","1"); } return v; } }catch(e){} return MA_COLS_DEF.slice(); }
 ACT.maPick=()=>{ MA.pick=!MA.pick; render(); };
+ACT.maStage=async t=>{ const id=t.dataset.id, d=+t.dataset.d, n=Object.assign({},MA.data.N[id]||{}), cur=+n.stage||1, nx=Math.min(STAGES[STAGES.length-1],Math.max(1,cur+d)); if(nx===cur) return;
+  n.stage=nx; n.stageHist=(n.stageHist||[]).concat([{s:nx,at:todayISO()}]);
+  try{ await DB.doc("media_notes/"+id).set(n); MA.data.N[id]=n; if(LB.data) LB.data.N[id]=n; render(); toast(L("اترحّل لـ ","Moved to ")+stageLabel(nx)); }
+  catch(e){ toast(L("مقدرتش أحفظ: ","Couldn't save: ")+(e.message||e),true); } };
+ACT.maStageF=t=>{ const v=+t.dataset.s||0; MA.stg=MA.stg===v?0:v; render(); };
 ACT.maCol=t=>{ const a=maColsGet(), k=t.dataset.k, i=a.indexOf(k); i<0? a.push(k) : a.splice(i,1); try{ localStorage.setItem("gad.maCols",JSON.stringify(a)); }catch(e){} render(); };
 ACT.maDecSet=async t=>{ const id=t.dataset.id, k=t.dataset.k, cur=(MA.data.N[id]||{}).decision, n=Object.assign({},MA.data.N[id]||{});
   if(cur===k) delete n.decision; else n.decision=k;   // دوسة تانية على نفس القرار بترجّعه للاقتراح
