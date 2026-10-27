@@ -9526,15 +9526,16 @@ ACT.profEdit=()=>{
     '<div class="frow"><div class="fld"><label>'+esc(L("الإيميل (للدخول)","Email (sign-in)"))+'</label><input class="inp num" value="'+esc(ME.email||"")+'" disabled style="direction:ltr"></div>'+
       '<div class="fld"><label>'+esc(L("الموبايل","Phone"))+'</label><input class="inp num" id="pfP" maxlength="25" value="'+esc(PF.phone)+'" placeholder="+9665…" style="direction:ltr"></div></div>'+
     '<div class="fld"><label>'+esc(L("نبذة","About"))+'</label><textarea class="inp" id="pfB" rows="2" maxlength="300">'+esc(PF.bio)+"</textarea></div>"+
-    '<details style="margin-top:6px"><summary style="cursor:pointer;font-weight:600">'+esc(L("تغيير الباسورد","Change password"))+"</summary>"+
-      '<div class="frow" style="margin-top:10px"><div class="fld"><label>'+esc(L("الباسورد الجديد","New password"))+'</label><input class="inp" id="pfW1" type="password" autocomplete="new-password" style="direction:ltr"></div>'+
+    '<button class="btn btn-s" data-a="pfPw" style="margin-top:6px">🔒 '+esc(L("تغيير الباسورد","Change password"))+"</button>"+
+      '<div id="pfPwBox" style="display:none"><div class="frow" style="margin-top:10px"><div class="fld"><label>'+esc(L("الباسورد الجديد","New password"))+'</label><input class="inp" id="pfW1" type="password" autocomplete="new-password" style="direction:ltr"></div>'+
       '<div class="fld"><label>'+esc(L("اكتبه تاني","Repeat it"))+'</label><input class="inp" id="pfW2" type="password" autocomplete="new-password" style="direction:ltr"></div></div>'+
-      '<div class="hint">'+esc(L("8 حروف على الأقل. سيبه فاضي لو مش عايز تغيّره.","At least 8 characters. Leave empty to keep it."))+"</div></details>"+
+      '<div class="hint">'+esc(L("8 حروف على الأقل. سيبه فاضي لو مش عايز تغيّره.","At least 8 characters. Leave empty to keep it."))+"</div></div>"+
     "</div>",
     '<button class="btn" data-a="pfOut" style="margin-inline-end:auto">'+esc(L("تسجيل خروج","Sign out"))+'</button><button class="btn" data-a="mclose">'+esc(L("إلغاء","Cancel"))+'</button><button class="btn btn-p" data-a="pfSave">'+esc(L("حفظ","Save"))+"</button>");
   pfAvatar();
 };
 ACT.pfColor=t=>{ PF.color=t.dataset.c; document.querySelectorAll(".pf-c").forEach(b=>b.classList.toggle("on",b.dataset.c===PF.color)); pfAvatar(); };
+ACT.pfPw=()=>{ const b=$("#pfPwBox"); if(!b) return; const on=b.style.display==="none"; b.style.display=on?"":"none"; if(on){ const i=$("#pfW1"); if(i) i.focus(); } };
 ACT.pfNoPic=()=>{ PF.avatar=""; pfAvatar(); };
 ACT.pfPick=()=>{ // الـ input برّه الصفحة عشان مايتمنعش من الـ click delegation
   const i=document.createElement("input"); i.type="file"; i.accept="image/*";
