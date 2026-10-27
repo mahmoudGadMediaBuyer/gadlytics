@@ -1,326 +1,821 @@
 # GADLYTICS
 
-**منصة متابعة وتحليل أداء الحملات الإعلانية لجمعية ملبي** على Meta وTikTok وSnapchat، مربوطة بنظام خزامى (Khzama) اللي بيسجّل التبرعات الفعلية.
+**A performance-tracking and decision platform for paid media**, built for the Molabi (ملبي) charity account at Tamkeen. It joins ad-platform data (Meta, TikTok, Snapchat) with **Khzama** (خزامى), the donation system that records the real orders and revenue.
 
-- **الموقع:** https://mahmoudgadmediabuyer.github.io/gadlytics/
-- **النوع:** موقع ثابت (ملف واحد) على GitHub Pages + قاعدة بيانات Supabase.
-- **مين بيستخدمه:** الميديا باير (الحساب الأساسي) — وفيه دعم لفريق وأدوار وبوابة عميل.
+| | |
+|---|---|
+| **Live site** | https://mahmoudgadmediabuyer.github.io/gadlytics/ |
+| **Hosting** | Static single-page app on GitHub Pages |
+| **Backend** | Supabase (Postgres + Auth + Edge Functions), Row Level Security on every table |
+| **UI language** | Arabic (RTL) by default, English toggle |
+| **Currency / timezone** | SAR · Asia/Riyadh (UTC+3) |
+| **Users** | Media buyer (owner), plus optional teammates, roles and a client portal |
+
+The site **only displays data**. It never writes to or changes an ad account. All pulling is done outside the site by Claude through the platform connectors, and every decision the site suggests is yours to make.
 
 ---
 
-## المحتويات
-1. [الفكرة والقاعدة الذهبية](#1-الفكرة-والقاعدة-الذهبية)
-2. [إزاي البيانات بتوصل للسيستم](#2-إزاي-البيانات-بتوصل-للسيستم)
-3. [الدخول والتشغيل](#3-الدخول-والتشغيل)
-4. [القايمة الجانبية — كل شاشة بالتفصيل](#4-القايمة-الجانبية--كل-شاشة-بالتفصيل)
-5. [الأرقام والمعادلات](#5-الأرقام-والمعادلات)
-6. [التحديث والمزامنة](#6-التحديث-والمزامنة)
-7. [الهوك الأوتوماتيك (Whisper)](#7-الهوك-الأوتوماتيك-whisper)
-8. [المساعد الذكي](#8-المساعد-الذكي)
-9. [هيكل المشروع والملفات](#9-هيكل-المشروع-والملفات)
-10. [قاعدة البيانات](#10-قاعدة-البيانات)
-11. [الأمان والخصوصية](#11-الأمان-والخصوصية)
-12. [حل المشاكل](#12-حل-المشاكل)
-13. [أسئلة متكررة](#13-أسئلة-متكررة)
+## Table of contents
+
+1. [Core idea and the golden rule](#1-core-idea-and-the-golden-rule)
+2. [How Khzama links to the ads](#2-how-khzama-links-to-the-ads)
+3. [Data pipeline](#3-data-pipeline)
+4. [Signing in, opening the app, your profile](#4-signing-in-opening-the-app-your-profile)
+5. [Global controls](#5-global-controls)
+6. [Screens, one by one](#6-screens-one-by-one)
+7. [Metrics and formulas](#7-metrics-and-formulas)
+8. [Decision rules (how suggestions are made)](#8-decision-rules-how-suggestions-are-made)
+9. [Refresh schedule](#9-refresh-schedule)
+10. [Automatic hooks (Whisper, on-device)](#10-automatic-hooks-whisper-on-device)
+11. [AI assistant](#11-ai-assistant)
+12. [Repository layout](#12-repository-layout)
+13. [Database reference](#13-database-reference)
+14. [Building and deploying](#14-building-and-deploying)
+15. [Security and privacy](#15-security-and-privacy)
+16. [Troubleshooting](#16-troubleshooting)
+17. [FAQ](#17-faq)
+18. [Glossary](#18-glossary)
 
 ---
 
-## 1) الفكرة والقاعدة الذهبية
+## 1) Core idea and the golden rule
 
-المنصات الإعلانية (Meta / TikTok / Snap) بتقيس الطلبات والإيراد بالبكسل، وده بيطلع **أعلى من الحقيقة** عند ملبي (مشاكل تراكينج وداتا لاير مش في إيدنا). المصدر الحقيقي للتبرعات هو **خزامى**.
+Ad platforms measure orders and revenue with their pixels. On Molabi those numbers run **higher than reality** because of duplicated events, view-through attribution and tracking issues on a site we don't control. **Khzama** records each actual donation, so it is the source of truth.
 
-> ### القاعدة: كل الميتركس من المنصات — ما عدا **الطلبات والإيراد** (ومعاهم **ROAS / CPA / AOV**) من **خزامى**.
+> ### Golden rule
+> **Every metric comes from the ad platforms, except orders and revenue, which come from Khzama.**
+> Anything derived from orders or revenue (**ROAS, CPA, AOV**) is computed with Khzama's figures.
 
-| من المنصات الإعلانية | من خزامى |
+| From the ad platforms | From Khzama |
 |---|---|
-| الصرف، الظهور، الوصول، النقرات، CTR، CPM، CPC، مشاهدات الفيديو، Hook Rate، Hold Rate، القمع (مشاهدة منتج، سلة، دفع) | عدد الطلبات (التبرعات)، الإيراد، وبالتالي ROAS = إيراد خزامى ÷ صرف المنصات، CPA = الصرف ÷ طلبات خزامى، AOV = إيراد خزامى ÷ طلبات خزامى |
+| Spend, impressions, reach, frequency, clicks, link clicks, CTR, CPM, CPC, landing-page views, video plays, 2s/6s views, ThruPlay, 25/50/75/100% views, Hook rate, Hold rate, and the funnel events (view content, add to cart, initiate checkout, payment info) | Orders (donations) and revenue. From these, ROAS = Khzama revenue ÷ platform spend, CPA = spend ÷ Khzama orders, AOV = Khzama revenue ÷ Khzama orders |
 
-**الربط بين الاتنين** بيتم عن طريق اسم رابط خزامى (Parameters) اللي بيتعمل من أداة الإطلاق، وشكله:
-`<رقم الحملة>-<كاستم اختياري>-<Creative ID>-<كود المنصة>-<المنتج>-<الفاريشن>-<نوع المحتوى>-<المشهور>…`
-مثال: `MGG-03060-Story-20260810134858-SC-Sqya-Sqya-Dywf-Alrhmn-Influencer-Mnswr-Alsalmy`
+The platforms' own purchase and revenue numbers are still kept, labelled **"backend"** or "platform", so you can see the gap. They never replace Khzama's figures.
 
-**أكواد خزامى المحسوبة (بس):**
+---
 
-| الكود | المصدر |
+## 2) How Khzama links to the ads
+
+Every ad's landing URL carries a **Khzama link name** (Parameters), generated by the Tamkeen launch tool. The site parses that name to tie each Khzama donation to a platform, campaign, video and influencer.
+
+**Structure** (fields separated by `-`):
+
+```
+<campaign no.>-<optional custom>-<Creative ID>-<platform code>-<product>-<variation>-<content type>-<influencer>…
+```
+
+**Example:**
+
+```
+MGG-03060-Story-20260810134858-SC-Sqya-Sqya-Dywf-Alrhmn-Influencer-Mnswr-Alsalmy
+```
+
+- **Creative ID:** 14 digits, a timestamp such as `20260810134858`. It is the key that joins Khzama, the ad platforms and the Airtable creative board.
+- **Platform code:** decides which source a donation is credited to.
+
+**Counted Khzama codes (only these):**
+
+| Code | Source |
 |---|---|
-| `ME` | Meta |
+| `ME` | Meta (Facebook / Instagram) |
 | `TT` | TikTok |
 | `SC` | Snapchat |
-| `bio` | رابط البايو |
-| `com` | روابط الكومنتات |
-| `DM` | روابط الرسايل |
+| `bio` | Profile bio links |
+| `com` | Comment links |
+| `DM` | Direct-message links |
 
-أي كود تاني تبع أقسام تانية **ومش داخل في الحسابات**.
+Any other code belongs to other departments and is **excluded** from every total.
+
+### Name unification
+
+Influencer, product and project names appear in Arabic in some places and in transliterated Latin in others. Examples are `Mnswr-Alsalmy` = منصور السالمي, and the several spellings of أبو جودي.
+
+The site builds a dictionary from the Airtable board and the launch-tool parameters. It uses it to **merge these into one row** everywhere: the Analyzer, the filters and the pick-lists.
+
+A video with two influencers shows both names in a fixed order, for example «أنس اكشن + منصور السالمي».
 
 ---
 
-## 2) إزاي البيانات بتوصل للسيستم
+## 3) Data pipeline
 
 ```
-Meta / TikTok / Snap (MCP)  ─┐
-خزامى (Chrome — مفيش API)    ├─►  Claude  ─►  Supabase  ─►  الموقع (عرض بس)
-بورد Airtable (فيو مشاركة)   ─┘
+ Meta Ads ─┐
+ TikTok ───┤  (Claude via MCP connectors, read-only)
+ Snap SAR ─┤
+ Snap USD ─┘  (local OAuth token, USD × 3.75)
+                         │
+ Khzama ─────────────────┤  (Claude via Chrome — Khzama has no API)
+                         │
+ Airtable board ─────────┤  (public shared view, read-only)
+                         ▼
+                   Supabase  ──►  GADLYTICS site (display only)
 ```
 
-- **الموقع نفسه مبيسحبش من المنصات** — بيعرض بس. السحب بيتم من **Claude** (عن طريق موصّلات MCP للمنصات، والكروم لخزامى لأنها مفيهاش API).
-- **حساب Snap بالدولار** (في بيزنس تاني) بيتسحب بتوكن محلي، والدولار بيتحوّل لريال **×3.75**.
-- **فيديوهات TikTok Smart+** بتتحسب على مستوى كل فيديو (تقرير الكريتيف) — ومن غير ما الصرف يتحسب مرتين.
+### 3.1 Sources
 
-### السحب اليومي (أوتوماتيك)
-مهمة مجدولة في تطبيق Claude كل يوم الساعة **8:30 الصبح**:
-1. تسحب آخر 3 أيام من المنصات (لكل إعلان وفيديو، يوم بيوم).
-2. تسحب روابط خزامى لنفس الأيام (طلبات وإيراد لكل رابط).
-3. تبني التقارير اليومية (الصرف من المنصات + الطلبات والإيراد من خزامى).
-
-> لازم **تطبيق Claude والكروم يكونوا مفتوحين** والكروم مسجّل دخول على خزامى. أول مرة بتطلب موافقة على الأدوات — اختار «دايماً».
-
----
-
-## 3) الدخول والتشغيل
-
-- افتح الموقع وسجّل دخول بالإيميل والباسورد (حساب Supabase).
-- **اختصار:** ملف `GADLYTICS` على سطح المكتب يفتح الموقع بدبل كليك، أو في Chrome: ⋮ ← Cast, save and share ← **Install page as app** عشان يبقى برنامج لوحده.
-- **الثيم والوضع:** فاتح/غامق من فوق، و**بسيط / كل الأدوات** من تحت القايمة.
-- **اللغة:** عربي/English من زرار EN.
-
-### ملفي الشخصي
-دوس على **اسمك وصورتك** (فوق في الشريط أو في القايمة الجانبية) أو زرار **«✎ تعديل ملفي»** في «لوحتي»:
-- **الصورة:** «📷 غيّر الصورة» (أي صورة، بتتقص مربع وتتصغّر لوحدها)، أو «شيل الصورة» وتختار **لون** لدايرة أول حرف من اسمك.
-- **الاسم** اللي بيظهر في كل مكان، **المسمى الوظيفي** (بيظهر تحت اسمك بدل الدور)، **الموبايل**، **نبذة**.
-- **الإيميل** للعرض بس (هو إيميل الدخول).
-- **تغيير الباسورد:** اكتب الجديد مرتين (8 حروف على الأقل) — لو سبته فاضي مش هيتغير.
-- **تسجيل خروج** من نفس الشاشة.
-- بيتحفظ في Supabase (`docs` ← `profiles/<user id>`)، فبيظهر على أي جهاز تفتح منه.
-
-> لو ظهرت رسالة «مش قادر أوصل لقاعدة البيانات» — بياناتك سليمة؛ اعمل تحديث للصفحة (Cmd+Shift+R) أو سجّل دخول تاني. السيستم **عمره ما يفتح نسخة فاضية** بدل بياناتك.
-
----
-
-## 4) القايمة الجانبية — كل شاشة بالتفصيل
-
-### شغلي
-
-#### لوحتي
-ملخص سريع ليك:
-- **الكروت:** عملائي · صرف النهارده · إيراد النهارده · **صرف امبارح** · **إيراد امبارح (خزامى)** · **ROAS امبارح** (أخضر ≥3، أحمر <1.5، وتحته ROAS النهارده للمقارنة) · مهامي المفتوحة · رسايل مش مقروءة.
-- **ملخص الصباح**، **عملائي النهارده** (صرف/إيراد/ROAS ومقارنة بامبارح)، **مهامي**، **الفريق**.
-
-#### المهام / المجتمع
-مهام شخصية ومهام للفريق بمواعيد وتنبيه بالمتأخر، ومحادثات الفريق والمنشن.
-
-### متابعة
-
-#### مركز الإجراءات
-المكان اللي بتاخد منه القرارات:
-- **الملخص:** كارت لكل منصة (الصرف، الطلبات، الإيراد، ROAS، CPA، AOV) + تغيّرها عن الفترة اللي قبلها + تقييم ممتاز/كويس/ضعيف مقابل متوسط الفترة.
-- **أحسن وأضعف 3** حملات وفيديوهات ومشاهير (بشرط صرف ≥1% من الإجمالي) — دوسة على أي سطر تفتحه في المحلل.
-- **محتاج تدخلك:** تنبيهات مرتبة بالأولوية (ROAS تحت الهدف، فرص تزويد، شذوذ في CPA/ROAS، أيام من غير بيانات…).
-- زرار **«تحديث»** يجيب آخر أرقام وصلت، ومكتوب جنبه «آخر أرقام وصلت» إمتى.
-
-#### اليوم مباشر
-متابعة اليوم ساعة بساعة (لقطات تراكمية من أول اليوم):
-- **شيت اللقطات** فوق: كل صف = وقت اللقطة؛ أعمدة ملوّنة لكل منصة (صرف / إيراد / ROAS / AOV) + bio / com / DM + **الإجمالي** (صرف، طلبات، إيراد، ROAS، AOV، CPA).
-- **العدّاد:** ميعاد اللقطة الجاية، وتختار كل 15/30/60 دقيقة أو «عند الطلب»، وزراير أسرع/أبطأ و«خد لقطة دلوقتي».
-- **رسمة** الصعود والنزول خلال اليوم، و**كروت** مقارنة بنفس الوقت امبارح، و**مقارنة** بنفس الساعة في أيام تانية (امبارح، نفس اليوم الأسبوع اللي فات، متوسط 7 أيام)، و**أقوى وأضعف ساعات**.
-
-> **اللقطات التلقائية مقفولة حالياً** وبتتشغل في **الموسم** (كل ربع ساعة طول الـ 24 ساعة). زرار «ابدأ سناب شوت» بيسجّل طلب لقطة، وClaude بياخدها في أول تشييكة.
-
-### تحليل
-
-#### نظرة عامة
-شاشة واحدة بتتغير حسب الفترة اللي تختارها من الشريط فوق:
-- **النهارده:** ملخص اليوم — الأرقام مقابل نفس الساعة امبارح، توقّع نهاية اليوم «لو كمّل بنفس المعدل»، أكبر مكسب وأكبر مشكلة، أخطر التنبيهات، جودة البيانات، وزرار «انسخ الملخص».
-- **امبارح:** تقرير الإقفال — مقابل اليوم اللي قبله ومتوسط 7 أيام، أفضل وأسوأ منصة وحملة، **إجراءات بكرة** (زوّد / قلّل / وقّف + السبب)، وزرار «انسخ التقرير».
-- **أي فترة:** كروت الأرقام الأساسية، الاتجاه، حصة المنصات، ROAS لكل منصة، درجة الصحة، الأهداف.
-- **تحت دايماً:** «كل الاستنتاجات والتحليل» (إيه اللي اتغير، أفضل الأوقات والمنصات، الصرف اليومي حسب المنصة، أداء العملاء والمنصات) — وزرار إخفاء/اعرض.
-
-#### المحلل
-أداة البحث في كل التفاصيل — بيقرا **كل إعلان وكل فيديو يوم بيوم**:
-- **الفترة:** من/إلى، و**قارن بـ**: الفترة اللي قبلها / نفس الفترة السنة اللي فاتت / مخصص / بدون.
-- **قسّم حسب:** المنصة · الحساب · الحملة · الفيديو · المشهور · المعلن (Airtable) · المشروع · الموسم · المنتج · الفاريشن · نوع المحتوى · المقاس · اليوم · الأسبوع · الشهر · يوم الأسبوع.
-- **الفلاتر (اختيار متعدد):** الحملة، الموسم، المشروع، المعلن + المنصة. القوايم **بتتبع المنصة المختارة** (لو اخترت سناب يظهرلك حملات سناب بس).
-- **«دوّر»:** قايمة تختار منها قيم التقسيم الحالي (مش لازم تكتب).
-- **اختار الأرقام:** 42 ميترك (أساسي / القمع / الفيديو) — اختيارك بيتحفظ.
-- **دوسة على أي سطر:** تفاصيله حسب المنصة والحملة والشهر والفيديو.
-- **ملف الحملة:** لما تقسّم بالحملة وتدوس على حملة — القمع بنسبة كل خطوة، أيام الأسبوع، رسمة يوم بيوم (صرف vs إيراد خزامى).
-- **⇆ فترتين جنب بعض:** كل رقم في الفترتين والتغيير، ولكل منصة.
-- **CSV** للتصدير.
-- **توحيد الأسماء:** نفس الشخص/المنتج/المشروع لو مكتوب بالعربي مرة وبالإنجليزي مرة (مثلاً `Mnswr-Alsalmy` = منصور السالمي) بيظهر سطر واحد — القاموس جاي من بورد Airtable.
-
-#### التقارير
-تقارير يوم/أسبوع/شهر جاهزة (بأسماء الأيام)، فلتر بالمنصة، واختيار الأرقام اللي تظهر — للتسليم والطباعة، وبتظهر للعميل في بوابته.
-
-### تشغيل
-
-#### إدخال البيانات
-إدخال يدوي (لقطة سريعة / تقرير يومي) لأي حاجة مش بتتسحب أوتوماتيك.
-
-#### إدارة الحملات
-شيت: **كل عمود يوم، وكل صف منصة**، وجوه كل خانة **أكواد الحملات** الشغالة (الكود بس، مش الاسم الكامل).
-- **أخضر** = مكمّلة من اليوم اللي قبله · **أزرق** = جديدة · **إطار أحمر** = اشتغلت اليوم ده ومترحّلتش لليوم اللي بعده (وقفت).
-- الملخص فوق: مستمرة من امبارح / جديدة / اتقفلت / شغالة في اليوم.
-- **←** ترحّل حملة لليوم اللي بعده، **«الكل ←»** ترحّل كل حملات المنصة، **✕** تشيلها، **+** تضيف.
-- **دوسة على كود أي حملة = ملف الحملة:** اختار الفترة (النهارده / امبارح / آخر 7 أيام / من أول ما اشتغلت / **مدة تختارها**) وتشوف:
-  - الأرقام (صرف، ظهور، نقرات، CTR، CPM، CPC من المنصة + طلبات، إيراد، ROAS، CPA، AOV من خزامى) ومقارنة كل رقم **بمتوسط نفس المنصة**.
-  - رسمة يوم بيوم، والفيديوهات اللي فيها (المعلن، الصرف، الطلبات، **الإيراد**، ROAS).
-  - **الاقتراح:** زوّد الميزانية / سيبها شغالة / راقبها / وقّفها / «لسه بدري — استنى» + السبب (مقارنة بمتوسط المنصة، اتجاه آخر 3 أيام، أضعف خطوة في القمع). **القرار والتنفيذ عندك.**
-
-> ملا الشيت أوتوماتيك من المنصات كل يوم متأجّل للموسم — دلوقتي «حدّث شيت الحملات» من Claude.
-
-#### الميديا بلان
-تخطيط الميزانيات والتوزيع على المنصات.
-
-#### إدارة الميديا
-الفيديوهات اللي **اتطلقت** (أو اللي ضفتها من المكتبة) — مقسومة **بالمشروع ثم المشهور**، ومن **اليمين للشمال**:
-`المشهور ← رقم الفيديو ← الهوك ← تاريخ الإطلاق ← ميتا ← تيك توك ← سناب ← رفع الميديا ← إطلاق الحملة ← (اسم الحملة) ← الأداء ← المرحلة ← القرار`
-- **المنصات / رفع الميديا / إطلاق الحملة / تاريخ الإطلاق:** بتتحسب لوحدها من المنصات وخزامى.
-- **الأداء:** قوي / متوسط / ضعيف = ROAS الفيديو مقارنة **بمتوسط مشروعه** (وبيحتاج صرف 300 ريال على الأقل، غير كده «بيانات قليلة»).
-- **القرار:** اقتراح أوتوماتيك (قوي ← هيكمل، ضعيف ← مش هيكمل، غير كده يتراقب) بإطار متقطّع؛ ✓ / ✕ / … تثبّت قرارك، ودوسة تانية ترجّعه للاقتراح.
-- **المراحل:** ١ اختبار ← ٢ الوينرز ← ٣ التوسيع (والأسامي بتتغير، لحد 10 مراحل):
-  - **↑** ترحّل للمرحلة اللي بعدها و **↓** ترجّعها — وكل نقلة بتتسجل **بتاريخها**.
-  - تحت المرحلة: «من {تاريخ دخولها}» و**ROAS من يوم ما دخلتها** (صرف المنصات + إيراد خزامى).
-  - زرار ↑ **بينوّر أخضر** لما الفيديو يبقى قوي وجاهز يترحّل.
-  - **كروت المراحل** فوق (العدد، ROAS، الصرف) — دوسة تفلتر عليها.
-- **الهوك:** مكتوب يدوي ✎، أو **🎙 هوك أوتوماتيك** (بيدخل طابور، شوف [الجزء 7](#7-الهوك-الأوتوماتيك-whisper)).
-- **☰ الأعمدة:** تختار تظهر إيه («اسم الحملة» مخفي افتراضياً عشان السطور متكبرش).
-- **كروت فوق:** الإجمالي، هيكمل، مش هيكمل، يتراقب، اقتراح لسه ما اتأكدش، اتطلق آخر 3 أيام — دوسة على أي كارت تفلتر.
-- فلاتر بالمشروع والمعلن والمنصة وبحث.
-
-#### مكتبة الكريتيف
-زي Airtable بس أبسط — **كل فيديوهات ملبي** (الأسلوب: مشهور / مودل / إبداعي — من غير التصاميم والتصوير) بكل أعمدة البورد + أداء كل فيديو:
-- **شريط الأدوات:** `🔍 بحث` · `☰ الأعمدة` · `⧩ فلتر` · `▤ تجميع` · `⇅ ترتيب` · `الأرقام: كل الوقت / فترة` · `↻ تحديث من Airtable` — الزرار المتفعّل بيتلوّن وعليه عدد.
-- **الأعمدة:** كل أعمدة Airtable + المحسوبة: الهوك، الصرف، صرف كل منصة، الطلبات والإيراد (خزامى)، ROAS، تكلفة الطلب، **Hook Rate / Hold Rate / CTR / CPM من المنصات**، **التقييم**، **التاجز**، **ملاحظات**، أول/آخر صرف، الحملات، المنصات، «في إدارة الميديا». **اسحبها بالماوس** يمين وشمال عشان ترتّبها، ودوسة بتخفي/تظهر.
-- **الفلتر:** الشروط حسب نوع العمود (نص: هو / مش هو / فيه / مش فيه / فاضي / مش فاضي — رقم: > < ≥ ≤ = ≠ — تاريخ: في يوم / بعد / قبل)، و«هو / مش هو» **باختيار متعدد** وبحث، و**كل الشروط / أي شرط**.
-- **التجميع:** لحد 3 مستويات، ولكل مستوى ترتيب (الأعلى صرفاً / أ←ي / ي←أ)، و«افتح الكل / اقفل الكل»، ومجموع كل مجموعة.
-- **الترتيب:** أكتر من مستوى، أو دوسة على عنوان العمود. الفاضي دايماً تحت.
-- **دوسة على فيديو:** الهوك (وتعديله)، **التاجز والملاحظات** (يدوي)، أداؤه على كل منصة والحملات (دوسة على حملة تفتح ملفها)، وكل بيانات البورد ولينك الفيديو.
-- **إضافة لإدارة الميديا:** علّم كذا فيديو ← «➕ أضف لإدارة الميديا»، أو من داخل الفيديو. الفيديو بيدخل المرحلة ١ ويتحط في طابور الهوك لو ملوش هوك.
-
-#### الموافقات / سجل التغييرات / التجارب
-- **سجل التغييرات:** سجّل أي تغيير (ميزانية، كريتيف، استهداف، لاندنج…) والسيستم يقيس **قبل/بعد** على نفس النطاق وبنفس طول النافذة ويحكم نجح/فشل/غير حاسم، وبيحذّر من التغييرات المتداخلة، والتغييرات بتظهر كعلامات على رسومات الاتجاه. (حالياً يدوي.)
-- **التجارب:** مجموعة ضابطة ومجموعة اختبار وحكم بالأرقام.
-
-### الإدارة والإعدادات
-الفريق والأدوار، تقييم الأداء، ولوحة التحكم (العملاء، المنصات، الأهداف، التنبيهات، الأقسام، أسماء المراحل…).
-
----
-
-## 5) الأرقام والمعادلات
-
-| الرقم | المعادلة | المصدر |
+| Source | Granularity | How it is pulled |
 |---|---|---|
-| ROAS | إيراد خزامى ÷ صرف المنصات | خزامى + المنصات |
-| CPA (تكلفة الطلب) | الصرف ÷ طلبات خزامى | خزامى + المنصات |
-| AOV (متوسط الطلب) | إيراد خزامى ÷ طلبات خزامى | خزامى |
-| CTR | النقرات ÷ الظهور × 100 | المنصات |
-| CPM | الصرف ÷ الظهور × 1000 | المنصات |
-| CPC | الصرف ÷ النقرات | المنصات |
-| Hook Rate | مشاهدات أول ثانيتين (أو تشغيلات الفيديو لو المنصة مبتبعتهاش) ÷ الظهور × 100 | المنصات |
-| Hold Rate | مشاهدات الفيديو للآخر ÷ تشغيلات الفيديو × 100 | المنصات |
-| نقرة ← طلب | طلبات خزامى ÷ النقرات × 100 | الاتنين |
-| تقييم الفيديو | ROAS الفيديو ÷ متوسط مشروعه: ≥1.15 قوي، ≥0.85 متوسط، أقل ضعيف (وصرف ≥300) | الاتنين |
+| **Meta** | Ad × day, plus video (creative) × day | Meta Ads MCP connector |
+| **TikTok** | Ad × day; Smart+ at the creative (material) level | TikTok for Business MCP connector |
+| **Snap (SAR account)** | Ad × day | Snap MCP connector |
+| **Snap (USD account, separate business)** | Ad × day | Local OAuth token, converted to SAR at **3.75** |
+| **Khzama** | Link name × day (orders, revenue) | Read through Chrome, since Khzama has no API |
+| **Airtable creative board** | One row per video, all board columns | Public shared view, via the `media-sync` function |
 
-- **النقرات** = نقرات الرابط لو المنصة بتبعتها، وإلا النقرات العادية.
-- **العملة:** ريال سعودي؛ أي دولار ×3.75.
-- **التوقيت:** الرياض (+3).
+### 3.2 Special handling
+
+- **TikTok Smart+ double counting.** Smart+ campaigns report spend both per ad and per material (video). When material-level rows exist for the same account, ad and date, the ad-level rows are dropped, so the spend is counted once.
+- **USD to SAR.** Every USD row carries `currency=USD, fx=3.75` and is converted before it is stored.
+- **Clicks.** Link clicks are used when the platform reports them. Otherwise all clicks are used.
+
+### 3.3 Daily pull (automatic)
+
+A scheduled task in the Claude desktop app, **"GADLYTICS — daily pull for Molabi"**, runs every day at **08:30** and:
+
+1. Pulls the **last 3 days** from every platform account, per ad and per video, day by day. Re-pulling three days lets late-arriving conversions settle.
+2. Pulls the Khzama link totals for the same days.
+3. Rebuilds the daily report docs: platform metrics plus Khzama orders and revenue.
+
+**Requirements:**
+
+- The Claude app and Chrome must be open.
+- Chrome must be signed in to Khzama.
+- The first run asks permission for each tool. Choose **"Always allow"**.
 
 ---
 
-## 6) التحديث والمزامنة
+## 4) Signing in, opening the app, your profile
 
-| إيه | إمتى | إزاي |
+### 4.1 Signing in
+
+- Open the site and sign in with your **email and password** (a Supabase Auth account).
+- The session persists, so you won't need to sign in again on the same browser.
+
+### 4.2 Opening it fast
+
+- **Desktop shortcut:** a `GADLYTICS` file on the Mac desktop opens the site on double-click.
+- **Install as an app:** in Chrome, go to ⋮ → *Cast, save and share* → **Install page as app**.
+- **From the Claude app:** the `GADLYTICS` entry in the preview list opens the site inside Claude.
+
+### 4.3 Your profile (ملفي الشخصي)
+
+Open your profile in any of these ways:
+
+- Click your **name and photo** in the top bar.
+- Click your name in the sidebar.
+- Use **"✎ Edit profile"** on *My dashboard*.
+
+| Field | Notes |
+|---|---|
+| **Photo** | "📷 Change photo" takes any image; it is cropped square and scaled to 192 px automatically. "Remove photo" falls back to an initial in a coloured circle. |
+| **Initials colour** | 8 colours for the circle shown when there is no photo. |
+| **Name** | Your display name everywhere: top bar, sidebar, tasks, community. |
+| **Job title** | Shown under your name instead of the role, for example "Media buyer". |
+| **Email** | Read-only. It is your sign-in email. |
+| **Phone, About** | Free text. |
+| **🔒 Change password** | Enter the new password twice, at least 8 characters. Leave it empty to keep the current one. |
+| **Sign out** | Ends the session on this browser. |
+
+The profile is saved in Supabase (`docs` → `profiles/<auth user id>`), so it follows you to any device.
+
+---
+
+## 5) Global controls
+
+| Control | Where | What it does |
 |---|---|---|
-| المنصات + خزامى + التقارير | يومياً 8:30 الصبح | مهمة «GADLYTICS — السحب اليومي لملبي» في تطبيق Claude |
-| بورد Airtable (المكتبة) | وقت ما تحب | زرار **«↻ تحديث من Airtable»** في المكتبة (حوالي 10 ثواني) |
-| لقطات اليوم المباشر | في الموسم كل ربع ساعة | مهمة «لقطات اليوم المباشر» (مقفولة دلوقتي) |
-| أي سحب فوري | أي وقت | اطلبه من Claude |
+| **Client switcher** | Top bar | Pick a client, or "All clients". Molabi is the main one. |
+| **Screen search** | Top bar (shortcut `/`) | Type a screen name and press Enter to jump to it. |
+| **Notifications 🔔** | Top bar | Badge = pending approvals + unread mentions + tasks due soon. |
+| **EN / عربي** | Top bar | Switch language. |
+| **Theme** | Top bar | Light or dark. |
+| **Mode: Simple / All tools** | Bottom of the sidebar | Simple hides advanced screens and sections. |
+| **Filter bar** | Most analysis screens | Date range, platform and comparison period. |
+| **Copy buttons** | Overview and briefs | Copy a ready-to-paste text summary. |
 
 ---
 
-## 7) الهوك الأوتوماتيك (Whisper)
+## 6) Screens, one by one
 
-الهوك = أول جملة بيقولها المعلن في الفيديو.
-- **Whisper** (موديل large-v3-turbo) شغال **على جهاز الماك** ومش بيبعت الفيديو لأي حد.
-- لكل فيديو: بيفتح فولدر الدرايف بتاعه ← ينزّل فيديو واحد في **فولدر مؤقت** ← يطلّع الصوت ← **يمسح الفيديو فوراً** ← يسمع أول 12 ثانية ← يمسح الصوت ← يحفظ أول جملة. **مفيش ولا ملف بيفضل على الجهاز.**
-- حوالي **14 ثانية للفيديو**.
-- **الطابور:** أي فيديو يتضاف لإدارة الميديا من غير هوك، أو تدوس له «🎙 هوك أوتوماتيك»، بيدخل الطابور. بعدها قول لـ Claude **«اكتب الهوكات»**.
-- **الأولوية:** الهوك اللي كتبته بإيدك ← هوك Whisper ← «نص تسويقي» من Airtable.
+The sidebar is grouped into **Work (شغلي)**, **Monitoring (متابعة)**, **Analysis (تحليل)**, **Operations (تشغيل)**, **Administration (الإدارة)** and **Settings (الإعدادات)**.
 
----
+### 6.1 My dashboard (لوحتي)
 
-## 8) المساعد الذكي
+A personal home screen.
 
-النجمة اللي تحت في الشمال. بيقرا أرقامك من الموقع ويجاوب (أضعف حملة، ليه الـ ROAS نزل، أحسن وقت…) ويقدر يضيف أقسام.
-- **محتاج مفتاح Claude API** (رصيد بيتشحن مقدماً من console.anthropic.com، والسؤال بسنتات).
-- المفتاح بيتحط في **Supabase ← Edge Functions ← Secrets** باسم `ANTHROPIC_API_KEY` — **مش في الموقع ولا في GitHub ولا في الشات**.
-- الأنواع: سريع (أرخص) / عادي / متقدم (أدق).
+- **Header:** your photo, name, role or job title, and an "Edit profile" button.
+- **KPI tiles:**
+  - My clients.
+  - Spend today.
+  - Revenue today, with today's ROAS underneath.
+  - **Spend yesterday.**
+  - **Revenue yesterday (Khzama).**
+  - **ROAS yesterday:** green at 3x or above, red below 1.5x, with today's ROAS underneath for comparison.
+  - Open tasks, with the number overdue.
+  - Unread messages.
+- **Morning summary:** what changed overnight.
+- **My clients today:** spend, revenue and ROAS per client, compared with yesterday.
+- **My tasks** and **Team** (who is online).
 
----
+### 6.2 Tasks and Community (المهام / المجتمع)
 
-## 9) هيكل المشروع والملفات
+- **Tasks:** personal tasks or tasks assigned to teammates, with due dates and an overdue flag. A task can be linked to a client.
+- **Community:** team channels (general, updates, fun, per-client), direct messages and @mentions. Unread counts appear in the sidebar.
 
-| الملف | الوظيفة |
+### 6.3 Action center (مركز الإجراءات)
+
+The screen to open first every morning.
+
+**Per-platform summary cards** cover Meta, TikTok, Snap and bio / com / DM. Each card shows:
+
+- Spend, orders, revenue, ROAS, CPA and AOV.
+- The change from the previous period of the same length.
+- A rating against the period average: **Excellent** (≥ 1.15× average ROAS), **OK** (≥ 0.9×) or **Weak**.
+
+**Top 3 and bottom 3** campaigns, videos and influencers:
+
+- Only items with at least **1% of total spend** qualify, so tiny tests don't dominate.
+- Click any row to open it in the Analyzer.
+
+**"Needs you" (محتاج تدخلك)** lists alerts in priority order, such as:
+
+- ROAS below target.
+- Scaling opportunities.
+- CPA or ROAS anomalies against the trend.
+- Days with no data.
+- Budget pacing.
+- Data-quality issues.
+
+**Refresh** reloads the latest numbers. The label beside it says when data last arrived.
+
+### 6.4 Today live (اليوم مباشر)
+
+Intraday tracking from cumulative **snapshots** taken through the day.
+
+**Snapshot sheet (top).** One row per snapshot time, with column groups in this order:
+
+1. One coloured group per platform: spend, revenue, ROAS and AOV.
+2. bio, com and DM.
+3. **Total:** spend, orders, revenue, ROAS, AOV and CPA.
+
+**Countdown:**
+
+- Shows the time left until the next snapshot.
+- Choose every 15, 30 or 60 minutes, or on demand.
+- Faster and slower buttons, plus **"Take a snapshot now"**.
+
+**Below the sheet:**
+
+- A **chart** of the day's climb.
+- **Cards** comparing each number with the same time yesterday.
+- A **same-hour comparison** with yesterday, the same weekday last week and the 7-day average.
+- The **best and worst hours**.
+
+> **Automatic snapshots are currently OFF.** In season they run every 15 minutes, 24 hours a day. The "Start snapshot" button records a request, and Claude takes the snapshot on its next check.
+
+### 6.5 Overview (نظرة عامة)
+
+One screen whose content follows the period chosen in the filter bar.
+
+| Period | What you get |
 |---|---|
-| `index.html` | المنصة كلها (بتتبني من `mediabuyer-console.html` بـ `python3 tools/build.py`) |
-| `supa-db.js` | التخزين على Supabase بنفس واجهة المنصة + شاشة الدخول |
-| `config.js` | رابط مشروع Supabase والـ anon key (عام ومحمي بـ RLS) |
-| `schema.sql` | جدول `docs` وقواعد الصلاحيات |
-| `tools/build.py` | يبني `index.html` |
-| `tools/prep_ad_daily.py` | يجهّز سحب المنصات لجدول `ad_daily` (يفك أسماء الحملات والإعلانات، ويحوّل الدولار) |
-| `tools/rebuild_entries.sql` | يبني التقارير اليومية (الصرف من المنصات + الطلبات/الإيراد من خزامى) |
-| `supabase/functions/ai` | المساعد الذكي (بيكلّم Claude API بالمفتاح المتخزّن كسر) |
+| **Today** | Live brief. Numbers against the same hour yesterday; an end-of-day projection ("if the pace holds"); the biggest win and biggest problem; top alerts; data quality; "Copy summary". |
+| **Yesterday** | Closing report. Comparison with the day before and the 7-day average; best and worst platform and campaign; **tomorrow's actions** (scale, reduce or pause, each with a reason); "Copy report". |
+| **Any range** | KPI cards, trend chart, platform share, ROAS by platform, health score and goal progress. |
 
-**دوال شغالة على Supabase ومصدرها مش هنا عمداً** (الريبو عام):
-- `ingest` — استقبال البيانات المسحوبة (فيها مفتاح).
-- `media-sync` — «تحديث المكتبة» من Airtable (فيها لينك المشاركة الخاص بالبورد).
+Always at the bottom: **"All conclusions and analysis"**. It covers what changed, the best times and platforms, daily spend by platform, and performance per client and per platform. A toggle hides or shows it.
 
----
+### 6.6 Analyzer (المحلل)
 
-## 10) قاعدة البيانات
+The deep-dive tool. It reads **every ad and every video, day by day**.
 
-| الجدول / العرض | فيه إيه |
+**Period and comparison**
+
+- From and To dates.
+- **Compare with:** the previous period, the same period last year, a custom range, or none.
+
+**Break down by** (one dimension at a time):
+
+| Group | Dimensions |
 |---|---|
-| `docs` | إعدادات المنصة، ملفك الشخصي `profiles/<user id>`، التقارير اليومية `entries/<client>__<date>`، شيت الحملات `roster/…`، ملاحظات/مراحل/قرارات الفيديوهات `media_notes/…`، مواعيد اللقطات… |
-| `ad_daily` | أرقام المنصات يوم بيوم لكل إعلان وفيديو (Meta · TikTok · Snap الريال والدولار) |
-| `khzama_link_daily` | طلبات وإيراد خزامى لكل رابط يوم بيوم |
-| `snapshots` | لقطات «اليوم مباشر» التراكمية |
-| `media` | فيديوهات بورد Airtable بكل أعمدته + الهوك الأوتوماتيك |
-| `v_media_perf` | أداء كل فيديو على كل منصة (صرف، ظهور، نقرات، مشاهدات + طلبات/إيراد خزامى، والحملات) — من غير تكرار Smart+ |
-| `v_media_daily` | أداء كل فيديو يوم بيوم (للمراحل) |
+| Structure | Platform, Account, Campaign |
+| Creative | Video (Creative ID), Influencer, Creator (Airtable advertiser), Content type, Size |
+| Business | Project, Season, Product, Variation |
+| Time | Day, Week, Month, Weekday |
 
-كل الجداول عليها **RLS**: محدش يقرا غير اللي مسجّل دخول، والكتابة من البيانات المسحوبة بتعدّي على دالة `ingest` بس.
+**Filters (multi-select)**
 
----
+- Campaign, Season, Project and Creator, plus Platform.
+- The lists **follow the selected platform**: choose Snap and only Snap campaigns are listed.
+- Each filter opens a checklist with search, so you can pick several values at once.
 
-## 11) الأمان والخصوصية
+**Search pick-list (دوّر):** suggests the values of the current dimension, so you choose instead of typing.
 
-- مفيش باسوردات ولا توكنات في الكود. المفاتيح كلها **أسرار في Supabase** أو على جهاز الماك.
-- الـ anon key في `config.js` عام بطبيعته ومحمي بقواعد RLS.
-- السحب من المنصات وخزامى **قراية بس** — السيستم مبيعدّلش ولا يشغّل ولا يوقف أي حاجة في الحسابات الإعلانية. أي قرار تنفيذه عندك.
-- اقتراح: فعّل **Leaked password protection** من Supabase ← Authentication.
+**Metrics picker.** Your selection is remembered.
 
----
-
-## 12) حل المشاكل
-
-| المشكلة | الحل |
+| Group | Metrics |
 |---|---|
-| «مش قادر أوصل لقاعدة البيانات» | تحديث (Cmd+Shift+R) أو سجّل دخول تاني — البيانات سليمة |
-| الأرقام واقفة عند يوم قديم | السحب اليومي مستني موافقة: افتح مهمته في تطبيق Claude ووافق بـ «دايماً» |
-| «امبارح» كله صفر | يا إما مفيش صرف فعلاً، يا إما السحب اليومي ماشتغلش |
-| المكتبة مش فيها فيديو جديد | «↻ تحديث من Airtable» |
-| الهوك فاضي | «🎙 هوك أوتوماتيك» ثم «اكتب الهوكات» لـ Claude، أو ✎ واكتبه |
-| المساعد بيقول «محتاج مفتاح» | حط `ANTHROPIC_API_KEY` في Supabase Secrets |
-| صفحة قديمة بعد تحديث | Cmd+Shift+R |
+| Base | Spend, Revenue, ROAS, Orders, CPA, AOV, Impressions, CPM, Clicks, CTR, CPC |
+| Funnel | Clicks, LP views, View content, Add to cart, Checkout, Purchases; the step rates Click→VC, VC→ATC, ATC→Checkout, Checkout→Buy and Click→Buy; Cost/ATC, Cost/Checkout |
+| Video | Impressions, Plays, Hook rate, 2s, 6s, ThruPlay, reached 25/50/75%, Hold (100%), Spend, ROAS |
+| Extra | Reach, Frequency, Link clicks, All clicks, Cost/LP view, Cost/VC, Payment info, 25/50/75/100% view counts |
+
+For cost metrics such as CPA, CPM, CPC and frequency, **lower is better**, so their colouring is inverted.
+
+**Interactions**
+
+- **Click a row** to see its breakdown by platform, campaign, month and video.
+- **Campaign file:** when breaking down by campaign, click one to see:
+  - its funnel, with the conversion % at each step;
+  - weekday performance;
+  - a day-by-day chart of spend against Khzama revenue.
+- **⇆ Side by side:** two periods next to each other, with every metric and its change, overall and per platform.
+- **CSV export** of the current table.
+
+### 6.7 Reports (التقارير)
+
+Ready **daily, weekly and monthly** reports with day names. They have a platform filter and a metric picker with:
+
+| Group | Metrics |
+|---|---|
+| Results | Spend, Revenue, ROAS, Orders, CPA, AOV |
+| Delivery | Impressions, CPM, Clicks, CTR, CPC |
+| Funnel | View content, Add to cart, Checkouts, the step conversion rates, Cost/ATC, Cost/Checkout |
+| Platform-reported | Backend orders, revenue and ROAS |
+
+The reports are built for handing over or printing, and they also appear in the client's portal.
+
+### 6.8 Data entry (إدخال البيانات)
+
+Manual input for anything that isn't pulled automatically: a **quick snapshot** or a **full daily report** per platform. Manual entries appear everywhere the automatic ones do.
+
+### 6.9 Campaign roster (إدارة الحملات)
+
+A sheet where **each column is a day and each row is a platform**. Each cell holds the **codes** of the campaigns running that day: the code only, not the full name.
+
+**Colours**
+
+| Mark | Meaning |
+|---|---|
+| **Green** | Continued from the previous day |
+| **Blue** | New that day |
+| **Red outline** | Ran that day but wasn't carried to the next day (stopped) |
+
+**Summary strip:** continued from yesterday, new, stopped, and running today.
+
+**Editing**
+
+| Control | Action |
+|---|---|
+| **←** | Carry this campaign to the next day |
+| **All ←** | Carry every campaign of this platform |
+| **✕** | Remove the campaign from that day |
+| **+** | Add a campaign |
+
+**Campaign file (click any code)**
+
+- **Window:** today, yesterday, last 7 days, since launch, or a **custom range**.
+- **Metrics:** spend, impressions, clicks, CTR, CPM and CPC from the platform, and orders, revenue, ROAS, CPA and AOV from Khzama. Each one is compared with the **same platform's average**.
+- **Day-by-day chart.**
+- **Videos table:** creator, spend, orders, **revenue** and ROAS for each video in the campaign.
+- **Suggestion** with its reasons; see [§8](#8-decision-rules-how-suggestions-are-made). It is a suggestion only. The decision and execution are yours.
+
+> Auto-filling the roster from the platforms every day is planned for the season. For now, ask Claude to "update the campaign sheet".
+
+### 6.10 Media plans (الميديا بلان)
+
+Plan budgets and how they split across platforms for a period.
+
+### 6.11 Media management (إدارة الميديا)
+
+Where you manage the videos that have **launched**, or that you added from the library, and decide which ones continue and which stop.
+
+**Layout:** grouped by **project**, then by **influencer**, read right to left.
+
+| Column | Source |
+|---|---|
+| Influencer | Airtable |
+| Video number (Creative ID) | Airtable |
+| Hook | Manual ✎, then Whisper, then Airtable's "marketing text" |
+| Launch date (first spend) | Platforms |
+| Meta / TikTok / Snap | ✓ if the video spent on that platform |
+| Media uploaded / Campaign launched | Platforms (automatic) |
+| Campaign name | Platforms. **Hidden by default** to keep rows short. |
+| Performance | Computed (see below) |
+| Stage | You |
+| Decision | Suggested, then confirmed by you |
+
+**Performance:** the video's ROAS divided by its **project's average ROAS**.
+
+| Ratio | Rating |
+|---|---|
+| ≥ 1.15 | **Strong** |
+| ≥ 0.85 | **Average** |
+| below 0.85 | **Weak** |
+
+A video needs at least **300 SAR of spend** to be rated. Below that it shows "little data".
+
+**Decision**
+
+- Suggested automatically:
+  - strong → **Keep** (هيكمل);
+  - weak → **Stop** (مش هيكمل);
+  - otherwise → **Watch** (يتراقب).
+- A suggestion has a dashed outline.
+- **✓ / ✕ / …** lock your own decision. Click it again to return to the suggestion.
+
+**Stages**
+
+- Default stages: **1 Test → 2 Winners → 3 Scale**. They can be renamed, up to 10 stages.
+- **↑** promotes a video to the next stage and **↓** demotes it. Every move is logged with its date.
+- Under each stage you see "since {date}" and the **ROAS since the video entered that stage**, using platform spend and Khzama revenue for those days only.
+- The ↑ button **lights green** when a video is strong and ready to promote.
+- **Stage cards** at the top show the count, ROAS and spend for each stage. Click one to filter.
+
+**Other controls**
+
+- **☰ Columns:** show or hide any column. Your choice is remembered on this browser.
+- **Top cards:** total, Keep, Stop, Watch, unconfirmed suggestions, and launched in the last 3 days. Click a card to filter.
+- Filters by project, creator and platform, plus search.
+- **🎙 Auto hook:** queues a video for transcription; see [§10](#10-automatic-hooks-whisper-on-device).
+
+### 6.12 Creative library (مكتبة الكريتيف)
+
+An Airtable-style board of **every Molabi video**, built to be simpler and faster than Airtable. It includes only the styles **Influencer (مشهور)**, **Model (مودل)** and **Creative (ابداعي)**; designs and photo shoots are excluded.
+
+**Toolbar:** `🔍 Search` · `☰ Columns` · `⧩ Filter` · `▤ Group` · `⇅ Sort` · `Numbers: all time / period` · `↻ Refresh from Airtable`. An active button is highlighted and shows a count.
+
+**Columns**
+
+- **Every Airtable board column:** client, product, project, style, creator, season, type, category, ad status, licence validity, art director's recommendation, hold reason, URL, launch link, entry date, and the rest.
+- **Computed columns:**
+
+| Group | Columns |
+|---|---|
+| Spend | Spend, spend per platform |
+| Khzama | Orders, revenue, ROAS, CPA |
+| From the platforms | Hook rate, Hold rate, CTR, CPM |
+| Your inputs | Rating, Tags, Notes |
+| Activity | First and last spend, Campaigns, Platforms, "In media management" |
+| Content | Hook |
+
+- **Drag** column headers left or right to reorder them. Click a column to show or hide it.
+
+**Filter**
+
+| Column type | Conditions |
+|---|---|
+| Text | is · is not · contains · doesn't contain · is empty · is not empty |
+| Number | > · < · ≥ · ≤ · = · ≠ |
+| Date | on · after · before |
+
+- "is" and "is not" support **multi-select** with search.
+- Combine conditions with **All conditions** (AND) or **Any condition** (OR).
+
+**Group**
+
+- Up to **3 levels**.
+- Each level is ordered by highest spend, A→Z or Z→A.
+- Expand all or collapse all.
+- Each group shows its totals.
+
+**Sort**
+
+- Multiple sort levels, or click a column header.
+- Empty values always go last.
+
+**Rating:** the video's ROAS against its project average. You can filter and sort by it.
+
+**Video detail (click a row)**
+
+- The hook, which you can edit.
+- **Tags and notes**, entered manually.
+- Performance on each platform and the campaigns the video ran in. Click a campaign to open its file.
+- All board fields and the video link.
+- Add the video to media management, or remove it.
+
+**Adding to media management**
+
+- Select several rows and click **"➕ Add to media management"**, or add a single video from its detail view.
+- Added videos enter **stage 1**.
+- A video without a hook joins the hook queue.
+
+**Refresh:** "↻ Refresh from Airtable" re-reads the shared board view in about 10 seconds. New videos appear and changed fields update. Your tags, notes, stages and decisions are kept.
+
+### 6.13 Approvals, change log, experiments
+
+- **Approvals (الموافقات):** items waiting for an admin's sign-off.
+- **Change log (سجل التغييرات):**
+  - Record any change: budget, creative, targeting, landing page, bid, and so on.
+  - The site measures **before against after** on the same scope with windows of equal length.
+  - It gives a verdict: worked, failed or inconclusive.
+  - It warns when changes overlap, because that makes a verdict unreliable.
+  - Changes appear as markers on the trend charts.
+  - Entries are currently added by hand.
+- **Experiments (التجارب):** define a control group and a test group, and get a verdict based on the numbers.
+
+### 6.14 Team, performance, settings
+
+**Team (الفريق)**
+
+- Add teammates by searching or by email.
+- Roles:
+
+| Role | Access |
+|---|---|
+| **Owner** | Everything |
+| **Admin** | Full access |
+| **Member** | Only their assigned clients |
+| **Client** | Portal only: their own reports |
+
+- Set each person's job title and assigned clients.
+- Handle join requests and disable accounts.
+
+**Performance (تقييم الأداء):** each teammate's results on their clients.
+
+**Settings / Control panel (لوحة التحكم):**
+
+- Clients and their platforms.
+- Goals: ROAS, CPA and budget.
+- Alert thresholds.
+- Which sections appear on each screen.
+- Stage names for media management.
+- Decision thresholds.
+- Currency.
 
 ---
 
-## 13) أسئلة متكررة
+## 7) Metrics and formulas
 
-**ليه أرقام المنصة غير أرقام خزامى؟** المنصات بتقيس بالبكسل وبتعدّ زيادة (تكرار، إسناد مشاهدة، أحداث وهمية من التاج مانجر). خزامى هي الحقيقة، عشان كده الإيراد والطلبات منها.
+| Metric | Formula | Source |
+|---|---|---|
+| **ROAS** | Khzama revenue ÷ platform spend | Khzama + platforms |
+| **CPA** (cost per order) | Spend ÷ Khzama orders | Khzama + platforms |
+| **AOV** (average order value) | Khzama revenue ÷ Khzama orders | Khzama |
+| **CTR** | Clicks ÷ impressions × 100 | Platforms |
+| **CPM** | Spend ÷ impressions × 1000 | Platforms |
+| **CPC** | Spend ÷ clicks | Platforms |
+| **Frequency** | Impressions ÷ reach | Platforms |
+| **Hook rate** | 2-second views ÷ impressions × 100. Uses video plays when the platform doesn't report 2-second views. | Platforms |
+| **Hold rate** | 100% views ÷ video plays × 100 | Platforms |
+| **Reached 25/50/75%** | Views at that quartile ÷ video plays × 100 | Platforms |
+| **Click → VC** | View content ÷ clicks × 100 | Platforms |
+| **VC → ATC** | Add to cart ÷ view content × 100 | Platforms |
+| **ATC → Checkout** | Initiate checkout ÷ add to cart × 100 | Platforms |
+| **Checkout → Buy** | Orders ÷ initiate checkout × 100 | Mixed |
+| **Click → Buy (CVR)** | Khzama orders ÷ clicks × 100 | Mixed |
+| **Cost / ATC, Cost / Checkout** | Spend ÷ event count | Platforms |
+| **Backend orders / revenue / ROAS** | As reported by the platform pixel | Platforms (reference only) |
+| **Video rating** | Video ROAS ÷ project average ROAS | Mixed |
 
-**ليه فيديو بيظهر «بيانات قليلة»؟** صرفه أقل من 300 ريال — لسه بدري نحكم عليه.
+---
 
-**الفيديو اللي فيه أكتر من مشهور؟** بيظهر بأساميهم كلهم بترتيب ثابت (مثلاً «أنس اكشن + منصور السالمي»).
+## 8) Decision rules (how suggestions are made)
 
-**هل السيستم بيوقف حملات لوحده؟** لأ. كل حاجة اقتراح، والتنفيذ عندك.
+Every suggestion includes **its reasons**. None of them is ever executed automatically.
+
+### 8.1 Campaign file (roster)
+
+Compared with the **same platform's average ROAS** over the same window:
+
+| Condition | Suggestion |
+|---|---|
+| Spend < 300 SAR **or** fewer than 2 days with spend | **Too early — wait** |
+| ROAS ≥ 1.2 × average **and** ROAS ≥ 2x | **Scale up** |
+| ROAS ≥ 0.85 × average | **Keep running** |
+| ROAS ≥ 0.6 × average | **Watch** (try a new creative or audience before pausing) |
+| Otherwise | **Stop** |
+
+Extra reasons are added when:
+
+- **Last 3 days trend:** ROAS over the last 3 days moved by 15% or more, up or down, against the earlier days. This needs at least 5 days of data.
+- **Weakest funnel step:** a step's rate is below 75% of the platform average for that step. The steps checked are click→view, view→cart, cart→checkout and click→order.
+
+### 8.2 Media management (videos)
+
+- **Strong / Average / Weak** by the ratio to the project average: ≥ 1.15, ≥ 0.85, or below. A rating needs at least 300 SAR of spend.
+- The decision is suggested from that rating: strong → Keep, weak → Stop, otherwise → Watch.
+
+### 8.3 Action center
+
+- Platform rating: **Excellent** at ≥ 1.15 × the period's average ROAS, **OK** at ≥ 0.9×, otherwise **Weak**.
+- The top and bottom lists only include items with **at least 1% of total spend**.
+
+### 8.4 Overview and analysis engine
+
+Each segment gets one status: **Scale**, **Watch**, **Optimize**, **Pause / review** or **Not enough data**. The status is based on:
+
+- data sufficiency (minimum spend and number of days);
+- ROAS against the target and reference;
+- trend strength;
+- data health.
+
+The thresholds are set in Settings.
+
+---
+
+## 9) Refresh schedule
+
+| What | When | How |
+|---|---|---|
+| Platforms + Khzama + daily reports | Daily at 08:30 (last 3 days) | Scheduled task in the Claude app |
+| Airtable creative board | Any time | **↻ Refresh from Airtable** in the library |
+| Live snapshots | In season: every 15 min, 24h (currently off) | Scheduled task in the Claude app |
+| Video hooks | When queued | Ask Claude to "write the hooks" |
+| Anything else, immediately | Any time | Ask Claude |
+
+---
+
+## 10) Automatic hooks (Whisper, on-device)
+
+The **hook** is the first sentence the creator says in the video.
+
+**How it works**
+
+- **Whisper** (`large-v3-turbo`, via MLX) runs **locally on the Mac**. Videos are never sent to a third-party service.
+- For each video:
+  1. Read the video's public Google Drive folder.
+  2. Pick one cut, preferring Snap, TikTok, Story, Reel or 9×16.
+  3. Download it to a **temporary folder**.
+  4. Extract the audio.
+  5. **Delete the video immediately.**
+  6. Transcribe the **first 12 seconds**.
+  7. Delete the audio.
+  8. Save the first sentence (up to 220 characters).
+- **Nothing is left on disk.**
+- It takes about **14 seconds per video**, and accuracy on Saudi Arabic speech is good.
+
+**The queue**
+
+- A video joins the queue when it is added to media management without a hook, or when you click **🎙 Auto hook**.
+- Then tell Claude **"write the hooks"** (اكتب الهوكات).
+
+**Which hook is shown:** your manual hook first, then the Whisper hook, then Airtable's "marketing text" (نص تسويقي).
+
+---
+
+## 11) AI assistant
+
+The ✦ button (bottom-left) opens an assistant that reads your numbers from the site. It answers questions such as "Weakest campaign this week?", "Why did ROAS drop?" or "Best hour?", and it can add sections to screens.
+
+- It needs a **Claude API key**: prepaid credit from console.anthropic.com, at a few cents per question.
+- The key is stored as a **Supabase Edge Function secret** named `ANTHROPIC_API_KEY`. It is never stored in the site, in GitHub or in a chat.
+- Tiers: **Quick** (cheapest), **Default** and **Advanced** (most accurate).
+- Without the key, the assistant says so. The rest of the site is unaffected.
+
+---
+
+## 12) Repository layout
+
+| Path | Purpose |
+|---|---|
+| `index.html` | The whole app, built from `mediabuyer-console.html` by `tools/build.py` |
+| `supa-db.js` | Supabase storage adapter (the same interface the app expects) and the sign-in screen |
+| `config.js` | Supabase project URL and **anon** key (public by design, protected by RLS) |
+| `schema.sql` | The `docs` table and its access policies |
+| `tools/build.py` | Builds `index.html`; injects supabase-js 2.45.4, `config.js` and `supa-db.js` |
+| `tools/prep_ad_daily.py` | Turns raw platform pulls into `ad_daily` rows: parses campaign and ad names, converts USD, flags Smart+ |
+| `tools/rebuild_entries.sql` | Rebuilds the daily report docs (platform metrics + Khzama orders and revenue) |
+| `supabase/functions/ai/` | The AI assistant function; calls the Claude API with the stored secret |
+
+**Deployed, but intentionally left out of this public repo:**
+
+| Function | Why |
+|---|---|
+| `ingest` | Receives pulled data; protected by a private ingest key |
+| `media-sync` | The "Refresh from Airtable" function; contains the board's private share link |
+
+**Kept on the Mac only** (`~/.gadlytics/`):
+
+- the ingest key;
+- the daily-pull and snapshot runbooks;
+- the USD Snap puller;
+- the Airtable sync script;
+- the Whisper hook writer.
+
+---
+
+## 13) Database reference
+
+### 13.1 Tables
+
+| Table | Contents |
+|---|---|
+| `docs` | Document store (`path`, `coll`, `data` JSON). See the paths below. |
+| `ad_daily` | Platform metrics per **ad × day** and per **video × day**: Meta, TikTok, Snap SAR and Snap USD (converted). |
+| `khzama_link_daily` | Khzama orders and revenue per **link name × day**. |
+| `khzama_rev` | Khzama revenue per source code (ME/TT/SC/bio/com/DM) for a date range, with the time it was taken. Used for period snapshot cards. |
+| `snapshots` | Cumulative intraday snapshots for *Today live*. |
+| `media` | One row per Airtable video: key fields, every board column (`fields` JSON), and `hook_auto`. |
+
+### 13.2 Views (all `security_invoker`)
+
+| View | Contents |
+|---|---|
+| `v_media_perf` | Per video × platform: spend, impressions, clicks, views, Khzama orders and revenue, campaigns. Smart+ deduplicated. |
+| `v_media_daily` | Per video × day. Used for "ROAS since entering the stage". |
+| `v_creative` | Creative-level join used by the library. |
+
+### 13.3 Main `docs` paths
+
+| Path | Holds |
+|---|---|
+| `config/…` | Clients, platforms, goals, settings |
+| `entries/<client>__<YYYY-MM-DD>` | The daily report per client |
+| `roster/…` | Campaign roster cells |
+| `media_notes/<creative_id>` | Hook override, tags, note, decision, stage, stage history, in-management flag, hook-queue flag |
+| `profiles/<auth user id>` | Your profile: name, title, phone, about, photo, colour |
+| `team/roster`, `meta/access` | Team members, roles and access |
+| `tasks/…` | Tasks |
+
+### 13.4 Access
+
+- RLS is enabled on every table. Only signed-in users can read.
+- Pulled data is written **only** through the `ingest` function, with the private key.
+- The site itself writes only to `docs`: your settings, notes, stages and profile.
+
+---
+
+## 14) Building and deploying
+
+1. Edit the source file `mediabuyer-console.html`. It lives outside this repo.
+2. Build:
+   ```bash
+   python3 tools/build.py
+   ```
+3. Upload `index.html`, plus any other changed files, to the `main` branch. GitHub Pages redeploys in about 1–2 minutes.
+4. Hard-refresh the site (Cmd+Shift+R).
+5. **Verify after every deploy.** Signed in, Molabi's data must load. The empty "add a client" welcome screen must never appear.
+
+> Never define `window.claude` on the site. The app treats that as a different runtime and starts without your cloud data.
+
+---
+
+## 15) Security and privacy
+
+- No passwords, tokens or API keys in the code or the repo.
+- Secrets live as **Supabase secrets** or on the Mac (`~/.gadlytics/`).
+- The `anon` key in `config.js` is public by design and limited by RLS.
+- Access to the ad platforms and Khzama is **read-only**. The system never edits, launches or pauses anything.
+- Videos used for hooks are deleted immediately after the audio is extracted. Nothing is stored.
+- Recommended: enable **Leaked password protection** in Supabase → Authentication.
+
+---
+
+## 16) Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| "Can't reach the database" | Your data is safe. Hard-refresh (Cmd+Shift+R) or sign in again. |
+| Numbers are stuck on an old day | The daily pull is waiting for approval. Open its task in the Claude app and allow it ("Always"). |
+| "Yesterday" is all zeros | Either there really was no spend, or the daily pull didn't run. |
+| A new video isn't in the library | Click **↻ Refresh from Airtable**. |
+| A hook is empty | Click **🎙 Auto hook** and then ask Claude to "write the hooks", or type the hook with ✎. |
+| The assistant says it needs a key | Add `ANTHROPIC_API_KEY` to the Supabase secrets. |
+| The page looks outdated after an update | Hard-refresh (Cmd+Shift+R). |
+| A campaign shows the wrong platform | Check the platform code in its Khzama link name. |
+| The same influencer appears twice | That spelling isn't in the dictionary yet. Ask Claude to add it to the name-unification map. |
+
+---
+
+## 17) FAQ
+
+**Why are the platform numbers different from Khzama's?**
+Pixels over-count: duplicate events, view-through attribution and ghost events from the tag manager. Khzama records the actual donations, so orders and revenue come from Khzama.
+
+**Why does a video show "little data"?**
+It has spent less than 300 SAR, which is too early to judge.
+
+**What about a video with more than one influencer?**
+It shows all their names in a fixed order, for example «أنس اكشن + منصور السالمي».
+
+**Does the system pause campaigns by itself?**
+No. Everything is a suggestion, and you do the executing.
+
+**Why do bio, com and DM appear next to the platforms?**
+They are organic Khzama sources: the profile bio, comments and DMs. They count toward the totals but have no ad spend.
+
+**Does the USD Snap account count?**
+Yes. It is pulled separately, converted at 3.75 SAR per USD, and merged with the SAR account.
+
+**Will my tags, notes and stages survive an Airtable refresh?**
+Yes. They are stored separately in `media_notes`, and the sync never overwrites them.
+
+---
+
+## 18) Glossary
+
+| Term | Meaning |
+|---|---|
+| **Khzama (خزامى)** | Molabi's donation platform; the source of truth for orders and revenue |
+| **Creative ID** | The 14-digit video identifier shared by Airtable, the link names and the ads |
+| **Link name / Parameters** | The structured name attached to each ad's landing URL |
+| **Smart+** | TikTok's automated campaign type; reported per material (video) |
+| **Hook** | The opening sentence of a video |
+| **Hook rate** | Share of impressions that watched at least 2 seconds |
+| **Hold rate** | Share of video plays that watched to the end |
+| **Stage** | A video's step in media management (Test → Winners → Scale) |
+| **Season (الموسم)** | A campaign period such as Ramadan or Hajj, taken from Airtable |
+| **Project (المشروع)** | The charity project a video promotes, for example سقيا |
+| **Creator / Advertiser (المعلن)** | The influencer or model in the video, from Airtable |
+| **Snapshot** | A cumulative intraday reading of today's numbers |
