@@ -17,6 +17,8 @@
 .ms-p{margin-top:10px;width:100%;max-width:520px;background:var(--glass,rgba(127,127,127,.06));border:1px solid var(--cyan);border-radius:12px;padding:10px}.ms-h{font-weight:700;font-size:12.5px;margin-bottom:6px}
 .ms-l{max-height:280px;overflow:auto;margin:6px 0;display:flex;flex-direction:column;gap:2px}.ms-l label{display:flex;gap:8px;align-items:center;padding:4px 6px;border-radius:6px;cursor:pointer;font-size:12.5px;direction:ltr;justify-content:flex-end}
 .ms-l label:hover{background:rgba(127,127,127,.12)}.ms-f{display:flex;justify-content:space-between;gap:6px}
+.lb-bulk{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 10px;padding:8px 12px;border:1px solid var(--cyan);border-radius:10px;background:color-mix(in srgb,var(--cyan) 8%,transparent)}
+.lb-ck{width:28px;text-align:center}.lb-ck input{cursor:pointer;width:15px;height:15px}
 .lb-bar{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.lb-q{width:220px}.lb-per{width:auto}
 .lb-tb{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:9px;border:1px solid var(--line,rgba(127,127,127,.25));background:transparent;color:inherit;font:inherit;font-size:13px;cursor:pointer}
 .lb-tb:hover{border-color:var(--cyan)}.lb-tb.on{background:color-mix(in srgb,var(--cyan) 14%,transparent);border-color:var(--cyan);color:var(--cyan)}.lb-tb.open{outline:2px solid var(--cyan);outline-offset:1px}
@@ -8239,7 +8241,7 @@ function renderMediaAuto(mode){ const MG=mode==="manage";
   if(!MA.data){ setTimeout(()=>maLoad(),0);
     return card(L("إدارة الميديا","Media"),"",'<div class="hint">'+esc(MA.err||L("بحمّل الميديا…","Loading media…"))+"</div>"); }
   const D=MA.data, q=MA.q.trim().toLowerCase();
-  const base=D.media.map(maVid).filter(v=>(!MG||v.uploaded)&&(!MA.proj||(v.m.project||"—")===MA.proj)&&(!MA.adv||(v.m.advertiser||"—")===MA.adv)&&(!MA.plat||v.plats[MA.plat])
+  const base=D.media.map(maVid).filter(v=>(!MG||v.uploaded||(D.N[v.id]||{}).inMgmt)&&(!MA.proj||(v.m.project||"—")===MA.proj)&&(!MA.adv||(v.m.advertiser||"—")===MA.adv)&&(!MA.plat||v.plats[MA.plat])
     &&(!q||[v.id,v.hook,v.m.advertiser,v.m.project,v.camps.join(" ")].some(x=>x&&String(x).toLowerCase().indexOf(q)>=0)));
   const pAvg={}; [...new Set(base.map(v=>v.m.project||"—"))].forEach(p=>{ pAvg[p]=maAgg(base.filter(v=>(v.m.project||"—")===p)).roas; });
   base.forEach(v=>{ v.rate=maRate(v,pAvg[v.m.project||"—"]); v.dec=maDec(v); });
@@ -10580,7 +10582,7 @@ const LB_AT=["Creative ID","تاريخ الإدخال","المعلن","الأس�
 const LB_CALC=[["_hook","الهوك","Hook"],["_spend","الصرف","Spend"],["_sp_meta","صرف Meta","Meta spend"],["_sp_tiktok","صرف TikTok","TikTok spend"],["_sp_snap","صرف Snap","Snap spend"],
   ["_orders","الطلبات (خزامى)","Orders (Khzama)"],["_revenue","الإيراد (خزامى)","Revenue (Khzama)"],["_roas","ROAS (خزامى)","ROAS (Khzama)"],["_cpa","تكلفة الطلب","CPA"],["_first","أول صرف","First spend"],["_last","آخر صرف","Last spend"],["_camps","الحملات","Campaigns"],["_plats","المنصات","Platforms"],
   ["_hookr","Hook Rate (المنصات)","Hook rate (platforms)"],["_holdr","Hold Rate (المنصات)","Hold rate (platforms)"],["_ctr","CTR","CTR"],["_cpm","CPM","CPM"],
-  ["_rate","التقييم","Rating"],["_tags","التاجز","Tags"],["_note","ملاحظات","Notes"]];
+  ["_rate","التقييم","Rating"],["_tags","التاجز","Tags"],["_note","ملاحظات","Notes"],["_mgmt","في إدارة الميديا","In media management"]];
 const LB_PCT={_hookr:1,_holdr:1,_ctr:1};
 const LB_NUM={_hookr:1,_holdr:1,_ctr:1,_cpm:1,_spend:1,_sp_meta:1,_sp_tiktok:1,_sp_snap:1,_orders:1,_revenue:1,_roas:1,_cpa:1,"Hook Rate":1,"Hold Rate":1,"ROAS":1};
 const LB_DEF=["Creative ID","المعلن","الأسلوب","المشروع","الموسم","حالة الإعلان","_hook","_spend","_orders","_revenue","_roas","_camps","URL"];
@@ -10617,7 +10619,7 @@ function lbRows(){ const D=LB.data, pf=lbPerf()||{};
     f._spend=p?p.sp:0; f._sp_meta=p&&p.pl.meta||0; f._sp_tiktok=p&&p.pl.tiktok||0; f._sp_snap=p&&p.pl.snap||0;
     f._orders=p?p.n:0; f._revenue=p?p.a:0; f._roas=p&&p.sp? p.a/p.sp : null; f._cpa=p&&p.n? p.sp/p.n : null;
     f._hookr=p&&p.im? (p.v2||p.pv)/p.im*100 : null; f._holdr=p&&p.pv? p.p100/p.pv*100 : null; f._ctr=p&&p.im? p.ck/p.im*100 : null; f._cpm=p&&p.im? p.sp/p.im*1000 : null;
-    f._tags=(n.tags||[]).join("، "); f._note=n.note||"";
+    f._tags=(n.tags||[]).join("، "); f._note=n.note||""; f._mgmt=(p&&p.sp>0)||n.inMgmt? L("أيوه","Yes") : L("لأ","No");
     f._first=p&&p.first||""; f._last=p&&p.last||""; f._camps=p? [...p.camps].sort().join("، ") : ""; f._plats=p? Object.keys(p.pl).map(x=>(platById(x)||{}).name||x).join("، ") : "";
     f.__id=m.creative_id; return f; });
   /* التقييم = ROAS الفيديو مقارنة بمتوسط مشروعه (وبشرط صرف ٣٠٠ ريال على الأقل) */
@@ -10716,14 +10718,16 @@ function renderCreativeLibrary(){
     .map(x=>'<div class="md-s"><div class="l">'+esc(x[0])+'</div><div class="n">'+x[1]+"</div></div>").join("")+"</div>";
   if(LB.msg) h+='<div class="hint" style="margin-bottom:8px">'+esc(LB.msg)+"</div>";
   const cols=LB.cols.filter(k=>colsAll.indexOf(k)>=0), s0=sorts[0]||{};
-  const head="<tr>"+cols.map(k=>'<th data-a="lbSort" data-k="'+esc(k)+'" class="'+(LB_NUM[k]?"num":"")+'">'+esc(lbLabel(k))+(s0.k===k?(s0.dir<0?" ▾":" ▴"):"")+"</th>").join("")+"</tr>";
-  const rowH=r=>'<tr data-a="clbOpen" data-id="'+esc(r.__id)+'">'+cols.map(k=>'<td class="'+(LB_NUM[k]?"num":"")+(k==="_hook"?" lb-hook":"")+'">'+lbFmt(k,r[k])+"</td>").join("")+"</tr>";
+  if(!LB.sel) LB.sel=new Set();
+  if(LB.sel.size) h+='<div class="lb-bulk"><b>'+LB.sel.size+esc(L(" فيديو متحدد"," selected"))+'</b><button class="btn btn-p btn-s" data-a="lbAddMg">➕ '+esc(L("أضف لإدارة الميديا","Add to media management"))+'</button><button class="btn btn-s" data-a="lbSelNone">'+esc(L("إلغاء التحديد","Clear selection"))+"</button></div>";
+  const head="<tr><th class=\"lb-ck\"></th>"+cols.map(k=>'<th data-a="lbSort" data-k="'+esc(k)+'" class="'+(LB_NUM[k]?"num":"")+'">'+esc(lbLabel(k))+(s0.k===k?(s0.dir<0?" ▾":" ▴"):"")+"</th>").join("")+"</tr>";
+  const rowH=r=>'<tr data-a="clbOpen" data-id="'+esc(r.__id)+'"><td class="lb-ck"><input type="checkbox" data-a="lbSel" data-id="'+esc(r.__id)+'"'+(LB.sel.has(r.__id)?" checked":"")+"></td>"+cols.map(k=>'<td class="'+(LB_NUM[k]?"num":"")+(k==="_hook"?" lb-hook":"")+'">'+lbFmt(k,r[k])+"</td>").join("")+"</tr>";
   const g=LB.groups.filter(x=>x.k); let body="", shown=0;
   const grp=(list,lvl,path)=>{ if(lvl>=g.length){ list.forEach(r=>{ if(shown<800){ body+=rowH(r); shown++; } }); return; }
     const G=g[lvl], by={}; list.forEach(r=>{ const k=r[G.k]==null||r[G.k]===""?"—":String(r[G.k]); (by[k]=by[k]||[]).push(r); });
     const keys=Object.keys(by).sort((a,b)=> a==="—"?1 : b==="—"?-1 : G.dir==="sp"? lbSum(by[b]).sp-lbSum(by[a]).sp||a.localeCompare(b,"ar") : (lbType(G.k)==="num"? (+a)-(+b) : a.localeCompare(b,"ar"))*(+G.dir));
     keys.forEach(k=>{ const key=path+"|"+k, open=LB.open[key]===undefined? !LB.allClosed : LB.open[key], sm=lbSum(by[k]);
-      body+='<tr class="lb-g l'+lvl+'" data-a="lbTog" data-k="'+esc(key)+'"><td colspan="'+cols.length+'"><b>'+(open?"▾ ":"▸ ")+esc(lbLabel(G.k))+": "+esc(lbType(G.k)==="date"&&k!=="—"?fdate(k):k)+'</b> <span class="muted">'+by[k].length+esc(L(" فيديو"," videos"))+
+      body+='<tr class="lb-g l'+lvl+'" data-a="lbTog" data-k="'+esc(key)+'"><td colspan="'+(cols.length+1)+'"><b>'+(open?"▾ ":"▸ ")+esc(lbLabel(G.k))+": "+esc(lbType(G.k)==="date"&&k!=="—"?fdate(k):k)+'</b> <span class="muted">'+by[k].length+esc(L(" فيديو"," videos"))+
         (sm.sp?" · "+esc(L("صرف ","spend "))+fnum(sm.sp,0)+" · "+fnum(sm.n,0)+esc(L(" طلب"," orders"))+" · ROAS "+(sm.roas==null?"—":sm.roas.toFixed(2)+"x"):"")+"</span></td></tr>";
       if(open) grp(by[k],lvl+1,key); }); };
   grp(rows,0,"");
@@ -10736,6 +10740,17 @@ function renderCreativeLibrary(){
 CHG.lbQ=v=>{ LB.q=v||""; render(); };
 CHG.lbPer=v=>{ LB.per=v; if(v==="range"&&!LB.from){ LB.to=todayISO(); LB.from=addDays(LB.to,-29); } render(); };
 CHG.clbFrom=v=>{ LB.from=v; render(); }; CHG.lbT=v=>{ LB.to=v; render(); };
+ACT.lbSel=t=>{ const id=t.dataset.id, on=!LB.sel.has(id); on? LB.sel.add(id) : LB.sel.delete(id); setTimeout(()=>{ t.checked=on; render(); },0); };
+ACT.lbSelNone=()=>{ LB.sel=new Set(); render(); };
+/** إضافة فيديوهات لإدارة الميديا من المكتبة (حتى لو لسه ما اتطلقتش) — بتبدأ في المرحلة ١ */
+async function lbAddToMg(ids,on){ const T=todayISO(); let ok=0;
+  for(const id of ids){ const n=Object.assign({},LB.data.N[id]||{}); n.inMgmt=on;
+    if(on&&!n.stage){ n.stage=1; n.stageHist=(n.stageHist||[]).concat([{s:1,at:T}]); }
+    try{ await DB.doc("media_notes/"+id).set(n); LB.data.N[id]=n; if(MA.data) MA.data.N[id]=n; ok++; }catch(e){} }
+  return ok; }
+ACT.lbAddMg=async()=>{ const ids=[...LB.sel]; const ok=await lbAddToMg(ids,true); LB.sel=new Set(); render();
+  toast(L("اتضاف لإدارة الميديا: ","Added to media management: ")+ok+(ok<ids.length?L(" (فيه "+(ids.length-ok)+" ما اتحفظوش)",""):"")); };
+ACT.lbMgOne=async t=>{ const id=t.dataset.id, on=t.dataset.on==="1"; await lbAddToMg([id],on); closeModal(); render(); toast(on?L("اتضاف لإدارة الميديا","Added to media management"):L("اتشال من إدارة الميديا","Removed from media management")); };
 ACT.lbPanel=t=>{ LB.panel=LB.panel===t.dataset.p? null : t.dataset.p; LB.fOpen=null; render(); };
 /* فلتر */
 CHG.lbConj=v=>{ LB.conj=v; render(); };
@@ -10789,6 +10804,10 @@ ACT.clbOpen=t=>{ const id=t.dataset.id, r=lbRows().find(x=>x.__id===id); if(!r) 
     pf.map(p=>"<tr><td>"+esc((platById(p.platform)||{}).name||p.platform)+'</td><td class="num">'+fnum(+p.spend||0,0)+'</td><td class="num">'+fnum(+p.orders||0,0)+'</td><td class="num">'+fnum(+p.revenue||0,0)+'</td><td class="num">'+(+p.spend?((+p.revenue||0)/(+p.spend)).toFixed(2)+"x":"—")+"</td><td>"+esc((p.first_day?fdate(p.first_day):"—")+" — "+(p.last_day?fdate(p.last_day):"—"))+"</td><td>"+(p.camps||[]).map(c=>'<span data-a="rsCamp" data-i="'+esc(c)+'" data-p="'+esc(p.platform)+'" style="cursor:pointer;text-decoration:underline dotted">'+esc(c)+"</span>").join(" ")+"</td></tr>").join("")+"</table>"
     : '<div class="hint">'+esc(L("الفيديو ده لسه ما اتصرفش عليه.","No spend on this video yet."))+"</div>";
   modal(L("الفيديو ","Video ")+id+(r["المعلن"]?" — "+r["المعلن"]:""),
+    (()=>{ const n=LB.data.N[id]||{}, launched=r._spend>0;
+      return '<div style="margin-bottom:10px">'+(launched? '<span class="md-rate" style="color:#1D9E75">✓ '+esc(L("في إدارة الميديا (اتطلق)","In media management (launched)"))+"</span>"
+        : n.inMgmt? '<span class="md-rate" style="color:#1D9E75">✓ '+esc(L("في إدارة الميديا","In media management"))+'</span> <button class="btn btn-s" data-a="lbMgOne" data-id="'+esc(id)+'" data-on="0">'+esc(L("شيله منها","Remove"))+"</button>"
+        : '<button class="btn btn-p btn-s" data-a="lbMgOne" data-id="'+esc(id)+'" data-on="1">➕ '+esc(L("أضف لإدارة الميديا","Add to media management"))+"</button>")+"</div>"; })()+
     '<div class="lb-hk"><b>'+esc(L("الهوك","Hook"))+":</b> "+(r._hook?esc(r._hook):'<span class="muted">—</span>')+' <button class="btn btn-s" data-a="maHook" data-id="'+esc(id)+'">'+esc(L("✎ عدّل","✎ Edit"))+"</button></div>"+
     '<div class="lb-nt"><label class="fld"><span>'+esc(L("التاجز (افصل بفاصلة)","Tags (comma separated)"))+'</span><input class="inp" id="lbTags" list="lbTagList" value="'+esc((LB.data.N[id]||{}).tags?(LB.data.N[id].tags||[]).join("، "):"")+'"></label>'+
       '<datalist id="lbTagList">'+[...new Set([].concat(...Object.values(LB.data.N).map(n=>n.tags||[])))].map(t=>'<option value="'+esc(t)+'">').join("")+"</datalist>"+
