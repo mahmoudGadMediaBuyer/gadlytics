@@ -595,14 +595,20 @@ An Airtable-style board of **every Molabi video**, built to be simpler and faste
 ### 6.13 Approvals, change log, experiments
 
 - **Approvals (الموافقات):** items waiting for an admin's sign-off.
-- **Change log (سجل التغييرات):**
-  - **Automatic entries from Meta:** the daily pull reads Meta's activity log for both accounts and adds budget changes (first old value → last new value of the day, with the number of edits), real pauses and resumes, new campaigns, ad sets and ads, and creative, targeting and bid changes. Meta's own events (billing, automatic audiences, ad review) and the "Pending Process" flips around every budget edit are ignored. Auto entries carry an "⚙ Auto · Meta" badge and a 3-day measurement window. Filter with All / Manual / Auto.
-  - Record any change: budget, creative, targeting, landing page, bid, and so on.
-  - The site measures **before against after** on the same scope with windows of equal length.
-  - It gives a verdict: worked, failed or inconclusive.
-  - It warns when changes overlap, because that makes a verdict unreliable.
-  - Changes appear as markers on the trend charts.
-  - Manual entries are added with «+ سجّل تغيير».
+- **Change log (سجل التغييرات):** built to stay readable in season, when there are dozens of edits a day. The unit is the **day**, not the single edit.
+  - **Filters** (apply to every tab): from–to dates, **hour range**, platform, campaign (multi-select), and change type (budget, pause, resume, new campaign/ad set, creative, manual).
+  - **Level** follows the filters: no filter = **total** across platforms; a platform = **that platform**; one or more campaigns = **those campaigns**.
+  - **Daily impact (الأثر يوم بيوم):**
+    - Cards: number of edits and campaigns changed, total daily budget at the start → end of the period, spend, Khzama orders and revenue, ROAS, and how many budget moves worked.
+    - Chart: spend vs Khzama revenue per day, the daily budget as a dashed line, and a dot on days with edits.
+    - Day-by-day table: edits, budget start → end, spend, orders, revenue, ROAS, CPA (each with its change vs the previous day), and a **verdict**.
+    - The verdict appears on days the budget moved 10%+: that day and the next vs the two days before. "Worked" when a raise brought a marginal ROAS ≥ 1 and ≥ 80% of the earlier ROAS, or a cut improved ROAS without losing revenue; "Didn't work" otherwise; "Inconclusive" or "Too early" when the data can't tell.
+    - Click a day to see every edit with its **time** (Meta), campaign and old → new budget, filtered by the hour range.
+  - **Budget levels (مراحل الميزانية):** consecutive days on the same daily budget, with spend, orders and revenue per day, ROAS, CPA and the **marginal ROAS** vs the previous level (what each extra riyal returned). The best level is highlighted.
+  - **Full log (السجل الكامل):** every entry as a card (manual + automatic), with the before/after measurement and the All / Manual / Auto filter. Add manual entries with «+ سجّل تغيير».
+  - **Where the budgets come from:**
+    - **Meta:** its activity log, with the exact time of every edit (Meta's own events and the "Pending Process" flips are ignored).
+    - **TikTok and Snap:** no activity log is available yet (TikTok's change log is announced for December), so the daily pull records each campaign's budget once a day; a different budget from the day before counts as a budget change that day, without a time.
 - **Experiments (التجارب):** define a control group and a test group, and get a verdict based on the numbers.
 
 ### 6.14 Team, performance, settings
@@ -784,7 +790,8 @@ The ✦ button (bottom-left) opens an assistant that reads your numbers from the
 - the USD Snap puller;
 - the Airtable sync script;
 - the Whisper hook writer;
-- `meta_changes.py`, which turns Meta activity-log results (read from the session log) into automatic change-log entries;
+- `meta_changes.py`, which turns Meta activity-log results (read from the session log) into automatic change-log entries and daily campaign budgets;
+- `budget_snapshot.py`, the daily budget snapshot for TikTok and Snap;
 - the Mixpanel parsers: `mx_prep.py` turns report results into `mx_daily` rows, and `mx_from_log.py` reads report results from the session log so numbers are never retyped.
 
 ---
@@ -810,6 +817,8 @@ The ✦ button (bottom-left) opens an assistant that reads your numbers from the
 | `v_media_perf` | Per video × platform: spend, impressions, clicks, views, Khzama orders and revenue, campaigns. Smart+ deduplicated. |
 | `v_media_daily` | Per video × day. Used for "ROAS since entering the stage". |
 | `v_creative` | Creative-level join used by the library. |
+| `camp_budget_daily` | Each campaign's daily budget day by day (start/end, edits, status), from Meta's activity log or the daily snapshot for TikTok/Snap. |
+| `v_camp_day` | Per campaign × day: budget, edits, platform spend/impressions/clicks and Khzama orders/revenue — the base of the change log. |
 | `v_fatigue` | Creative fatigue per video × platform: last 3 days vs the 7 before (CTR, hook rate, frequency and CPM changes, and a status). |
 | `v_mx_aff` | Mixpanel funnel per Khzama link, with campaign number, Creative ID and source code (taken from Khzama's parsed link, or parsed from the name). |
 

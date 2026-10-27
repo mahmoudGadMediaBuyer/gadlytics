@@ -12340,7 +12340,7 @@ const CL_V={good:["نفع","Worked","#1D9E75"],bad:["ما نفعش","Didn't work
 function clVerdictText(vd){ if(!vd||vd.v==="early") return L("محتاج يوم بعد التغيير على الأقل.","Needs at least a day after the change.");
   const C=CURR[S.cfg.settings.currency]||"", up=vd.bd>0;
   return L((up?"زوّدت":"قلّلت")+" الميزانية "+fnum(Math.abs(vd.bd),0)+"% — الصرف "+fnum(vd.s0,0)+" ← "+fnum(vd.s1,0)+"، الإيراد "+fnum(vd.r0,0)+" ← "+fnum(vd.r1,0)+" "+C+
-      (vd.ro0!=null&&vd.ro1!=null?"، ROAS "+vd.ro0.toFixed(2)+"x ← "+vd.ro1.toFixed(2)+"x":"")+(vd.mr!=null?" · كل ريال "+(up?"زيادة":"اتشال")+" "+(up?"جاب":"كان بيجيب")+" "+fnum(vd.mr,2)+" ريال":""),
+      (vd.ro0!=null&&vd.ro1!=null?"، ROAS "+vd.ro0.toFixed(2)+"x ← "+vd.ro1.toFixed(2)+"x":"")+(vd.mr!=null?" · كل ريال "+(up?"زيادة":"اتشال")+" "+(up?"جاب":"كان بيجيب")+" "+(Math.abs(vd.mr)<0.005?"0":fnum(vd.mr,2))+" ريال":""),
     (up?"Raised":"Cut")+" budget "+fnum(Math.abs(vd.bd),0)+"% — spend "+fnum(vd.s0,0)+" → "+fnum(vd.s1,0)+", revenue "+fnum(vd.r0,0)+" → "+fnum(vd.r1,0)+(vd.mr!=null?" · marginal ROAS "+fnum(vd.mr,2):"")); }
 /* مراحل الميزانية: أيام متتالية على نفس الميزانية الإجمالية */
 function clRegimes(days){ const rs=[]; let cur=null;
@@ -12387,7 +12387,7 @@ function renderChangeLog(){
   const tile=(l,v,sub,col)=>'<div class="card kpi"><div class="kpi-l">'+esc(l)+'</div><div class="kpi-v num"'+(col?' style="color:'+col+'"':"")+">"+v+'</div><div class="kpi-f"><span class="dlt-c">'+esc(sub||"")+"</span></div></div>";
   h+='<div class="hint" style="margin-bottom:8px">'+esc(L("المستوى: ","Level: ")+level+" · "+fdate(a)+" — "+fdate(b))+"</div>"+
     '<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:14px">'+
-    tile(L("التعديلات","Edits"),fnum(eds.length,0),fnum(tot.camps.size,0)+L(" حملة اتعدلت"," campaigns changed"))+
+    tile(L("التعديلات","Edits"),fnum(eds.length,0),L(tot.camps.size===1?"حملة واحدة اتعدلت":tot.camps.size===2?"حملتين اتعدلوا":tot.camps.size+(tot.camps.size<=10?" حملات":" حملة")+" اتعدلت",tot.camps.size+" campaigns changed"))+
     tile(L("الميزانية اليومية","Daily budget"),firstB&&lastB?fnum(firstB.bs,0)+" ← "+fnum(lastB.be,0):"—",C)+
     tile(L("الصرف","Spend"),fnum(tot.spend,0),C)+tile(L("الطلبات (خزامى)","Orders (Khzama)"),fnum(tot.orders,0),"")+
     tile(L("الإيراد (خزامى)","Revenue (Khzama)"),fnum(tot.revenue,0),C)+tile("ROAS",tot.spend?(tot.revenue/tot.spend).toFixed(2)+"x":"—","")+
@@ -12412,7 +12412,7 @@ function renderChangeLog(){
         '<td class="num">'+fnum(d.spend,0)+dl(d.spend,p.spend)+'</td><td class="num">'+fnum(d.orders,0)+dl(d.orders,p.orders)+'</td><td class="num">'+fnum(d.revenue,0)+dl(d.revenue,p.revenue)+'</td><td class="num">'+(d.roas==null?"—":d.roas.toFixed(2)+"x")+dl(d.roas,p.roas)+'</td><td class="num">'+(d.cpa==null?"—":fnum(d.cpa,1))+dl(d.cpa,p.cpa,1)+"</td>"+
         "<td>"+(V?'<span class="md-rate" style="color:'+V[2]+'" title="'+esc(clVerdictText(vd))+'">'+esc(L(V[0],V[1]))+"</span>":"")+"</td></tr>"+
         (open?'<tr class="cl-x"><td colspan="9">'+(vd?'<div class="act-rec" style="margin:0 0 8px">'+esc(clVerdictText(vd))+"</div>":"")+
-          (ev.length?ev.map(x=>'<div class="cl-e"><span class="num">'+esc(x.e.t||"—")+"</span><b>"+esc(x.c.campaign||scopeLabel(x.c))+"</b><span>"+esc(x.e.old!=null&&x.e.new!=null? L("الميزانية ","Budget ")+fnum(x.e.old,0)+" ← "+fnum(x.e.new,0) : chTypeName(x.c.type)+(x.c.field&&!x.c.auto?" — "+x.c.field:""))+'</span><small class="muted">'+esc((platById(x.c.platformId)||{}).name||x.c.platformId||"")+(x.c.src==="snapshot"?" · "+L("من اللقطة اليومية","daily snapshot"):x.c.auto?" · Meta":" · "+L("يدوي","manual"))+"</small></div>").join(""):'<div class="hint">'+esc(L("مفيش تعديلات في الساعات المختارة.","No edits in the selected hours."))+"</div>")+"</td></tr>":""); }).join("")+"</table></div>"+
+          (ev.length?ev.map(x=>'<div class="cl-e"><span class="num">'+esc(x.e.t||"—")+"</span><b>"+esc(x.c.campaign||scopeLabel(x.c))+"</b><span>"+esc(x.e.old!=null&&x.e.new!=null? L("الميزانية ","Budget ")+fnum(x.e.old,0)+" ← "+fnum(x.e.new,0) : chTypeName(x.c.type)+(x.c.field&&!x.c.auto?" — "+x.c.field:""))+'</span><small class="muted">'+esc((platById(x.c.platformId)||{}).name||x.c.platformId||"")+(x.c.src==="snapshot"?" · "+L("من اللقطة اليومية","daily snapshot"):x.c.auto?" · "+L("تلقائي","auto"):" · "+L("يدوي","manual"))+"</small></div>").join(""):'<div class="hint">'+esc(L("مفيش تعديلات في الساعات المختارة.","No edits in the selected hours."))+"</div>")+"</td></tr>":""); }).join("")+"</table></div>"+
     '<div class="hint" style="margin-top:8px">'+esc(L("الأرقام يومية (الصرف من المنصات، والطلبات والإيراد من خزامى). الحكم بيظهر على الأيام اللي الميزانية اتغيرت فيها ١٠٪+: اليوم واللي بعده مقابل اليومين اللي قبله. فلتر الساعة بيأثر على قايمة التعديلات وعددها.","Daily figures (spend from platforms, orders and revenue from Khzama). A verdict appears on days the budget moved 10%+: that day and the next vs the two before. The hour filter applies to the edits list and counts."))+"</div>")+"</div>";
   return h; }
 CHG.clF=v=>{ CL.from=v; CL.open={}; clLoad(); }; CHG.clT=v=>{ CL.to=v; CL.open={}; clLoad(); };
