@@ -316,6 +316,9 @@ textarea.inp{resize:vertical;min-height:96px;font-family:var(--f-num);font-size:
 /* ── الفريق والمجتمع ── */
 .pav{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;color:#fff;font-weight:700;flex:none;object-fit:cover;vertical-align:middle}
 .nav-me{display:flex;align-items:center;gap:10px;padding:10px 10px 12px;margin:-6px 0 10px;border-bottom:1px solid var(--line)}
+.cl-f{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end}.cl-f .fld{margin:0}
+.cl-t tr.on td{background:rgba(70,95,255,.08)}.cl-x td{background:rgba(127,127,127,.04);padding:10px 14px!important}
+.cl-e{display:flex;gap:12px;align-items:baseline;padding:5px 0;border-bottom:1px dashed var(--line);font-size:13px}.cl-e:last-child{border-bottom:0}.cl-e .num{width:44px;color:var(--ink-3)}.cl-e span:nth-child(3){flex:1}
 .rf-card{margin-bottom:14px}.rf-top{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px}
 .rf-btn{font-size:15px;padding:10px 22px}.rf-spin{display:inline-block;animation:rfs 1s linear infinite}@keyframes rfs{to{transform:rotate(360deg)}}
 .rf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
@@ -11330,7 +11333,7 @@ function renderViewRaw(){
       case "creatives":return renderCreatives();
       case "roster":   return renderRoster();
       case "tasks":    return renderTasks();
-      case "changes":  return renderChanges();
+      case "changes":  return renderChangeLog();
       case "experiments": return renderExperiments();
       case "compare":  return renderCompare();
       case "analyze":  return renderAnalyze();
@@ -12279,6 +12282,149 @@ ACT.rfAll=async()=>{ if(RF.busy||!(window.SUPA_DB&&SUPA_DB.client)) return; RF.b
     await schLoad(); SCH.cfg=Object.assign({every:30,start:"09:00"},SCH.cfg||{},{requested:new Date().toISOString()}); await schSave(); });
   RF.fresh=null; RF.busy=false; RF.step=""; await rfFresh(); render();
   toast(RF.log.every(x=>x[0]==="ok")? L("اتحدّث كل حاجة","Everything refreshed") : L("اتحدّث مع ملاحظات — شوف تحت الزرار","Refreshed with notes — see below the button"),!RF.log.every(x=>x[0]==="ok")); };
+
+/* ══════════════════ سجل التغييرات: الأثر على الحملة والمنصة والإجمالي ══════════════════
+   الوحدة هي «اليوم» مش التعديل الواحد — في الموسم بيبقى فيه عشرات التعديلات في اليوم، فبنجمّعها:
+   لكل يوم: كام تعديل وعلى كام حملة، الميزانية من كام لكام، وإيه اللي حصل للصرف والطلبات والإيراد (خزامى) والـ ROAS.
+   «العائد الحدّي» = فرق الإيراد ÷ فرق الصرف (اليوم واللي بعده مقابل اليومين اللي قبله) — بيقولك الريال الزيادة جاب كام.
+   «مراحل الميزانية» = الأيام المتتالية على نفس الميزانية، عشان تشوف أنهي مستوى ميزانية أداؤه أحسن.
+   الداتا: v_camp_day (ميزانية كل حملة يوم بيوم من سجل نشاط Meta + صرف المنصات + طلبات وإيراد خزامى). */
+const CL={tab:"impact",from:"",to:"",plat:[],camps:[],h0:0,h1:23,types:[],cache:{},busy:false,err:"",open:{},campOpen:false};
+const CL_TYPES=[["budget","ميزانية","Budget"],["pause","إيقاف","Pause"],["resume","تشغيل","Resume"],["structure","حملة/مجموعة جديدة","New campaign/ad set"],["creative","كريتيف","Creative"],["manual","يدوي","Manual"]];
+function clRange(){ const T=todayISO(); if(!CL.from){ CL.to=T; CL.from=addDays(T,-20); } return [CL.from,CL.to]; }
+async function clLoad(){ const [a,b]=clRange(), k=a+"|"+b; if(CL.cache[k]||CL.busy) return; const sb=window.SUPA_DB&&SUPA_DB.client;
+  if(!sb){ CL.err=L("الشاشة دي بتقرا من الداتا بيز — افتحها من رابط الموقع.","Open it from the site link."); render(); return; }
+  CL.busy=true; CL.err=""; render();
+  try{ const cid=S.ws||(S.cfg.clients[0]||{}).id, out=[], lo=addDays(a,-14);
+    for(let i=0;;i+=1000){ let q=sb.from("v_camp_day").select("date,platform,camp_no,name,budget_start,budget_end,edits,status,spend,impressions,clicks,orders,revenue").gte("date",lo).lte("date",b).order("date").order("platform").order("camp_no").range(i,i+999);
+      if(cid) q=q.eq("client_id",cid); const r=await q; if(r.error) throw r.error; out.push(...r.data); if(r.data.length<1000) break; }
+    CL.cache[k]=clPrep(out); }
+  catch(e){ CL.err=e.message||String(e); }
+  CL.busy=false; render(); }
+const clN=v=>+v||0;
+function clPrep(rows){ const by={}, snap=[]; rows.forEach(r=>{ (by[r.platform+"|"+r.camp_no]=by[r.platform+"|"+r.camp_no]||[]).push(r); });
+  Object.values(by).forEach(list=>{ list.sort((x,y)=>x.date<y.date?-1:1); let prev=null;
+    list.forEach(r=>{ if(r.budget_start==null&&r.budget_end!=null){ const pb=prev&&prev.budget_end!=null&&prev.date===addDays(r.date,-1)? +prev.budget_end : null;
+        r.budget_start=pb!=null?pb:r.budget_end;
+        if(pb!=null&&Math.round(pb)!==Math.round(+r.budget_end)&&!clN(r.edits)){ r.edits=1;
+          snap.push({c:{date:r.date,campaign:r.camp_no,platformId:r.platform,type:"budget",auto:true,src:"snapshot",field:""},e:{t:null,old:pb,new:+r.budget_end}}); } }
+      if(r.budget_end!=null) prev=r; }); });
+  rows.snapEdits=snap; return rows; }
+function clEdits(a,b){ const h0=CL.h0, h1=CL.h1, ty=CL.types, rows=CL.cache[a+"|"+b]||[];
+  const snap=(rows.snapEdits||[]).filter(x=>x.c.date>=a&&x.c.date<=b&&(!CL.plat.length||CL.plat.indexOf(x.c.platformId)>=0)&&(!CL.camps.length||CL.camps.indexOf(x.c.campaign)>=0)&&(!ty.length||ty.indexOf("budget")>=0)&&h0===0&&h1===23);
+  return snap.concat((S.changes||[]).filter(c=>c.date>=a&&c.date<=b).filter(c=>!CL.plat.length||CL.plat.indexOf(c.platformId)>=0)
+    .filter(c=>!CL.camps.length||CL.camps.indexOf(c.campaign)>=0)
+    .filter(c=>!ty.length||(c.auto? ty.indexOf(c.type)>=0 : ty.indexOf("manual")>=0||ty.indexOf(c.type)>=0))
+    .flatMap(c=>{ const es=(c.edits&&c.edits.length)? c.edits : [{t:null}];
+      return es.filter(e=>{ if(e.t==null) return h0===0&&h1===23; const h=+String(e.t).slice(0,2); return h>=h0&&h<=h1; }).map(e=>({c:c,e:e})); })
+    ).sort((x,y)=>(x.c.date+(x.e.t||"")).localeCompare(y.c.date+(y.e.t||""))); }
+/* صفوف اليوم للمستوى المختار: بنجمع الحملات اللي في الفلتر (أو كلها) */
+function clDays(rows,a,b){ const by={};
+  rows.forEach(r=>{ if(CL.plat.length&&CL.plat.indexOf(r.platform)<0) return; if(CL.camps.length&&CL.camps.indexOf(r.camp_no)<0) return;
+    const d=by[r.date]||(by[r.date]={date:r.date,bs:0,be:0,hasB:false,edits:0,camps:new Set(),spend:0,orders:0,revenue:0,clicks:0,impressions:0});
+    const live=clN(r.spend)>0||clN(r.edits)>0; if(live&&r.budget_end!=null){ d.bs+=clN(r.budget_start!=null?r.budget_start:r.budget_end); d.be+=clN(r.budget_end); d.hasB=true; }
+    d.edits+=clN(r.edits); if(clN(r.edits)) d.camps.add(r.camp_no); d.spend+=clN(r.spend); d.orders+=clN(r.orders); d.revenue+=clN(r.revenue); d.clicks+=clN(r.clicks); d.impressions+=clN(r.impressions); });
+  const out=[]; for(let x=addDays(a,-14);x<=b;x=addDays(x,1)) out.push(by[x]||{date:x,bs:0,be:0,hasB:false,edits:0,camps:new Set(),spend:0,orders:0,revenue:0,clicks:0,impressions:0});
+  out.forEach(d=>{ d.roas=d.spend? d.revenue/d.spend : null; d.cpa=d.orders? d.spend/d.orders : null; });
+  return out; }
+/* حكم اليوم اللي الميزانية اتغيرت فيه ١٠٪+: اليوم واللي بعده مقابل اليومين اللي قبله */
+function clVerdict(days,i){ const d=days[i], bd=d.hasB&&d.bs? (d.be-d.bs)/d.bs*100 : null; if(bd==null||Math.abs(bd)<10) return null;
+  const pre=days.slice(Math.max(0,i-2),i).filter(x=>x.spend>0), post=days.slice(i,i+2).filter(x=>x.spend>0); if(!pre.length||!post.length) return {bd:bd,v:"early"};
+  const avg=(xs,k)=>xs.reduce((s,x)=>s+x[k],0)/xs.length, s0=avg(pre,"spend"), s1=avg(post,"spend"), r0=avg(pre,"revenue"), r1=avg(post,"revenue");
+  const ro0=s0?r0/s0:null, ro1=s1?r1/s1:null, ds=s1-s0, dr=r1-r0, mr=Math.abs(ds)>=50? dr/ds : null;
+  let v="flat";
+  if(bd>0){ if(mr!=null&&ro0&&mr>=ro0*0.8&&mr>=1) v="good"; else if(mr!=null&&mr<1) v="bad"; }
+  else { if(ro0&&ro1&&ro1>=ro0*1.1&&dr>=-Math.abs(ds)*ro0) v="good"; else if(ro0&&ro1&&dr<0&&Math.abs(dr)>Math.abs(ds)*ro0*1.2) v="bad"; }
+  return {bd:bd,s0:s0,s1:s1,r0:r0,r1:r1,ro0:ro0,ro1:ro1,mr:mr,v:v,post:post.length}; }
+const CL_V={good:["نفع","Worked","#1D9E75"],bad:["ما نفعش","Didn't work","#E24B4A"],flat:["غير حاسم","Inconclusive","#888780"],early:["لسه بدري","Too early","#BA7517"]};
+function clVerdictText(vd){ if(!vd||vd.v==="early") return L("محتاج يوم بعد التغيير على الأقل.","Needs at least a day after the change.");
+  const C=CURR[S.cfg.settings.currency]||"", up=vd.bd>0;
+  return L((up?"زوّدت":"قلّلت")+" الميزانية "+fnum(Math.abs(vd.bd),0)+"% — الصرف "+fnum(vd.s0,0)+" ← "+fnum(vd.s1,0)+"، الإيراد "+fnum(vd.r0,0)+" ← "+fnum(vd.r1,0)+" "+C+
+      (vd.ro0!=null&&vd.ro1!=null?"، ROAS "+vd.ro0.toFixed(2)+"x ← "+vd.ro1.toFixed(2)+"x":"")+(vd.mr!=null?" · كل ريال "+(up?"زيادة":"اتشال")+" "+(up?"جاب":"كان بيجيب")+" "+fnum(vd.mr,2)+" ريال":""),
+    (up?"Raised":"Cut")+" budget "+fnum(Math.abs(vd.bd),0)+"% — spend "+fnum(vd.s0,0)+" → "+fnum(vd.s1,0)+", revenue "+fnum(vd.r0,0)+" → "+fnum(vd.r1,0)+(vd.mr!=null?" · marginal ROAS "+fnum(vd.mr,2):"")); }
+/* مراحل الميزانية: أيام متتالية على نفس الميزانية الإجمالية */
+function clRegimes(days){ const rs=[]; let cur=null;
+  days.forEach(d=>{ if(!d.hasB||!(d.spend>0)) { cur=null; return; } const lvl=Math.round(d.be);
+    if(cur&&cur.lvl===lvl&&addDays(cur.to,1)===d.date){ cur.to=d.date; cur.days.push(d); } else { cur={lvl:lvl,from:d.date,to:d.date,days:[d]}; rs.push(cur); } });
+  rs.forEach((r,i)=>{ const n=r.days.length, s=r.days.reduce((a,x)=>a+x.spend,0), v=r.days.reduce((a,x)=>a+x.revenue,0), o=r.days.reduce((a,x)=>a+x.orders,0);
+    Object.assign(r,{n:n,spd:s/n,revd:v/n,ordd:o/n,roas:s?v/s:null,cpa:o?s/o:null}); const p=rs[i-1];
+    if(p&&p.to===addDays(r.from,-1)&&Math.abs(r.spd-p.spd)>=50) r.mr=(r.revd-p.revd)/(r.spd-p.spd); });
+  return rs; }
+function clChart(days){ const ds=days.filter(d=>d.date>=CL.from); if(!ds.length) return "";
+  const W=1000,H=180, bw=W/ds.length, top=Math.max(1,...ds.map(d=>Math.max(d.spend,d.revenue,d.be||0)));
+  let path=""; ds.forEach((d,i)=>{ if(!d.hasB) return; const y=(H-d.be/top*H).toFixed(1), x0=(i*bw).toFixed(1), x1=((i+1)*bw).toFixed(1); path+=(path?"L":"M")+x0+" "+y+" L"+x1+" "+y+" "; });
+  return '<svg viewBox="0 0 '+W+" "+(H+20)+'" style="width:100%;max-height:230px">'+ds.map((d,i)=>{ const x0=i*bw, s=d.spend/top*H, r=d.revenue/top*H;
+      return '<rect x="'+(x0+bw*0.12).toFixed(1)+'" y="'+(H-s).toFixed(1)+'" width="'+(bw*0.36).toFixed(1)+'" height="'+s.toFixed(1)+'" fill="#465FFF" rx="2"><title>'+fdate(d.date)+" · "+L("صرف ","spend ")+fnum(d.spend,0)+"</title></rect>"+
+        '<rect x="'+(x0+bw*0.5).toFixed(1)+'" y="'+(H-r).toFixed(1)+'" width="'+(bw*0.36).toFixed(1)+'" height="'+r.toFixed(1)+'" fill="#1D9E75" rx="2"><title>'+fdate(d.date)+" · "+L("إيراد ","revenue ")+fnum(d.revenue,0)+"</title></rect>"+
+        (d.edits?'<circle cx="'+(x0+bw/2).toFixed(1)+'" cy="8" r="5" fill="#F59E0B"><title>'+d.edits+L(" تعديل"," edits")+"</title></circle>":"")+
+        (ds.length<=31||i%Math.ceil(ds.length/31)===0?'<text x="'+(x0+bw/2).toFixed(1)+'" y="'+(H+15)+'" font-size="10" text-anchor="middle" fill="currentColor" opacity=".55">'+d.date.slice(8)+"</text>":""); }).join("")+
+    (path?'<path d="'+path+'" fill="none" stroke="#F59E0B" stroke-width="2.5" stroke-dasharray="6 4"/>':"")+"</svg>"+
+    '<div class="hint"><span style="color:#465FFF">■</span> '+esc(L("الصرف","Spend"))+' · <span style="color:#1D9E75">■</span> '+esc(L("إيراد خزامى","Khzama revenue"))+' · <span style="color:#F59E0B">- -</span> '+esc(L("الميزانية اليومية","Daily budget"))+' · <span style="color:#F59E0B">●</span> '+esc(L("يوم فيه تعديلات","Day with edits"))+"</div>"; }
+function renderChangeLog(){
+  const [a,b]=clRange(), rows=CL.cache[a+"|"+b]; if(!rows&&!CL.busy&&!CL.err) setTimeout(clLoad,0);
+  const C=CURR[S.cfg.settings.currency]||"";
+  const allCamps=rows? [...new Set(rows.filter(r=>(!CL.plat.length||CL.plat.indexOf(r.platform)>=0)&&r.date>=a&&(clN(r.spend)>0||clN(r.edits)>0)).map(r=>r.camp_no))].sort() : [];
+  const level=CL.camps.length? (CL.camps.length===1?L("الحملة ","Campaign ")+CL.camps[0]:CL.camps.length+L(" حملات"," campaigns")) : CL.plat.length? CL.plat.map(p=>(platById(p)||{}).name||p).join(" + ") : L("الإجمالي (كل المنصات)","Total (all platforms)");
+  let h='<div class="card cl-f">'+
+    '<label class="fld"><span>'+esc(L("من","From"))+'</span><input class="inp" type="date" data-c="clF" value="'+esc(a)+'" max="'+todayISO()+'"></label>'+
+    '<label class="fld"><span>'+esc(L("إلى","To"))+'</span><input class="inp" type="date" data-c="clT" value="'+esc(b)+'" max="'+todayISO()+'"></label>'+
+    '<label class="fld"><span>'+esc(L("من الساعة","From hour"))+'</span><select class="sel" data-c="clH0">'+Array.from({length:24},(_,i)=>'<option value="'+i+'"'+(CL.h0===i?" selected":"")+">"+String(i).padStart(2,"0")+":00</option>").join("")+"</select></label>"+
+    '<label class="fld"><span>'+esc(L("لحد الساعة","To hour"))+'</span><select class="sel" data-c="clH1">'+Array.from({length:24},(_,i)=>'<option value="'+i+'"'+(CL.h1===i?" selected":"")+">"+String(i).padStart(2,"0")+":59</option>").join("")+"</select></label>"+
+    '<div class="fld"><span>'+esc(L("المنصة","Platform"))+'</span><div class="chips"><button class="chip'+(CL.plat.length?"":" on")+'" data-a="clPl" data-id="">'+esc(L("الكل","All"))+"</button>"+
+      ["meta","tiktok","snap"].map(id=>'<button class="chip'+(CL.plat.indexOf(id)>=0?" on":"")+'" data-a="clPl" data-id="'+id+'"><i class="sw" style="background:'+((platById(id)||{}).color||"#888")+'"></i>'+esc((platById(id)||{}).name||id)+"</button>").join("")+"</div></div>"+
+    '<div class="fld ms"><span>'+esc(L("الحملة","Campaign"))+'</span><button class="sel ms-b'+(CL.camps.length?" on":"")+'" data-a="clCampOpen">'+esc(CL.camps.length? (CL.camps.length===1?CL.camps[0]:CL.camps.length+L(" مختارين"," selected")) : L("كل الحملات","All campaigns"))+(CL.campOpen?" ▴":" ▾")+"</button></div>"+
+    '<div class="fld"><span>'+esc(L("نوع التغيير","Change type"))+'</span><div class="chips">'+CL_TYPES.map(t=>'<button class="chip'+(CL.types.indexOf(t[0])>=0?" on":"")+'" data-a="clTy" data-k="'+t[0]+'">'+esc(L(t[1],t[2]))+"</button>").join("")+"</div></div>"+
+    ((CL.plat.length||CL.camps.length||CL.types.length||CL.h0||CL.h1!==23)?'<button class="btn btn-s" data-a="clClear">'+esc(L("مسح الفلاتر","Clear filters"))+"</button>":"")+
+    (CL.campOpen?'<div class="ms-p" style="flex-basis:100%"><div class="ms-l">'+(allCamps.length?allCamps.map(c=>'<label><input type="checkbox" data-a="clCampTog" data-v="'+esc(c)+'"'+(CL.camps.indexOf(c)>=0?" checked":"")+"> "+esc(c)+"</label>").join(""):'<div class="hint">—</div>')+'</div><div class="ms-f"><button class="btn btn-s" data-a="clCampNone">'+esc(L("الكل","All"))+'</button><button class="btn btn-s btn-p" data-a="clCampDone">'+esc(L("تم","Done"))+"</button></div></div>":"")+"</div>";
+  h+='<div class="seg" style="margin:12px 0">'+[["impact",L("الأثر يوم بيوم","Daily impact")],["regimes",L("مراحل الميزانية","Budget levels")],["log",L("السجل الكامل","Full log")]].map(t=>'<button class="'+(CL.tab===t[0]?"on":"")+'" data-a="clTab" data-t="'+t[0]+'">'+esc(t[1])+"</button>").join("")+"</div>";
+  if(CL.tab==="log") return h+renderChanges();
+  if(CL.err) return h+emptyBox(esc(CL.err));
+  if(!rows) return h+'<div class="empty" style="padding:30px">'+esc(L("بحمّل الميزانيات والأرقام…","Loading budgets and results…"))+"</div>";
+  const days=clDays(rows,a,b), inRange=days.filter(d=>d.date>=a), eds=clEdits(a,b);
+  const tot=inRange.reduce((s,d)=>{ s.spend+=d.spend; s.revenue+=d.revenue; s.orders+=d.orders; s.edits+=d.edits; d.camps.forEach(c=>s.camps.add(c)); return s; },{spend:0,revenue:0,orders:0,edits:0,camps:new Set()});
+  const firstB=inRange.find(d=>d.hasB), lastB=inRange.slice().reverse().find(d=>d.hasB);
+  const vds=inRange.map(d=>({d:d,v:clVerdict(days,days.indexOf(d))})).filter(x=>x.v), good=vds.filter(x=>x.v.v==="good").length, bad=vds.filter(x=>x.v.v==="bad").length;
+  const tile=(l,v,sub,col)=>'<div class="card kpi"><div class="kpi-l">'+esc(l)+'</div><div class="kpi-v num"'+(col?' style="color:'+col+'"':"")+">"+v+'</div><div class="kpi-f"><span class="dlt-c">'+esc(sub||"")+"</span></div></div>";
+  h+='<div class="hint" style="margin-bottom:8px">'+esc(L("المستوى: ","Level: ")+level+" · "+fdate(a)+" — "+fdate(b))+"</div>"+
+    '<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:14px">'+
+    tile(L("التعديلات","Edits"),fnum(eds.length,0),fnum(tot.camps.size,0)+L(" حملة اتعدلت"," campaigns changed"))+
+    tile(L("الميزانية اليومية","Daily budget"),firstB&&lastB?fnum(firstB.bs,0)+" ← "+fnum(lastB.be,0):"—",C)+
+    tile(L("الصرف","Spend"),fnum(tot.spend,0),C)+tile(L("الطلبات (خزامى)","Orders (Khzama)"),fnum(tot.orders,0),"")+
+    tile(L("الإيراد (خزامى)","Revenue (Khzama)"),fnum(tot.revenue,0),C)+tile("ROAS",tot.spend?(tot.revenue/tot.spend).toFixed(2)+"x":"—","")+
+    tile(L("تغييرات ميزانية نفعت","Budget moves that worked"),good+" / "+vds.length,bad?bad+L(" ما نفعتش"," didn't"):"",good>=bad?"var(--good)":"var(--bad)")+"</div>";
+  if(CL.tab==="regimes"){ const rs=clRegimes(days.filter(d=>d.date>=addDays(a,-14))).filter(r=>r.to>=a);
+    if(!rs.length) return h+emptyBox(esc(L("مفيش ميزانيات مسجلة للمستوى ده في الفترة دي (الميزانيات بتيجي من سجل نشاط Meta).","No budgets recorded for this level in the period (budgets come from Meta's activity log).")));
+    const best=rs.filter(r=>r.n>=1&&r.roas!=null).sort((x,y)=>y.roas-x.roas)[0];
+    return h+card(esc(L("مراحل الميزانية — ","Budget levels — ")+level),esc(L("أيام متتالية على نفس الميزانية","Consecutive days on the same budget")),
+      '<div class="tw"><table class="an-tbl"><tr><th>'+esc(L("الفترة","Period"))+'</th><th class="num">'+esc(L("الميزانية/يوم","Budget/day"))+'</th><th class="num">'+esc(L("أيام","Days"))+'</th><th class="num">'+esc(L("صرف/يوم","Spend/day"))+'</th><th class="num">'+esc(L("طلبات/يوم","Orders/day"))+'</th><th class="num">'+esc(L("إيراد/يوم","Revenue/day"))+'</th><th class="num">ROAS</th><th class="num">CPA</th><th class="num">'+esc(L("العائد الحدّي","Marginal ROAS"))+"</th></tr>"+
+      rs.map(r=>'<tr'+(best&&r===best?' style="background:rgba(29,158,117,.08)"':"")+"><td>"+esc(fdate(r.from)+(r.to!==r.from?" — "+fdate(r.to):""))+(best&&r===best?' <span class="ch-auto" style="color:#1D9E75;border-color:#1D9E75">'+esc(L("الأحسن","Best"))+"</span>":"")+'</td><td class="num"><b>'+fnum(r.lvl,0)+'</b></td><td class="num">'+r.n+'</td><td class="num">'+fnum(r.spd,0)+'</td><td class="num">'+fnum(r.ordd,1)+'</td><td class="num">'+fnum(r.revd,0)+'</td><td class="num">'+(r.roas==null?"—":r.roas.toFixed(2)+"x")+'</td><td class="num">'+(r.cpa==null?"—":fnum(r.cpa,1))+'</td><td class="num">'+(r.mr==null?"—":'<b style="color:'+(r.mr>=1?"var(--good)":"var(--bad)")+'">'+fnum(r.mr,2)+"</b>")+"</td></tr>").join("")+"</table></div>"+
+      '<div class="hint" style="margin-top:8px">'+esc(L("العائد الحدّي = (إيراد اليوم في المرحلة دي − اللي قبلها) ÷ (صرف اليوم في المرحلة دي − اللي قبلها). أقل من ١ يعني الريال الزيادة رجّع أقل من ريال — الزيادة مش مجدية. الإيراد والطلبات من خزامى.","Marginal ROAS = change in daily revenue ÷ change in daily spend vs the previous level. Below 1 means the extra riyal returned less than a riyal."))+"</div>"); }
+  /* الأثر يوم بيوم */
+  h+=card(esc(L("الصرف والإيراد والميزانية — ","Spend, revenue and budget — ")+level),"",clChart(days));
+  const byDay={}; eds.forEach(x=>{ (byDay[x.c.date]=byDay[x.c.date]||[]).push(x); });
+  const list=inRange.slice().reverse().filter(d=>d.spend>0||d.edits>0||byDay[d.date]);
+  h+='<div style="margin-top:14px">'+card(esc(L("يوم بيوم","Day by day")),esc(L("دوسة على اليوم تفتح تعديلاته","Click a day to see its edits")),
+    '<div class="tw"><table class="an-tbl cl-t"><tr><th>'+esc(L("اليوم","Day"))+'</th><th class="num">'+esc(L("التعديلات","Edits"))+'</th><th class="num">'+esc(L("الميزانية","Budget"))+'</th><th class="num">'+esc(L("الصرف","Spend"))+'</th><th class="num">'+esc(L("الطلبات","Orders"))+'</th><th class="num">'+esc(L("الإيراد","Revenue"))+'</th><th class="num">ROAS</th><th class="num">CPA</th><th>'+esc(L("الحكم","Verdict"))+"</th></tr>"+
+    list.map(d=>{ const i=days.indexOf(d), p=days[i-1]||{}, vd=clVerdict(days,i), V=vd?CL_V[vd.v]:null, ev=byDay[d.date]||[], open=CL.open[d.date];
+      const dl=(x,y,inv)=>{ if(!y||x==null) return ""; const c=(x-y)/Math.abs(y)*100; if(Math.abs(c)<1) return ""; const g=inv?c<0:c>0; return ' <small class="'+(g?"ex-up":"ex-dn")+'">'+(c>0?"▲":"▼")+fnum(Math.abs(c),0)+"%</small>"; };
+      const bcell=d.hasB? (Math.round(d.bs)!==Math.round(d.be)? fnum(d.bs,0)+" ← <b>"+fnum(d.be,0)+"</b>" : fnum(d.be,0)) : "—";
+      return '<tr data-a="clDay" data-d="'+d.date+'" style="cursor:pointer"'+(open?' class="on"':"")+"><td>"+esc(fdateFull(d.date))+'</td><td class="num">'+(ev.length?"<b>"+ev.length+"</b>"+(d.camps.size?' <small class="muted">'+d.camps.size+L(" حملة"," camp.")+"</small>":""):"—")+'</td><td class="num">'+bcell+"</td>"+
+        '<td class="num">'+fnum(d.spend,0)+dl(d.spend,p.spend)+'</td><td class="num">'+fnum(d.orders,0)+dl(d.orders,p.orders)+'</td><td class="num">'+fnum(d.revenue,0)+dl(d.revenue,p.revenue)+'</td><td class="num">'+(d.roas==null?"—":d.roas.toFixed(2)+"x")+dl(d.roas,p.roas)+'</td><td class="num">'+(d.cpa==null?"—":fnum(d.cpa,1))+dl(d.cpa,p.cpa,1)+"</td>"+
+        "<td>"+(V?'<span class="md-rate" style="color:'+V[2]+'" title="'+esc(clVerdictText(vd))+'">'+esc(L(V[0],V[1]))+"</span>":"")+"</td></tr>"+
+        (open?'<tr class="cl-x"><td colspan="9">'+(vd?'<div class="act-rec" style="margin:0 0 8px">'+esc(clVerdictText(vd))+"</div>":"")+
+          (ev.length?ev.map(x=>'<div class="cl-e"><span class="num">'+esc(x.e.t||"—")+"</span><b>"+esc(x.c.campaign||scopeLabel(x.c))+"</b><span>"+esc(x.e.old!=null&&x.e.new!=null? L("الميزانية ","Budget ")+fnum(x.e.old,0)+" ← "+fnum(x.e.new,0) : chTypeName(x.c.type)+(x.c.field&&!x.c.auto?" — "+x.c.field:""))+'</span><small class="muted">'+esc((platById(x.c.platformId)||{}).name||x.c.platformId||"")+(x.c.src==="snapshot"?" · "+L("من اللقطة اليومية","daily snapshot"):x.c.auto?" · Meta":" · "+L("يدوي","manual"))+"</small></div>").join(""):'<div class="hint">'+esc(L("مفيش تعديلات في الساعات المختارة.","No edits in the selected hours."))+"</div>")+"</td></tr>":""); }).join("")+"</table></div>"+
+    '<div class="hint" style="margin-top:8px">'+esc(L("الأرقام يومية (الصرف من المنصات، والطلبات والإيراد من خزامى). الحكم بيظهر على الأيام اللي الميزانية اتغيرت فيها ١٠٪+: اليوم واللي بعده مقابل اليومين اللي قبله. فلتر الساعة بيأثر على قايمة التعديلات وعددها.","Daily figures (spend from platforms, orders and revenue from Khzama). A verdict appears on days the budget moved 10%+: that day and the next vs the two before. The hour filter applies to the edits list and counts."))+"</div>")+"</div>";
+  return h; }
+CHG.clF=v=>{ CL.from=v; CL.open={}; clLoad(); }; CHG.clT=v=>{ CL.to=v; CL.open={}; clLoad(); };
+CHG.clH0=v=>{ CL.h0=+v; if(CL.h1<CL.h0) CL.h1=CL.h0; render(); }; CHG.clH1=v=>{ CL.h1=+v; if(CL.h0>CL.h1) CL.h0=CL.h1; render(); };
+ACT.clPl=t=>{ const id=t.dataset.id; if(!id) CL.plat=[]; else { const i=CL.plat.indexOf(id); i<0?CL.plat.push(id):CL.plat.splice(i,1); } CL.camps=[]; render(); };
+ACT.clTy=t=>{ const k=t.dataset.k, i=CL.types.indexOf(k); i<0?CL.types.push(k):CL.types.splice(i,1); render(); };
+ACT.clCampOpen=()=>{ CL.campOpen=!CL.campOpen; render(); };
+ACT.clCampTog=t=>{ const v=t.dataset.v, i=CL.camps.indexOf(v), on=i<0; if(on) CL.camps.push(v); else CL.camps.splice(i,1); setTimeout(()=>{ t.checked=on; },0); };
+ACT.clCampNone=()=>{ CL.camps=[]; CL.campOpen=false; render(); }; ACT.clCampDone=()=>{ CL.campOpen=false; render(); };
+ACT.clClear=()=>{ CL.plat=[]; CL.camps=[]; CL.types=[]; CL.h0=0; CL.h1=23; CL.campOpen=false; render(); };
+ACT.clTab=t=>{ CL.tab=t.dataset.t; render(); };
+ACT.clDay=t=>{ const d=t.dataset.d; CL.open[d]=!CL.open[d]; render(); };
 
 /* ══════════════════ اللقطة: صرف كل منصة + إيراد خزامى بالأكواد ══════════════════ */
 const SB={periods:null,sel:"",data:{},busy:false,err:""};
