@@ -17,6 +17,12 @@
 .ms-p{margin-top:10px;width:100%;max-width:520px;background:var(--glass,rgba(127,127,127,.06));border:1px solid var(--cyan);border-radius:12px;padding:10px}.ms-h{font-weight:700;font-size:12.5px;margin-bottom:6px}
 .ms-l{max-height:280px;overflow:auto;margin:6px 0;display:flex;flex-direction:column;gap:2px}.ms-l label{display:flex;gap:8px;align-items:center;padding:4px 6px;border-radius:6px;cursor:pointer;font-size:12.5px;direction:ltr;justify-content:flex-end}
 .ms-l label:hover{background:rgba(127,127,127,.12)}.ms-f{display:flex;justify-content:space-between;gap:6px}
+.lb-bar{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.lb-q{width:220px}.lb-per{width:auto}
+.lb-tb{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:9px;border:1px solid var(--line,rgba(127,127,127,.25));background:transparent;color:inherit;font:inherit;font-size:13px;cursor:pointer}
+.lb-tb:hover{border-color:var(--cyan)}.lb-tb.on{background:color-mix(in srgb,var(--cyan) 14%,transparent);border-color:var(--cyan);color:var(--cyan)}.lb-tb.open{outline:2px solid var(--cyan);outline-offset:1px}
+.lb-tb b{background:var(--cyan);color:#05212a;border-radius:999px;padding:0 6px;font-size:11px}
+.lb-pnl{margin-top:10px;padding:12px;border:1px solid var(--cyan);border-radius:12px;background:var(--glass,rgba(127,127,127,.05));display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.lb-ph{display:flex;gap:8px;align-items:center;flex-wrap:wrap;width:100%}.lb-fr{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .lb-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}.lb-fl{border-top:1px solid var(--line);padding-top:8px}
 .lb-cols{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.lb-ci{display:flex;gap:2px;align-items:center}.lb-ci .btn{padding:0 6px}
 .lb-tw{max-height:70vh;overflow:auto}.lb-t th{position:sticky;top:0;z-index:2;background:var(--ground-1,#121826);cursor:pointer;white-space:nowrap}
@@ -10546,7 +10552,7 @@ const LB_CALC=[["_hook","الهوك","Hook"],["_spend","الصرف","Spend"],["_
 const LB_PCT={_hookr:1,_holdr:1,_ctr:1};
 const LB_NUM={_hookr:1,_holdr:1,_ctr:1,_cpm:1,_spend:1,_sp_meta:1,_sp_tiktok:1,_sp_snap:1,_orders:1,_revenue:1,_roas:1,_cpa:1,"Hook Rate":1,"Hold Rate":1,"ROAS":1};
 const LB_DEF=["Creative ID","المعلن","الأسلوب","المشروع","الموسم","حالة الإعلان","_hook","_spend","_orders","_revenue","_roas","_camps","URL"];
-const LB={data:null,busy:false,err:"",cols:null,sort:{k:"تاريخ الإدخال",dir:-1},filters:[],groups:["المشروع"],q:"",per:"all",from:"",to:"",open:{},pick:false,syncing:false,msg:""};
+const LB={data:null,busy:false,err:"",cols:null,sorts:[{k:"تاريخ الإدخال",dir:-1}],filters:[],conj:"and",groups:[{k:"المشروع",dir:"sp"}],q:"",per:"all",from:"",to:"",open:{},allClosed:false,panel:null,fOpen:null,syncing:false,msg:""};
 function lbColsGet(){ try{ const v=JSON.parse(localStorage.getItem("gad.lbCols")||"null"); if(Array.isArray(v)&&v.length) return v; }catch(e){} return LB_DEF.slice(); }
 function lbColsSet(v){ LB.cols=v; try{ localStorage.setItem("gad.lbCols",JSON.stringify(v)); }catch(e){} }
 function lbLabel(k){ const c=LB_CALC.find(x=>x[0]===k); return c? L(c[1],c[2]) : k; }
@@ -10587,13 +10593,6 @@ function lbRows(){ const D=LB.data, pf=lbPerf()||{};
   rows.forEach(r=>{ const o=pa[r["المشروع"]||"—"], avg=o&&o.s? o.a/o.s : null;
     r._rate= !r._spend? "" : r._spend<300||!avg? L("بيانات قليلة","Too early") : (r._roas||0)/avg>=1.15? L("قوي","Strong") : (r._roas||0)/avg>=0.85? L("متوسط","Average") : L("ضعيف","Weak"); });
   return rows; }
-const LB_OPS=[["is","يساوي","is"],["not","لا يساوي","is not"],["has","فيه","contains"],["empty","فاضي","is empty"],["full","مش فاضي","is not empty"],["gt","أكبر من","greater than"],["lt","أقل من","less than"]];
-function lbPass(r){ const q=LB.q.trim().toLowerCase();
-  if(q&&!Object.keys(r).some(k=>k.indexOf("__")!==0&&r[k]!=null&&String(r[k]).toLowerCase().indexOf(q)>=0)) return false;
-  return LB.filters.every(f=>{ const v=r[f.f], s=v==null?"":String(v), vs=Array.isArray(f.v)?f.v:(f.v?[f.v]:[]);
-    const tagHit=x=>f.f==="_tags"? s.split("، ").indexOf(x)>=0 : s===x;
-    switch(f.op){ case "is": return !vs.length||vs.some(tagHit); case "not": return !vs.some(tagHit); case "has": return s.toLowerCase().indexOf(String(f.v||"").toLowerCase())>=0;
-      case "empty": return !s; case "full": return !!s; case "gt": return +v>+f.v; case "lt": return +v<+f.v; default: return true; } }); }
 function lbFmt(k,v){ if(v==null||v==="") return '<span class="muted">—</span>';
   if(k==="_roas"||k==="ROAS") return (+v).toFixed(2)+"x"; if(k==="_cpa"||k==="_cpm") return fnum(v,v<10?2:1);
   if(LB_PCT[k]) return fnum(v,v<1?2:1)+"%";
@@ -10605,88 +10604,143 @@ function lbFmt(k,v){ if(v==null||v==="") return '<span class="muted">—</span>'
   if(k==="_first"||k==="_last") return esc(fdate(v));
   return esc(String(v)); }
 function lbSum(rs){ const a={sp:0,n:0,a:0}; rs.forEach(r=>{ a.sp+=r._spend; a.n+=r._orders; a.a+=r._revenue; }); a.roas=a.sp? a.a/a.sp : null; return a; }
+/* شريط زي Airtable بس أبسط: الأعمدة · فلتر · تجميع · ترتيب — كل زرار بيفتح لوحته، وعليه عدد اللي متفعّل */
+const LB_DATE={"تاريخ الإدخال":1,_first:1,_last:1};
+const lbType=k=>LB_NUM[k]?"num":LB_DATE[k]?"date":"text";
+const LB_OPS={text:[["is","هو","is"],["not","مش هو","is not"],["has","فيه","contains"],["nothas","مش فيه","doesn't contain"],["empty","فاضي","is empty"],["full","مش فاضي","is not empty"]],
+  num:[["gt",">","greater than"],["lt","<","less than"],["gte","≥","≥"],["lte","≤","≤"],["eq","=","="],["ne","≠","≠"],["empty","فاضي","is empty"],["full","مش فاضي","is not empty"]],
+  date:[["on","في يوم","on"],["after","بعد","after"],["before","قبل","before"],["empty","فاضي","is empty"],["full","مش فاضي","is not empty"]]};
+function lbPass(r){ const q=LB.q.trim().toLowerCase();
+  if(q&&!Object.keys(r).some(k=>k.indexOf("__")!==0&&r[k]!=null&&String(r[k]).toLowerCase().indexOf(q)>=0)) return false;
+  const act=LB.filters.filter(f=>["empty","full"].indexOf(f.op)>=0||(Array.isArray(f.v)?f.v.length:(f.v!==""&&f.v!=null)));
+  if(!act.length) return true;
+  const test=f=>{ const v=r[f.f], s=v==null?"":String(v), vs=Array.isArray(f.v)?f.v:[f.v], n=+f.v;
+    const hit=x=>f.f==="_tags"? s.split("، ").indexOf(x)>=0 : s===x;
+    switch(f.op){ case "is": return vs.some(hit); case "not": return !vs.some(hit);
+      case "has": return s.toLowerCase().indexOf(String(f.v).toLowerCase())>=0; case "nothas": return s.toLowerCase().indexOf(String(f.v).toLowerCase())<0;
+      case "empty": return !s; case "full": return !!s;
+      case "gt": return v!=null&&v!==""&&+v>n; case "lt": return v!=null&&v!==""&&+v<n; case "gte": return v!=null&&v!==""&&+v>=n; case "lte": return v!=null&&v!==""&&+v<=n;
+      case "eq": return v!=null&&v!==""&&+v===n; case "ne": return !(v!=null&&v!==""&&+v===n);
+      case "on": return s.slice(0,10)===f.v; case "after": return !!s&&s.slice(0,10)>f.v; case "before": return !!s&&s.slice(0,10)<f.v; default: return true; } };
+  return LB.conj==="or"? act.some(test) : act.every(test); }
+function lbCmp(a,b,k,dir){ const x=a[k], y=b[k], ex=x==null||x==="", ey=y==null||y==="";
+  if(ex||ey) return ex===ey? 0 : ex? 1 : -1;   // الفاضي دايماً تحت
+  return (lbType(k)==="num"? (+x)-(+y) : String(x).localeCompare(String(y),"ar"))*dir; }
 function renderCreativeLibrary(){
   if(!LB.cols) LB.cols=lbColsGet();
   if(!LB.data){ setTimeout(()=>lbLoad(),0); return card(L("مكتبة الكريتيف","Creative library"),"",'<div class="hint">'+esc(LB.err||L("بحمّل المكتبة…","Loading the library…"))+"</div>"); }
   if(LB.per==="range"&&LB.from&&!EX.cache[LB.from+"|"+LB.to]){ setTimeout(async()=>{ try{ await exFetch(LB.from,LB.to); }catch(e){} render(); },0); }
-  const all=lbRows(), rows=all.filter(lbPass);
-  const colsAll=LB_AT.concat(LB_CALC.map(c=>c[0]));
-  const s=LB.sort; rows.sort((a,b)=>{ const x=a[s.k], y=b[s.k]; if(LB_NUM[s.k]) return ((+x||0)-(+y||0))*s.dir; return String(x||"").localeCompare(String(y||""),"ar")*s.dir; });
+  const all=lbRows(), rows=all.filter(lbPass), colsAll=LB_AT.concat(LB_CALC.map(c=>c[0]));
+  const sorts=LB.sorts.filter(x=>x.k); rows.sort((a,b)=>{ for(const x of sorts){ const c=lbCmp(a,b,x.k,x.dir); if(c) return c; } return 0; });
   const distinct=k=>[...new Set([].concat(...all.map(r=>k==="_tags"? String(r[k]||"").split("، ") : [r[k]])).filter(v=>v!=null&&v!==""))].map(String).sort((a,b)=>a.localeCompare(b,"ar"));
-  const fieldOpt=(cur)=>colsAll.map(k=>'<option value="'+esc(k)+'"'+(cur===k?" selected":"")+">"+esc(lbLabel(k))+"</option>").join("");
-  let h='<div class="card lb-ctl"><div class="lb-row">'+
-    '<input class="inp" style="width:230px" data-c="lbQ" placeholder="'+esc(L("دوّر في كل الأعمدة…","Search all columns…"))+'" value="'+esc(LB.q)+'">'+
-    '<label class="fld"><span>'+esc(L("أرقام الأداء","Performance"))+'</span><select class="sel" data-c="lbPer">'+selOpts([["all","كل الوقت","All time"],["range","فترة","Date range"]],LB.per)+"</select></label>"+
-    (LB.per==="range"?'<label class="fld"><span>'+esc(L("من","From"))+'</span><input class="inp" type="date" data-c="clbFrom" value="'+esc(LB.from)+'"></label><label class="fld"><span>'+esc(L("إلى","To"))+'</span><input class="inp" type="date" data-c="lbT" value="'+esc(LB.to)+'"></label>':"")+
-    '<button class="btn btn-s'+(LB.pick?" btn-p":"")+'" data-a="lbPick">☰ '+esc(L("الأعمدة","Columns"))+" ("+LB.cols.length+")</button>"+
-    '<button class="btn btn-s" data-a="lbAddF">+ '+esc(L("فلتر","Filter"))+"</button>"+
-    '<button class="btn btn-p btn-s" data-a="lbSync" style="margin-inline-start:auto">'+esc(LB.syncing?L("بيحدّث من Airtable…","Syncing from Airtable…"):L("↻ تحديث المكتبة","↻ Refresh library"))+"</button></div>";
-  /* التجميع */
-  h+='<div class="lb-row"><span class="flab">'+esc(L("جمّع حسب","Group by"))+"</span>"+[0,1].map(i=>'<select class="sel" data-c="lbG" data-i="'+i+'"><option value="">'+esc(i?L("— مستوى تاني —","— second level —"):L("بدون تجميع","No grouping"))+"</option>"+fieldOpt(LB.groups[i]||"")+"</select>").join("")+"</div>";
-  /* الفلاتر */
-  if(LB.filters.length) h+='<div class="lb-fl">'+LB.filters.map((f,i)=>{ const opts=distinct(f.f);
-      return '<div class="lb-row"><span class="flab">'+esc(i?L("و","and"):L("لو","where"))+'</span><select class="sel" data-c="lbFF" data-i="'+i+'">'+fieldOpt(f.f)+'</select><select class="sel" data-c="lbFO" data-i="'+i+'">'+selOpts(LB_OPS,f.op)+"</select>"+
-        (f.op==="empty"||f.op==="full"?"":(opts.length&&opts.length<=400&&(f.op==="is"||f.op==="not")? (()=>{ const vs=Array.isArray(f.v)?f.v:(f.v?[f.v]:[]), open=LB.fOpen===i;
-            return '<button class="sel ms-b'+(vs.length?" on":"")+(open?" open":"")+'" data-a="lbMsOpen" data-i="'+i+'">'+esc(!vs.length?L("اختار…","Pick…"):vs.length===1?vs[0]:vs.length+L(" مختارين"," selected"))+(open?" ▴":" ▾")+"</button>"; })()
-          :'<input class="inp" style="width:160px" data-c="lbFV" data-i="'+i+'" value="'+esc(Array.isArray(f.v)?f.v.join(","):(f.v||""))+'">'))+
-        '<button class="btn btn-s" data-a="lbDelF" data-i="'+i+'">✕</button></div>'+
-        (LB.fOpen===i&&(f.op==="is"||f.op==="not")? (()=>{ const vs=Array.isArray(f.v)?f.v:(f.v?[f.v]:[]);
-          return '<div class="ms-p"><div class="ms-h">'+esc(lbLabel(f.f))+'</div><input class="inp" placeholder="'+esc(L("دوّر في القايمة…","Search the list…"))+'" oninput="var q=this.value.toLowerCase();this.parentNode.querySelectorAll(\'label\').forEach(function(l){l.style.display=l.textContent.toLowerCase().indexOf(q)>=0?\'\':\'none\'})">'+
-            '<div class="ms-l">'+opts.map(o=>'<label><input type="checkbox" data-a="lbMsTog" data-i="'+i+'" data-v="'+esc(o)+'"'+(vs.indexOf(o)>=0?" checked":"")+"> "+esc(o)+"</label>").join("")+"</div>"+
-            '<div class="ms-f"><button class="btn btn-s" data-a="lbMsNone" data-i="'+i+'">'+esc(L("مسح","Clear"))+'</button><button class="btn btn-s btn-p" data-a="lbMsDone">'+esc(L("تم","Done"))+"</button></div></div>"; })() : ""); }).join("")+"</div>";
-  /* اختيار الأعمدة */
-  if(LB.pick){ const on=LB.cols.filter(k=>colsAll.indexOf(k)>=0), off=colsAll.filter(k=>on.indexOf(k)<0);
-    h+='<div class="ex-pick"><div class="hint">'+esc(L("الأعمدة الظاهرة — اسحبها بالماوس يمين وشمال عشان ترتّبها، ودوس على أي عمود تشيله. اختيارك بيتحفظ.","Shown columns — drag to reorder, click to hide. Saved."))+'</div>'+
+  const fieldSel=(cls,i,cur,extra)=>'<select class="sel" data-c="'+cls+'" data-i="'+i+'"'+(extra||"")+">"+colsAll.map(k=>'<option value="'+esc(k)+'"'+(cur===k?" selected":"")+">"+esc(lbLabel(k))+"</option>").join("")+"</select>";
+  const nF=LB.filters.filter(f=>["empty","full"].indexOf(f.op)>=0||(Array.isArray(f.v)?f.v.length:(f.v!==""&&f.v!=null))).length, nG=LB.groups.filter(g=>g.k).length, nS=sorts.length;
+  const tb=(id,icon,label,n)=>'<button class="lb-tb'+(LB.panel===id?" open":"")+(n?" on":"")+'" data-a="lbPanel" data-p="'+id+'">'+icon+" "+esc(label)+(n?' <b>'+n+"</b>":"")+"</button>";
+  let h='<div class="card lb-ctl"><div class="lb-bar">'+
+    '<input class="inp lb-q" data-c="lbQ" placeholder="'+esc(L("🔍 دوّر في كل الأعمدة…","🔍 Search all columns…"))+'" value="'+esc(LB.q)+'">'+
+    tb("cols","☰",L("الأعمدة","Fields"),0)+tb("filter","⧩",L("فلتر","Filter"),nF)+tb("group","▤",L("تجميع","Group"),nG)+tb("sort","⇅",L("ترتيب","Sort"),nS)+
+    '<select class="sel lb-per" data-c="lbPer">'+selOpts([["all","الأرقام: كل الوقت","Numbers: all time"],["range","الأرقام: فترة","Numbers: date range"]],LB.per)+"</select>"+
+    (LB.per==="range"?'<input class="inp" type="date" data-c="clbFrom" value="'+esc(LB.from)+'"><input class="inp" type="date" data-c="lbT" value="'+esc(LB.to)+'">':"")+
+    '<button class="btn btn-p btn-s" data-a="lbSync" style="margin-inline-start:auto">'+esc(LB.syncing?L("بيحدّث…","Syncing…"):L("↻ تحديث من Airtable","↻ Sync Airtable"))+"</button></div>";
+  /* لوحة الأعمدة */
+  if(LB.panel==="cols"){ const on=LB.cols.filter(k=>colsAll.indexOf(k)>=0), off=colsAll.filter(k=>on.indexOf(k)<0);
+    h+='<div class="lb-pnl"><div class="lb-ph"><b>'+esc(L("الأعمدة","Fields"))+'</b><span class="hint">'+esc(L("اسحب الظاهر يمين وشمال عشان ترتّبه · دوسة بتخفي · دوسة على المخفي بتظهره","Drag to reorder · click to hide/show"))+"</span>"+
+      '<button class="btn btn-s" data-a="lbColsAll">'+esc(L("إظهار الكل","Show all"))+'</button><button class="btn btn-s" data-a="lbColsReset">'+esc(L("الافتراضي","Default"))+"</button></div>"+
       '<div class="lb-cols lb-on" ondragover="event.preventDefault()">'+on.map(k=>'<button class="chip on lb-drag" draggable="true" data-a="lbCol" data-k="'+esc(k)+'" ondragstart="lbDragStart(event)" ondragover="lbDragOver(event)" ondrop="lbDrop(event)">⋮⋮ '+esc(lbLabel(k))+"</button>").join("")+"</div>"+
-      '<div class="hint">'+esc(L("مخفية — دوس تظهرها:","Hidden — click to show:"))+'</div><div class="lb-cols">'+off.map(k=>'<button class="chip" data-a="lbCol" data-k="'+esc(k)+'">+ '+esc(lbLabel(k))+"</button>").join("")+"</div>"+
-      '<button class="btn btn-s" data-a="lbColsReset">'+esc(L("رجّع الافتراضي","Reset"))+"</button></div>"; }
+      (off.length?'<div class="lb-cols">'+off.map(k=>'<button class="chip" data-a="lbCol" data-k="'+esc(k)+'">+ '+esc(lbLabel(k))+"</button>").join("")+"</div>":"")+"</div>"; }
+  /* لوحة الفلتر */
+  if(LB.panel==="filter"){
+    h+='<div class="lb-pnl"><div class="lb-ph"><b>'+esc(L("فلتر","Filter"))+"</b>"+(LB.filters.length>1?'<span class="hint">'+esc(L("اعرض اللي بيحقق","Show rows matching"))+'</span><select class="sel" data-c="lbConj">'+selOpts([["and","كل الشروط","all conditions"],["or","أي شرط","any condition"]],LB.conj)+"</select>":"")+
+      (LB.filters.length?'<button class="btn btn-s" data-a="lbFClear">'+esc(L("امسح الكل","Clear all"))+"</button>":"")+"</div>"+
+      LB.filters.map((f,i)=>{ const ty=lbType(f.f), ops=LB_OPS[ty], vs=Array.isArray(f.v)?f.v:(f.v?[f.v]:[]), open=LB.fOpen===i;
+        let val="";
+        if(f.op==="empty"||f.op==="full") val="";
+        else if(f.op==="is"||f.op==="not") val='<button class="sel ms-b'+(vs.length?" on":"")+(open?" open":"")+'" data-a="lbMsOpen" data-i="'+i+'">'+esc(!vs.length?L("اختار…","Pick…"):vs.length<=2?vs.join("، "):vs.length+L(" مختارين"," selected"))+(open?" ▴":" ▾")+"</button>";
+        else if(ty==="date") val='<input class="inp" type="date" data-c="lbFV" data-i="'+i+'" value="'+esc(f.v||"")+'">';
+        else val='<input class="inp" style="width:150px" '+(ty==="num"?'type="number" step="any" ':"")+'data-c="lbFV" data-i="'+i+'" value="'+esc(Array.isArray(f.v)?"":(f.v||""))+'">';
+        return '<div class="lb-fr"><span class="flab">'+esc(i?(LB.conj==="or"?L("أو","or"):L("و","and")):L("لو","where"))+"</span>"+fieldSel("lbFF",i,f.f)+
+          '<select class="sel" data-c="lbFO" data-i="'+i+'">'+selOpts(ops,f.op)+"</select>"+val+'<button class="btn btn-s" data-a="lbDelF" data-i="'+i+'" title="'+esc(L("شيل","Remove"))+'">✕</button></div>'+
+          (open&&(f.op==="is"||f.op==="not")?'<div class="ms-p"><input class="inp" placeholder="'+esc(L("دوّر…","Search…"))+'" oninput="var q=this.value.toLowerCase();this.parentNode.querySelectorAll(\'label\').forEach(function(l){l.style.display=l.textContent.toLowerCase().indexOf(q)>=0?\'\':\'none\'})">'+
+            '<div class="ms-l">'+distinct(f.f).map(o=>'<label><input type="checkbox" data-a="lbMsTog" data-i="'+i+'" data-v="'+esc(o)+'"'+(vs.indexOf(o)>=0?" checked":"")+"> "+esc(o)+"</label>").join("")+"</div>"+
+            '<div class="ms-f"><button class="btn btn-s" data-a="lbMsNone" data-i="'+i+'">'+esc(L("مسح","Clear"))+'</button><button class="btn btn-s btn-p" data-a="lbMsDone">'+esc(L("تم","Done"))+"</button></div></div>":""); }).join("")+
+      '<button class="btn btn-s" data-a="lbAddF">+ '+esc(L("شرط","Add condition"))+"</button></div>"; }
+  /* لوحة التجميع */
+  if(LB.panel==="group"){
+    h+='<div class="lb-pnl"><div class="lb-ph"><b>'+esc(L("تجميع","Group"))+"</b>"+(nG?'<button class="btn btn-s" data-a="lbGOpenAll">'+esc(L("افتح الكل","Expand all"))+'</button><button class="btn btn-s" data-a="lbGCloseAll">'+esc(L("اقفل الكل","Collapse all"))+"</button>":"")+"</div>"+
+      LB.groups.map((g,i)=>'<div class="lb-fr"><span class="flab">'+esc(i?L("ثم","then"):L("جمّع حسب","Group by"))+"</span>"+fieldSel("lbGK",i,g.k)+
+        '<select class="sel" data-c="lbGD" data-i="'+i+'">'+selOpts([["sp","الأعلى صرفًا الأول","Highest spend first"],["1",lbType(g.k)==="num"?"الأصغر الأول":"أ ← ي",lbType(g.k)==="num"?"Smallest first":"A → Z"],["-1",lbType(g.k)==="num"?"الأكبر الأول":"ي ← أ",lbType(g.k)==="num"?"Largest first":"Z → A"]],String(g.dir))+"</select>"+
+        '<button class="btn btn-s" data-a="lbDelG" data-i="'+i+'">✕</button></div>').join("")+
+      (LB.groups.length<3?'<button class="btn btn-s" data-a="lbAddG">+ '+esc(LB.groups.length?L("مستوى تاني","Add subgroup"):L("تجميع","Add group"))+"</button>":"")+"</div>"; }
+  /* لوحة الترتيب */
+  if(LB.panel==="sort"){
+    h+='<div class="lb-pnl"><div class="lb-ph"><b>'+esc(L("ترتيب","Sort"))+'</b><span class="hint">'+esc(L("وكمان دوسة على عنوان أي عمود في الجدول بترتّب بيه","Or click any column header"))+"</span></div>"+
+      LB.sorts.map((x,i)=>'<div class="lb-fr"><span class="flab">'+esc(i?L("ثم","then"):L("رتّب حسب","Sort by"))+"</span>"+fieldSel("lbSK",i,x.k)+
+        '<select class="sel" data-c="lbSD" data-i="'+i+'">'+selOpts(lbType(x.k)==="num"?[["-1","الأكبر الأول","Largest first"],["1","الأصغر الأول","Smallest first"]]:lbType(x.k)==="date"?[["-1","الأحدث الأول","Newest first"],["1","الأقدم الأول","Oldest first"]]:[["1","أ ← ي","A → Z"],["-1","ي ← أ","Z → A"]],String(x.dir))+"</select>"+
+        '<button class="btn btn-s" data-a="lbDelS" data-i="'+i+'">✕</button></div>').join("")+
+      '<button class="btn btn-s" data-a="lbAddS">+ '+esc(LB.sorts.length?L("ترتيب تاني","Add another sort"):L("ترتيب","Add sort"))+"</button></div>"; }
   h+="</div>";
   const tot=lbSum(rows);
   h+='<div class="md-sum">'+[[L("فيديوهات","Videos"),fnum(rows.length,0)+(rows.length!==all.length?" / "+all.length:"")],[L("الصرف","Spend"),fnum(tot.sp,0)],[L("الطلبات (خزامى)","Orders (Khzama)"),fnum(tot.n,0)],[L("الإيراد (خزامى)","Revenue (Khzama)"),fnum(tot.a,0)],["ROAS",tot.roas==null?"—":tot.roas.toFixed(2)+"x"]]
     .map(x=>'<div class="md-s"><div class="l">'+esc(x[0])+'</div><div class="n">'+x[1]+"</div></div>").join("")+"</div>";
   if(LB.msg) h+='<div class="hint" style="margin-bottom:8px">'+esc(LB.msg)+"</div>";
-  /* الجدول */
-  const cols=LB.cols.filter(k=>colsAll.indexOf(k)>=0);
-  const head="<tr>"+cols.map(k=>'<th data-a="lbSort" data-k="'+esc(k)+'" class="'+(LB_NUM[k]?"num":"")+'">'+esc(lbLabel(k))+(s.k===k?(s.dir<0?" ▾":" ▴"):"")+"</th>").join("")+"</tr>";
+  const cols=LB.cols.filter(k=>colsAll.indexOf(k)>=0), s0=sorts[0]||{};
+  const head="<tr>"+cols.map(k=>'<th data-a="lbSort" data-k="'+esc(k)+'" class="'+(LB_NUM[k]?"num":"")+'">'+esc(lbLabel(k))+(s0.k===k?(s0.dir<0?" ▾":" ▴"):"")+"</th>").join("")+"</tr>";
   const rowH=r=>'<tr data-a="clbOpen" data-id="'+esc(r.__id)+'">'+cols.map(k=>'<td class="'+(LB_NUM[k]?"num":"")+(k==="_hook"?" lb-hook":"")+'">'+lbFmt(k,r[k])+"</td>").join("")+"</tr>";
-  const g=LB.groups.filter(Boolean); let body="", shown=0;
+  const g=LB.groups.filter(x=>x.k); let body="", shown=0;
   const grp=(list,lvl,path)=>{ if(lvl>=g.length){ list.forEach(r=>{ if(shown<800){ body+=rowH(r); shown++; } }); return; }
-    const by={}; list.forEach(r=>{ const k=r[g[lvl]]==null||r[g[lvl]]===""?"—":String(r[g[lvl]]); (by[k]=by[k]||[]).push(r); });
-    Object.keys(by).sort((a,b)=>lbSum(by[b]).sp-lbSum(by[a]).sp||a.localeCompare(b,"ar")).forEach(k=>{ const key=path+"|"+k, open=LB.open[key]!==false, sm=lbSum(by[k]);
-      body+='<tr class="lb-g l'+lvl+'" data-a="lbTog" data-k="'+esc(key)+'"><td colspan="'+cols.length+'"><b>'+(open?"▾ ":"▸ ")+esc(lbLabel(g[lvl]))+": "+esc(k)+'</b> <span class="muted">'+by[k].length+esc(L(" فيديو"," videos"))+
+    const G=g[lvl], by={}; list.forEach(r=>{ const k=r[G.k]==null||r[G.k]===""?"—":String(r[G.k]); (by[k]=by[k]||[]).push(r); });
+    const keys=Object.keys(by).sort((a,b)=> a==="—"?1 : b==="—"?-1 : G.dir==="sp"? lbSum(by[b]).sp-lbSum(by[a]).sp||a.localeCompare(b,"ar") : (lbType(G.k)==="num"? (+a)-(+b) : a.localeCompare(b,"ar"))*(+G.dir));
+    keys.forEach(k=>{ const key=path+"|"+k, open=LB.open[key]===undefined? !LB.allClosed : LB.open[key], sm=lbSum(by[k]);
+      body+='<tr class="lb-g l'+lvl+'" data-a="lbTog" data-k="'+esc(key)+'"><td colspan="'+cols.length+'"><b>'+(open?"▾ ":"▸ ")+esc(lbLabel(G.k))+": "+esc(lbType(G.k)==="date"&&k!=="—"?fdate(k):k)+'</b> <span class="muted">'+by[k].length+esc(L(" فيديو"," videos"))+
         (sm.sp?" · "+esc(L("صرف ","spend "))+fnum(sm.sp,0)+" · "+fnum(sm.n,0)+esc(L(" طلب"," orders"))+" · ROAS "+(sm.roas==null?"—":sm.roas.toFixed(2)+"x"):"")+"</span></td></tr>";
       if(open) grp(by[k],lvl+1,key); }); };
   grp(rows,0,"");
   h+='<div class="tw lb-tw"><table class="an-tbl lb-t"><thead>'+head+"</thead><tbody>"+body+"</tbody></table></div>"+
     (shown>=800?'<div class="hint">'+esc(L("ظاهر أول ٨٠٠ — استخدم الفلاتر.","Showing the first 800 — use filters."))+"</div>":"")+
-    '<div class="hint" style="margin-top:10px">'+esc(L("فيديوهات ملبي بأسلوب مشهور/مودل/إبداعي من بورد Airtable — آخر مزامنة: ","Molabi influencer/model/creative videos from Airtable — last sync: "))+
+    '<div class="hint" style="margin-top:10px">'+esc(L("فيديوهات ملبي (مشهور/مودل/إبداعي) من بورد Airtable — آخر مزامنة: ","Molabi videos from Airtable — last sync: "))+
     esc(LB.data.synced? new Date(LB.data.synced).toLocaleString(EN()?"en-GB":"ar-EG",{dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Riyadh"}):"—")+
-    esc(L(". الصرف من المنصات، والطلبات والإيراد والـ ROAS من خزامى. دوس على أي فيديو تشوف كل تفاصيله.",". Spend from platforms; orders, revenue and ROAS from Khzama. Click a video for all its details."))+"</div>";
+    esc(L(". الصرف والـ Hook/Hold/CTR/CPM من المنصات، والطلبات والإيراد والـ ROAS من خزامى. دوس على أي فيديو تشوف تفاصيله.",". Spend and delivery from platforms; orders, revenue, ROAS from Khzama."))+"</div>";
   return h; }
 CHG.lbQ=v=>{ LB.q=v||""; render(); };
 CHG.lbPer=v=>{ LB.per=v; if(v==="range"&&!LB.from){ LB.to=todayISO(); LB.from=addDays(LB.to,-29); } render(); };
 CHG.clbFrom=v=>{ LB.from=v; render(); }; CHG.lbT=v=>{ LB.to=v; render(); };
-CHG.lbG=(v,t)=>{ LB.groups[+t.dataset.i]=v||""; if(!LB.groups[0]) LB.groups=[]; LB.open={}; render(); };
-CHG.lbFF=(v,t)=>{ LB.filters[+t.dataset.i].f=v; LB.filters[+t.dataset.i].v=[]; LB.fOpen=null; render(); };
+ACT.lbPanel=t=>{ LB.panel=LB.panel===t.dataset.p? null : t.dataset.p; LB.fOpen=null; render(); };
+/* فلتر */
+CHG.lbConj=v=>{ LB.conj=v; render(); };
+CHG.lbFF=(v,t)=>{ const f=LB.filters[+t.dataset.i]; f.f=v; f.op=LB_OPS[lbType(v)][0][0]; f.v=lbType(v)==="text"?[]:""; LB.fOpen=(f.op==="is"?+t.dataset.i:null); render(); };
+CHG.lbFO=(v,t)=>{ const f=LB.filters[+t.dataset.i]; const multi=v==="is"||v==="not"; if(multi&&!Array.isArray(f.v)) f.v=f.v?[String(f.v)]:[]; if(!multi&&Array.isArray(f.v)) f.v=""; f.op=v; render(); };
+CHG.lbFV=(v,t)=>{ LB.filters[+t.dataset.i].v=v; render(); };
+ACT.lbAddF=()=>{ LB.filters.push({f:"المعلن",op:"is",v:[]}); LB.fOpen=LB.filters.length-1; render(); };
+ACT.lbDelF=t=>{ LB.filters.splice(+t.dataset.i,1); LB.fOpen=null; render(); };
+ACT.lbFClear=()=>{ LB.filters=[]; LB.fOpen=null; render(); };
 ACT.lbMsOpen=t=>{ const i=+t.dataset.i; LB.fOpen=LB.fOpen===i? null : i; render(); };
 ACT.lbMsTog=t=>{ const f=LB.filters[+t.dataset.i]; if(!Array.isArray(f.v)) f.v=f.v?[f.v]:[]; const v=t.dataset.v, i=f.v.indexOf(v), on=i<0; on? f.v.push(v) : f.v.splice(i,1); setTimeout(()=>{ t.checked=on; },0); };
 ACT.lbMsNone=t=>{ LB.filters[+t.dataset.i].v=[]; LB.fOpen=null; render(); };
 ACT.lbMsDone=()=>{ LB.fOpen=null; render(); };
-CHG.lbFO=(v,t)=>{ LB.filters[+t.dataset.i].op=v; render(); };
-CHG.lbFV=(v,t)=>{ LB.filters[+t.dataset.i].v=v; render(); };
-ACT.lbAddF=()=>{ LB.filters.push({f:"المعلن",op:"is",v:[]}); LB.fOpen=LB.filters.length-1; render(); };
-ACT.lbDelF=t=>{ LB.filters.splice(+t.dataset.i,1); LB.fOpen=null; render(); };
-ACT.lbPick=()=>{ LB.pick=!LB.pick; render(); };
+/* تجميع */
+CHG.lbGK=(v,t)=>{ LB.groups[+t.dataset.i].k=v; LB.open={}; render(); };
+CHG.lbGD=(v,t)=>{ LB.groups[+t.dataset.i].dir=v==="sp"?"sp":+v; render(); };
+ACT.lbAddG=()=>{ LB.groups.push({k:LB.groups.length?"المعلن":"المشروع",dir:"sp"}); LB.open={}; render(); };
+ACT.lbDelG=t=>{ LB.groups.splice(+t.dataset.i,1); LB.open={}; render(); };
+ACT.lbGOpenAll=()=>{ LB.open={}; LB.allClosed=false; render(); };
+ACT.lbGCloseAll=()=>{ LB.open={}; LB.allClosed=true; render(); };
+ACT.lbTog=t=>{ const k=t.dataset.k, cur=LB.open[k]===undefined? !LB.allClosed : LB.open[k]; LB.open[k]=!cur; render(); };
+/* ترتيب */
+CHG.lbSK=(v,t)=>{ const x=LB.sorts[+t.dataset.i]; x.k=v; x.dir=lbType(v)==="text"?1:-1; render(); };
+CHG.lbSD=(v,t)=>{ LB.sorts[+t.dataset.i].dir=+v; render(); };
+ACT.lbAddS=()=>{ LB.sorts.push({k:LB.sorts.length?"المعلن":"_spend",dir:LB.sorts.length?1:-1}); render(); };
+ACT.lbDelS=t=>{ LB.sorts.splice(+t.dataset.i,1); render(); };
+ACT.lbSort=t=>{ const k=t.dataset.k, s=LB.sorts[0]; if(s&&s.k===k) s.dir=-s.dir; else LB.sorts=[{k:k,dir:lbType(k)==="text"?1:-1}]; render(); };
+/* الأعمدة */
 ACT.lbCol=t=>{ const k=t.dataset.k, a=LB.cols.slice(), i=a.indexOf(k); i<0? a.push(k) : a.splice(i,1); lbColsSet(a); render(); };
-ACT.lbMv=t=>{ const k=t.dataset.k, d=+t.dataset.d, a=LB.cols.slice(), i=a.indexOf(k), j=i+d; if(i<0||j<0||j>=a.length) return; a.splice(i,1); a.splice(j,0,k); lbColsSet(a); render(); };
+ACT.lbColsAll=()=>{ lbColsSet(LB.cols.concat(LB_AT.concat(LB_CALC.map(c=>c[0])).filter(k=>LB.cols.indexOf(k)<0))); render(); };
 ACT.lbColsReset=()=>{ lbColsSet(LB_DEF.slice()); render(); };
 let LB_DRAG=null;
 function lbDragStart(e){ LB_DRAG=e.currentTarget.dataset.k; e.dataTransfer.effectAllowed="move"; try{ e.dataTransfer.setData("text/plain",LB_DRAG); }catch(x){} }
 function lbDragOver(e){ e.preventDefault(); e.dataTransfer.dropEffect="move"; }
 function lbDrop(e){ e.preventDefault(); const to=e.currentTarget.dataset.k, from=LB_DRAG; LB_DRAG=null; if(!from||from===to) return;
   const a=LB.cols.slice(), i=a.indexOf(from), j=a.indexOf(to); if(i<0||j<0) return; a.splice(i,1); a.splice(a.indexOf(to)+(i<j?1:0),0,from); lbColsSet(a); render(); }
-ACT.lbSort=t=>{ const k=t.dataset.k; if(LB.sort.k===k) LB.sort.dir=-LB.sort.dir; else LB.sort={k:k,dir:LB_NUM[k]?-1:1}; render(); };
-ACT.lbTog=t=>{ const k=t.dataset.k; LB.open[k]=LB.open[k]===false; render(); };
+
 ACT.lbSync=async()=>{ if(LB.syncing) return; LB.syncing=true; LB.msg=""; render();
   try{ const r=await SUPA_DB.client.functions.invoke("media-sync",{body:{}}); if(r.error||(r.data&&r.data.error)) throw new Error((r.data&&r.data.error)||r.error.message);
     LB.msg=L("اتحدثت من Airtable — ","Synced from Airtable — ")+fnum(r.data.ok,0)+L(" سجل"," records"); LB.data=null; }
