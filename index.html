@@ -316,6 +316,16 @@ textarea.inp{resize:vertical;min-height:96px;font-family:var(--f-num);font-size:
 /* ── الفريق والمجتمع ── */
 .pav{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;color:#fff;font-weight:700;flex:none;object-fit:cover;vertical-align:middle}
 .nav-me{display:flex;align-items:center;gap:10px;padding:10px 10px 12px;margin:-6px 0 10px;border-bottom:1px solid var(--line)}
+.mx-fn{display:flex;flex-direction:column;gap:7px}
+.mx-st{display:grid;grid-template-columns:120px 1fr 54px 120px;align-items:center;gap:8px;font-size:13px}
+.mx-sb{height:14px;background:var(--line);border-radius:7px;overflow:hidden}.mx-sb i{display:block;height:100%;background:var(--cyan,#22b8cf);border-radius:7px}
+.mx-sr{font-size:12px;color:var(--ink-3)}.mx-sr.bad{color:var(--bad);font-weight:700}
+.mx-hr{display:flex;align-items:flex-end;gap:3px;height:120px;padding-top:6px}
+.mx-hc{flex:1;height:100%;position:relative;display:flex;align-items:flex-end;justify-content:center;gap:1px}
+.mx-hc i{display:block;width:45%;border-radius:3px 3px 0 0;min-height:1px}.mx-hc i.s{background:var(--line-2,#9aa4b2);opacity:.7}.mx-hc i.p{background:var(--good)}
+.mx-hc span{position:absolute;bottom:-16px;font-size:10px;color:var(--ink-3)}
+.mx-hr{margin-bottom:18px}.mx-k{display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:middle}.mx-k.s{background:var(--line-2,#9aa4b2)}.mx-k.p{background:var(--good)}
+@media(max-width:600px){.mx-st{grid-template-columns:90px 1fr 44px;}.mx-st .mx-sr{grid-column:1/-1}}
 .nav-me[data-a],.tb-me[data-a],.rail-me[data-a]{cursor:pointer;border-radius:10px}.nav-me[data-a]:hover,.tb-me[data-a]:hover,.rail-me[data-a]:hover{background:var(--bg-2,rgba(127,127,127,.08))}
 .pf-c{width:20px;height:20px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}.pf-c.on{border-color:var(--ink);box-shadow:0 0 0 2px var(--card,#fff) inset}
 .nav-me b{display:block;font-size:13px}.nav-me small{display:block;font-size:11px;color:var(--ink-3)}
@@ -4493,7 +4503,7 @@ function stateAt(date,msOfDay){
 function renderLive(){
   const D=S.liveDate;
   _roundShown=false;
-  return ssLiveBlock(D)+livePlatBar()+sectionsBlock("live",{from:D,to:D,cmp:[addDays(D,-1),addDays(D,-1)]});
+  return ssLiveBlock(D)+liveSiteStrip(D)+livePlatBar()+sectionsBlock("live",{from:D,to:D,cmp:[addDays(D,-1),addDays(D,-1)]});
 }
 /* ── المنصات الظاهرة في صفحة اليوم مباشر (بتتحفظ) ── */
 function livePlats(){ return (S.cfg.settings.livePlats||[]).filter(id=>S.cfg.platforms.some(p=>p.id===id&&!isAcct(id))); }
@@ -7284,7 +7294,7 @@ function renderActions(){
     (rows||'<div class="empty" style="padding:24px">'+esc(L("مفيش حاجة محتاجة تدخلك في الفترة دي.","Nothing needs you in this period."))+"</div>")+
     '<div class="hint" style="margin-top:12px">'+esc(L("الأولوية من خطورة النوع وحجم الصرف والإيراد المتأثر والانحراف والثقة. عدّل الحدود من لوحة التحكم ← الذكاء.",
       "Priority comes from severity, affected spend and revenue, deviation and confidence. Tune thresholds in Admin → Intelligence."))+"</div></div>";
-  const side='<div class="ac-side">'+acTasks()+acBudget()+acSnaps()+acTracking(from,to)+"</div>";
+  const side='<div class="ac-side">'+acSite()+acTasks()+acBudget()+acSnaps()+acTracking(from,to)+"</div>";
   return acTape()+acSummary(from,to)+'<div class="ac-grid">'+main+side+"</div>"+
     '<div style="margin-top:14px">'+sectionsBlock("actions",{from:from,to:to,cmp:resolveCmp(from,to)})+"</div>";
 }
@@ -8610,7 +8620,7 @@ async function rcLoad(){ RC.busy=true; RC.err=""; rcPaint();
   try{ if(RC.first==null){ const r=await SUPA_DB.client.from("ad_daily").select("date").eq("camp_no",RC.code).order("date").limit(1);
       const k=await SUPA_DB.client.from("khzama_link_daily").select("date").eq("camp_no",RC.code).order("date").limit(1);
       const ds=[(r.data||[])[0],(k.data||[])[0]].filter(Boolean).map(x=>x.date).sort(); RC.first=ds[0]||""; }
-    const [a,b]=rcRange(); await exFetch(a,b); }
+    const [a,b]=rcRange(); await exFetch(a,b); try{ await mxFetch(a,b); }catch(e){} }
   catch(e){ RC.err=e.message==="site-only"? L("ملف الحملة بيقرا من الداتا بيز — افتحه من رابط الموقع.","Opens from the site link only.") : (e.message||String(e)); }
   RC.busy=false; rcPaint(); }
 ACT.rsCamp=t=>{ RC.code=t.dataset.i; RC.plat=t.dataset.p||""; RC.win="7d"; RC.first=null; rcPaint(); rcLoad(); };
@@ -8675,7 +8685,7 @@ function rcBody(){
   const vl=Object.keys(vg).filter(k=>k!=="—").map(k=>({k:k,v:exUseKz(exAgg(vg[k]),vk[k])})).sort((x,y)=>y.v.spend-x.v.spend).slice(0,10);
   if(vl.length) h+='<b>'+esc(L("الفيديوهات اللي فيها","Videos in it"))+'</b><div class="tw"><table class="an-tbl"><tr><th>'+esc(L("الفيديو","Video"))+"</th><th>"+esc(L("المعلن","Creator"))+'</th><th class="num">'+esc(L("الصرف","Spend"))+'</th><th class="num">'+esc(L("الطلبات","Orders"))+'</th><th class="num">'+esc(L("الإيراد","Revenue"))+'</th><th class="num">ROAS</th></tr>'+
     vl.map(x=>'<tr><td class="num">'+esc(x.k)+"</td><td>"+esc(exInf(exAttr(x.k,"advertiser")||(cm[x.k]||{}).influencer)||"—")+'</td><td class="num">'+exFmt(x.v.spend,"cur")+'</td><td class="num">'+exFmt(x.v.purchases,"n")+'</td><td class="num">'+exFmt(x.v.revenue,"cur")+'</td><td class="num" style="color:'+(x.v.roas!=null&&ar&&x.v.roas>=ar?"var(--good)":"var(--bad)")+'">'+exFmt(x.v.roas,"x")+"</td></tr>").join("")+"</table></div>";
-  return h+'<div class="hint" style="margin-top:10px">'+esc(L("الصرف وباقي الأرقام من المنصة، والطلبات والإيراد والـ ROAS والـ CPA من خزامى. «المنصة» = متوسط كل حملات نفس المنصة في نفس الفترة.","Spend and delivery from the platform; orders, revenue, ROAS and CPA from Khzama. «platform» = average of all campaigns on the same platform in the same period."))+"</div>"; }
+  return h+mxCampBlock(RC.code,a,b)+'<div class="hint" style="margin-top:10px">'+esc(L("الصرف وباقي الأرقام من المنصة، والطلبات والإيراد والـ ROAS والـ CPA من خزامى. «المنصة» = متوسط كل حملات نفس المنصة في نفس الفترة.","Spend and delivery from the platform; orders, revenue, ROAS and CPA from Khzama. «platform» = average of all campaigns on the same platform in the same period."))+"</div>"; }
 
 function renderRoster(){
   if(!S.cfg.clients.length) return emptyBox(L("محتاج تضيف عميل الأول.","Add a client first."),
@@ -10896,8 +10906,9 @@ ACT.clbOpen=t=>{ const id=t.dataset.id, r=lbRows().find(x=>x.__id===id); if(!r) 
       '<datalist id="lbTagList">'+[...new Set([].concat(...Object.values(LB.data.N).map(n=>n.tags||[])))].map(t=>'<option value="'+esc(t)+'">').join("")+"</datalist>"+
       '<label class="fld"><span>'+esc(L("ملاحظات","Notes"))+'</span><textarea class="inp" id="lbNote" style="min-height:54px;direction:rtl;text-align:right">'+esc((LB.data.N[id]||{}).note||"")+"</textarea></label>"+
       '<button class="btn btn-s btn-p" data-a="lbNoteSave" data-id="'+esc(id)+'">'+esc(L("حفظ التاجز والملاحظات","Save tags & notes"))+"</button></div>"+
-    '<b>'+esc(L("الأداء","Performance"))+"</b>"+perf+'<b style="display:block;margin-top:12px">'+esc(L("بيانات البورد","Board fields"))+'</b><div class="tw"><table class="an-tbl lb-kv">'+fields+"</table></div>",""); };
+    '<b>'+esc(L("الأداء","Performance"))+"</b>"+perf+'<div id="clbMx"></div>'+'<b style="display:block;margin-top:12px">'+esc(L("بيانات البورد","Board fields"))+'</b><div class="tw"><table class="an-tbl lb-kv">'+fields+"</table></div>",""); };
 
+{ const _clbOpen=ACT.clbOpen; ACT.clbOpen=t=>{ _clbOpen(t); mxCreativeFill(t.dataset.id); }; }
 function renderLibrary(){
   if(window.SUPA_DB&&SUPA_DB.client) return renderCreativeLibrary();
   const f=S.crf, list=crList(), all=(S.lib||[]).filter(c=>inScope(c.clientId)).map(crN);
@@ -11315,6 +11326,7 @@ function renderViewRaw(){
       case "reports":  return renderReports();
       case "portal":   return renderPortal();
       case "library":  return renderLibrary();
+      case "site":     return renderSite();
       case "chat":     return renderChat();
       case "team":     return renderTeam();
       default:
@@ -11404,13 +11416,13 @@ function navHTML(){
     entry:it("entry",L("إدخال البيانات","Data entry")),rep:it("reports",L("التقارير","Reports")),plans:it("plans",L("الميديا بلان","Media plans")),cr:it("library",L("مكتبة الكريتيف","Creative library")),media:it("creatives",L("إدارة الميديا","Media management")),
     ap:it("approvals",L("الموافقات","Approvals")),team:it("team",L("الفريق","Team")),perf:it("perf",L("تقييم الأداء","Performance")),admin:it("admin",L("الإعدادات","Settings")),portal:it("portal",L("بوابتي","My portal"))};
   if(isClient()) return grp(L("حسابك","Your account"),[I.portal,I.rep]);
-  const work=grp(L("شغلي","My work"),[I.me,I.tasks,I.chat]), perfG=grp(L("الأداء","Performance"),[I.live,I.ov,it("explorer",L("المحلل","Analyzer"),"insights"),I.entry,I.rep]), planG=grp(L("التخطيط والإبداع","Planning & creative"),[I.plans,I.media,I.cr,I.ap]);
+  const work=grp(L("شغلي","My work"),[I.me,I.tasks,I.chat]), perfG=grp(L("الأداء","Performance"),[I.live,I.ov,it("explorer",L("المحلل","Analyzer"),"insights"),it("site",L("الموقع والقمع","Site & funnel"),"cart"),I.entry,I.rep]), planG=grp(L("التخطيط والإبداع","Planning & creative"),[I.plans,I.media,I.cr,I.ap]);
   if(isMember()) return work+perfG+planG;
   if(SIMPLE()) return work+perfG+planG+grp(L("الإدارة","Management"),[I.team,I.perf,I.admin])+
     (cs.length?grp(L("شاشاتي","My screens"),cs.map(v=>it(v.id,v.name,"screen"))):"")+modeBar();
   return work+
     grp(L("متابعة","Monitor"),[it("actions",L("مركز الإجراءات","Action Center")),it("live",L("اليوم مباشر","Live Today"))])+
-    grp(L("تحليل","Analyze"),[it("overview",L("نظرة عامة","Overview")),it("explorer",L("المحلل","Analyzer"),"insights"),I.rep])+
+    grp(L("تحليل","Analyze"),[it("overview",L("نظرة عامة","Overview")),it("explorer",L("المحلل","Analyzer"),"insights"),it("site",L("الموقع والقمع","Site & funnel"),"cart"),I.rep])+
     grp(L("تشغيل","Operate"),[it("entry",L("إدخال البيانات","Data entry")),it("roster",L("إدارة الحملات","Campaign roster")),I.plans,I.media,I.cr,I.ap,
       it("changes",L("سجل التغييرات","Change log")),it("experiments",L("التجارب","Experiments"))])+
     grp(L("الإدارة","Management"),[I.team,I.perf])+
@@ -11875,6 +11887,189 @@ ACT.exCsv=async()=>{ const [a,b]=exRange(), cur=EX.cache[a+"|"+b]; if(!cur) retu
   const lines=[[L("البند","Item")].concat(cols.map(c=>L(c[1],c[2])))].concat(Object.keys(g).map(k=>{ const v=exUseKz(exAgg(g[k]),kg[k]); return [exLabel(k,EX.dim)].concat(cols.map(c=>v[c[0]]==null?"":(+v[c[0]]).toFixed(c[3]==="n"?0:2))); }));
   const csv="﻿"+lines.map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(",")).join("\n");
   const blob=new Blob([csv],{type:"text/csv"}), u=URL.createObjectURL(blob), el=document.createElement("a"); el.href=u; el.download="gadlytics_"+EX.dim+"_"+a+"_"+b+".csv"; el.click(); setTimeout(()=>URL.revokeObjectURL(u),2000); };
+
+/* ══════════════════ الموقع والقمع (Mixpanel) ══════════════════
+   سلوك الزوار على المتجر من ميكس بانل: القمع والمصادر والحملات والأجهزة وطرق الدفع والساعات.
+   الطلبات والإيراد الرسميين فضلوا من خزامى — مشتريات ميكس بانل للمقارنة ونِسَب القمع بس.
+   الداتا في mx_daily (dev/src/pay/hour) و v_mx_aff (لكل لينك خزامى)، والمشتريات الوهمية من GTM متشالة وقت السحب. */
+const MX={win:"7",from:"",to:"",cache:{},busy:false,err:"",cs:"page_view"};
+const MX_STEPS=[["page_view","زيارة صفحة","Page view"],["view_content","مشاهدة مشروع","View content"],["add_to_cart","إضافة للسلة","Add to cart"],["begin_checkout","بدء الدفع","Checkout"],["purchase","دفع (ميكس بانل)","Paid (Mixpanel)"]];
+const MX_SRC=[["ME","ميتا","Meta","meta"],["TT","تيك توك","TikTok","tiktok"],["SC","سناب","Snap","snap"],["bio","البايو","Bio",""],["com","الكومنتات","Comments",""],["DM","الرسايل","DMs",""],
+  ["_other","أقسام تانية","Other departments",""],["_none","من غير لينك","No link",""]];
+const MX_PAY={applepay:["Apple Pay","Apple Pay"],card:["بطاقة","Card"],bankTransfer:["تحويل بنكي","Bank transfer"]};
+function mxRange(){ const T=todayISO(); if(MX.win==="custom"&&MX.from&&MX.to) return [MX.from,MX.to]; const n=+MX.win||7; return [addDays(T,-(n-1)),T]; }
+async function mxFetch(a,b){ const k=a+"|"+b; if(MX.cache[k]) return MX.cache[k];
+  const sb=window.SUPA_DB&&SUPA_DB.client; if(!sb) throw new Error("site-only");
+  const cid=S.ws||(S.cfg.clients[0]||{}).id;
+  const all=async(t,cols,ord)=>{ const out=[]; for(let i=0;;i+=1000){ let q=sb.from(t).select(cols).gte("date",a).lte("date",b).order("date"); ord.forEach(o=>{ q=q.order(o); }); q=q.range(i,i+999);
+      if(cid) q=q.eq("client_id",cid); const r=await q; if(r.error) throw r.error; out.push(...r.data); if(r.data.length<1000) break; } return out; };
+  const [mx,aff]=await Promise.all([all("mx_daily","date,dim,val,event,cnt",["dim","val","event"]),all("v_mx_aff","date,link,event,cnt,camp_no,creative_id,code",["link","event"])]);
+  let ad=null; try{ ad=await exFetch(a,b); }catch(e){}
+  return MX.cache[k]={mx:mx.filter(r=>r.dim!=="aff"),aff:aff,ad:ad}; }
+async function mxLoad(){ if(MX.busy) return; MX.busy=true; MX.err=""; render();
+  try{ const [a,b]=mxRange(); await mxFetch(a,b); }
+  catch(e){ MX.err=e.message==="site-only"? L("الشاشة دي بتقرا من الداتا بيز — افتحها من رابط الموقع.","Open it from the site link.") : (e.message||String(e)); }
+  MX.busy=false; render(); }
+function mxSum(rows){ const o={}; rows.forEach(r=>{ o[r.event]=(o[r.event]||0)+(+r.cnt||0); }); return o; }
+const mxPct=(x,y)=>y? x/y*100 : null;
+const mxP=(x,y)=>{ const p=mxPct(x,y); return p==null?"—":fnum(p,p<10?1:0)+"%"; };
+/* الأرقام الرسمية لكل مصدر: صرف المنصة + طلبات وإيراد خزامى */
+function mxOfficial(D){ const o={}; if(!D.ad) return o;
+  const ads=exScope(D.ad,"campaign");
+  MX_SRC.forEach(s=>{ if(!s[3]) return; const v=exAgg(ads.filter(r=>r.platform===s[3])); o[s[0]]={spend:v.spend||0,pp:v.purchases||0}; });
+  (D.ad.kz||[]).forEach(k=>{ const c=k.code; if(!c) return; const x=o[c]||(o[c]={spend:0,pp:0}); x.kd=(x.kd||0)+(+k.donations||0); x.ka=(x.ka||0)+(+k.amount||0); });
+  return o; }
+function mxFunnelBars(v){ const top=v.page_view||0; if(!top) return '<div class="hint">'+esc(L("مفيش زيارات في الفترة دي.","No visits in this period."))+"</div>";
+  let worst=null; for(let i=1;i<MX_STEPS.length;i++){ const r=mxPct(v[MX_STEPS[i][0]]||0,v[MX_STEPS[i-1][0]]||0); if(r!=null&&(!worst||r<worst.r)) worst={i:i,r:r}; }
+  return '<div class="mx-fn">'+MX_STEPS.map((s,i)=>{ const n=v[s[0]]||0, w=Math.max(2,n/top*100), step=i?mxP(n,v[MX_STEPS[i-1][0]]||0):"", bad=worst&&worst.i===i;
+    return '<div class="mx-st"><div class="mx-sl">'+esc(L(s[1],s[2]))+'</div><div class="mx-sb"><i style="width:'+w.toFixed(1)+'%"></i></div><b class="num">'+fnum(n,0)+"</b>"+
+      '<span class="mx-sr'+(bad?" bad":"")+'">'+(i?esc(L("من اللي قبلها ","of previous "))+step:"")+"</span></div>"; }).join("")+"</div>"+
+    (worst?'<div class="hint" style="margin-top:8px">'+esc(L("أكبر تسرب: من «"+MX_STEPS[worst.i-1][1]+"» لـ «"+MX_STEPS[worst.i][1]+"» — "+fnum(100-worst.r,0)+"% بيقعوا هنا.",
+      "Biggest drop: "+MX_STEPS[worst.i-1][2]+" → "+MX_STEPS[worst.i][2]+" ("+fnum(100-worst.r,0)+"% lost)."))+"</div>":""); }
+function mxTable(head,rows){ return '<div class="tw"><table class="an-tbl"><tr>'+head.map((h,i)=>"<th"+(i?' class="num"':"")+">"+esc(h)+"</th>").join("")+"</tr>"+rows.join("")+"</table></div>"; }
+function mxRow(cells){ return "<tr>"+cells.map((c,i)=>"<td"+(i?' class="num"':"")+">"+c+"</td>").join("")+"</tr>"; }
+function mxInsights(D,tot,bySrc,off,dev,pay,hrs){ const out=[], C=CURR[S.cfg.settings.currency]||"";
+  for(let i=1;i<MX_STEPS.length;i++){}
+  MX_SRC.slice(0,6).forEach(s=>{ const v=bySrc[s[0]]||{}; if((v.begin_checkout||0)>=5&&!(v.purchase||0))
+    out.push(["bad",L("زوار "+s[1]+" بدأوا الدفع "+fnum(v.begin_checkout,0)+" مرة ومفيش ولا دفع في ميكس بانل — جرّب الدفع من نفس المصدر على موبايل حقيقي.",
+      s[2]+" visitors started checkout "+fnum(v.begin_checkout,0)+" times with no payment — test checkout from that source on a real phone.")]); });
+  const ip=dev.iPhone||{}, an=dev.Android||{}, ci=mxPct(ip.purchase||0,ip.session||0), ca=mxPct(an.purchase||0,an.session||0);
+  if(ci!=null&&ca!=null&&(ip.session||0)>=50&&(an.session||0)>=50&&ca<ci*0.5)
+    out.push(["warn",L("تحويل أندرويد "+fnum(ca,1)+"% مقابل آيفون "+fnum(ci,1)+"% — راجع الدفع على أندرويد (البطاقة).","Android converts "+fnum(ca,1)+"% vs iPhone "+fnum(ci,1)+"% — check card checkout on Android.")]);
+  const pt=Object.values(pay).reduce((s,v)=>s+(v.purchase||0),0), ap=(pay.applepay||{}).purchase||0;
+  if(pt>=5) out.push(["info",L("Apple Pay = "+fnum(ap/pt*100,0)+"% من المدفوعات — أي مشكلة في Apple Pay بتوقف أغلب التبرعات.","Apple Pay is "+fnum(ap/pt*100,0)+"% of payments.")]);
+  const hb=hrs.filter(h=>h.s>0).sort((x,y)=>y.p-x.p)[0]; if(hb&&hb.p>=3) out.push(["info",L("أكتر ساعة فيها دفع: "+hb.h+":00 ("+fnum(hb.p,0)+" دفع).","Most payments at "+hb.h+":00 ("+fnum(hb.p,0)+").")]);
+  ["ME","TT","SC"].forEach(c=>{ const o=off[c]||{}, v=bySrc[c]||{}; if((o.kd||0)>=5&&(v.purchase||0)>0){ const g=(o.kd-(v.purchase||0))/o.kd*100;
+    if(Math.abs(g)>=30) out.push(["warn",L("خزامى سجّلت "+fnum(o.kd,0)+" تبرع من "+c+" وميكس بانل شاف "+fnum(v.purchase,0)+" — التتبع بيضيّع جزء.","Khzama logged "+fnum(o.kd,0)+" "+c+" donations, Mixpanel saw "+fnum(v.purchase,0)+".")]); } });
+  if((tot.checkout_error||0)>0) out.push(["bad",L("ظهر خطأ في الدفع "+fnum(tot.checkout_error,0)+" مرة.","Checkout errors: "+fnum(tot.checkout_error,0)+".")]);
+  return out; }
+function renderSite(){
+  const [a,b]=mxRange(), D=MX.cache[a+"|"+b], C=CURR[S.cfg.settings.currency]||"";
+  if(!D&&!MX.busy&&!MX.err) setTimeout(mxLoad,0);
+  const wins=[["1","النهارده","Today"],["7","آخر ٧ أيام","Last 7 days"],["14","آخر ١٤ يوم","Last 14 days"],["30","آخر ٣٠ يوم","Last 30 days"],["custom","مدة تختارها","Custom"]];
+  let h='<div class="card" style="margin-bottom:14px"><div class="card-h"><div class="card-t">'+esc(L("الموقع والقمع","Site & funnel"))+'</div><div class="card-x">'+esc(L("من ميكس بانل · ","From Mixpanel · "))+fdate(a)+" — "+fdate(b)+"</div></div>"+
+    '<div class="chips">'+wins.map(w=>'<button class="chip'+(MX.win===w[0]?" on":"")+'" data-a="mxWin" data-w="'+w[0]+'">'+esc(L(w[1],w[2]))+"</button>").join("")+"</div>"+
+    (MX.win==="custom"?'<div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap"><label class="fld"><span>'+esc(L("من","From"))+'</span><input class="inp" type="date" data-c="mxF" value="'+esc(MX.from||a)+'" max="'+todayISO()+'"></label>'+
+      '<label class="fld"><span>'+esc(L("إلى","To"))+'</span><input class="inp" type="date" data-c="mxT" value="'+esc(MX.to||b)+'" max="'+todayISO()+'"></label></div>':"")+
+    '<div class="hint" style="margin-top:8px">'+esc(L("ميكس بانل بيقيس اللي بيحصل على الموقع من الزيارة لحد الدفع. الطلبات والإيراد الرسميين لسه من خزامى — مشتريات ميكس بانل هنا للمقارنة ونِسَب القمع بس، والمشتريات الوهمية من GTM متشالة.",
+      "Mixpanel measures what happens on the site. Official orders and revenue still come from Khzama; Mixpanel payments here are for funnel ratios and comparison only (GTM ghost purchases removed)."))+"</div></div>";
+  if(MX.err) return h+emptyBox(esc(MX.err));
+  if(!D) return h+'<div class="empty" style="padding:30px">'+esc(L("بحمّل أرقام الموقع…","Loading site data…"))+"</div>";
+  if(!D.mx.length&&!D.aff.length) return h+emptyBox(esc(L("مفيش أرقام ميكس بانل للفترة دي لسه. بتتسحب كل يوم مع السحب اليومي، أو قول لـ Claude «اسحب ميكس بانل».","No Mixpanel data for this period yet. It is pulled daily, or ask Claude to pull Mixpanel.")));
+  const by=(dim,f)=>D.mx.filter(r=>r.dim===dim&&(!f||f(r)));
+  const tot=mxSum(by("dev",r=>r.val==="_all"));
+  const grp=(rows,key)=>{ const g={}; rows.forEach(r=>{ const k=key(r); if(k==null) return; (g[k]=g[k]||[]).push(r); }); const o={}; Object.keys(g).forEach(k=>o[k]=mxSum(g[k])); return o; };
+  const bySrc=grp(D.aff.filter(r=>r.code!=="_all"),r=>r.code||"_other");
+  const dev=grp(by("dev",r=>r.val!=="_all"),r=>r.val||"?"), pay=grp(by("pay",r=>r.val!=="_all"),r=>r.val||"?");
+  const hg=grp(by("hour"),r=>r.val), days=Math.max(1,new Set(by("hour").map(r=>r.date)).size);
+  const hrs=Array.from({length:24},(_,i)=>{ const k=String(i).padStart(2,"0"), v=hg[k]||{}; return {h:k,s:v.session||0,c:v.begin_checkout||0,p:v.purchase||0}; });
+  const off=mxOfficial(D);
+  const kdAll=["ME","TT","SC","bio","com","DM"].reduce((s,c)=>s+((off[c]||{}).kd||0),0), kaAll=["ME","TT","SC","bio","com","DM"].reduce((s,c)=>s+((off[c]||{}).ka||0),0);
+  const tile=(l,v,sub,col)=>'<div class="card kpi"><div class="kpi-l">'+esc(l)+'</div><div class="kpi-v num"'+(col?' style="color:'+col+'"':"")+">"+v+'</div><div class="kpi-f"><span class="dlt-c">'+esc(sub||"")+"</span></div></div>";
+  const cr=mxPct(tot.purchase||0,tot.session||0), co=mxPct(tot.purchase||0,tot.begin_checkout||0);
+  h+='<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:14px">'+
+    tile(L("الجلسات","Sessions"),fnum(tot.session||0,0),fnum((tot.session||0)/days,0)+L(" في اليوم"," / day"))+
+    tile(L("زيارات الصفحات","Page views"),fnum(tot.page_view||0,0),"")+
+    tile(L("بدء الدفع","Checkouts"),fnum(tot.begin_checkout||0,0),mxP(tot.begin_checkout||0,tot.session||0)+L(" من الجلسات"," of sessions"))+
+    tile(L("دفع (ميكس بانل)","Paid (Mixpanel)"),fnum(tot.purchase||0,0),fnum(tot.revenue||0,0)+" "+C)+
+    tile(L("تحويل الموقع","Site conversion"),cr==null?"—":fnum(cr,2)+"%",L("دفع ÷ جلسات","paid ÷ sessions"),cr!=null&&cr<1?"var(--warn)":"")+
+    tile(L("إتمام الدفع","Checkout completion"),co==null?"—":fnum(co,0)+"%",L("دفع ÷ بدء الدفع","paid ÷ checkouts"),co!=null&&co<40?"var(--bad)":co!=null&&co>=60?"var(--good)":"")+
+    tile(L("تبرعات خزامى (الرسمي)","Khzama donations (official)"),fnum(kdAll,0),fnum(kaAll,0)+" "+C+L(" · أكوادك بس"," · your codes"))+
+    ((tot.checkout_error||0)?tile(L("أخطاء الدفع","Checkout errors"),fnum(tot.checkout_error,0),"","var(--bad)"):"")+"</div>";
+  const ins=mxInsights(D,tot,bySrc,off,dev,pay,hrs);
+  if(ins.length) h+=card(esc(L("ملاحظات على الموقع","Site notes")),"",ins.map(x=>'<div class="ins '+x[0]+'" style="margin-bottom:6px"><div class="ins-b">'+esc(x[1])+"</div></div>").join(""));
+  h+='<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;margin:14px 0">'+
+    card(esc(L("القمع على الموقع","On-site funnel")),esc(L("كل الزوار","All visitors")),mxFunnelBars(tot))+
+    card(esc(L("صحة التتبع","Tracking health")),esc(L("المنصة · ميكس بانل · خزامى","Platform · Mixpanel · Khzama")),
+      mxTable([L("المصدر","Source"),L("طلبات المنصة","Platform orders"),L("دفع ميكس بانل","Mixpanel paid"),L("تبرعات خزامى","Khzama")],
+        ["ME","TT","SC"].map(c=>{ const s=MX_SRC.find(x=>x[0]===c), o=off[c]||{}, v=bySrc[c]||{};
+          return mxRow([esc(L(s[1],s[2])),fnum(o.pp||0,0),fnum(v.purchase||0,0),"<b>"+fnum(o.kd||0,0)+"</b>"]); }))+
+      '<div class="hint" style="margin-top:8px">'+esc(L("المنصة بتعدّ زيادة، وميكس بانل بيضيّع اللي اللينك بتاعهم اتشال — خزامى هي الرقم الرسمي.","Platforms over-count, Mixpanel misses visits whose link was dropped — Khzama is the official number."))+"</div>")+"</div>";
+  /* حسب المصدر */
+  const srcRows=MX_SRC.map(s=>{ const v=bySrc[s[0]]||{}, o=off[s[0]]||{}; if(!v.page_view&&!v.begin_checkout&&!v.purchase&&!o.kd) return "";
+    return mxRow(["<b>"+esc(L(s[1],s[2]))+"</b>",fnum(v.page_view||0,0),fnum(v.view_content||0,0),fnum(v.add_to_cart||0,0),fnum(v.begin_checkout||0,0),fnum(v.purchase||0,0),
+      mxP(v.purchase||0,v.page_view||0),mxP(v.purchase||0,v.begin_checkout||0),o.spend&&v.page_view?fnum(o.spend/v.page_view,2):"—",o.kd!=null?fnum(o.kd,0):"—"]); });
+  h+=card(esc(L("حسب المصدر","By source")),esc(L("من كود لينك خزامى (affiliate)","From the Khzama link code")),
+    mxTable([L("المصدر","Source"),L("زيارات","Views"),L("مشاهدة","VC"),L("سلة","ATC"),L("بدء الدفع","Checkout"),L("دفع","Paid"),L("زيارة ← دفع","View→Paid"),L("إتمام الدفع","Checkout→Paid"),L("تكلفة الزيارة","Cost/view"),L("خزامى","Khzama")],srcRows)+
+    '<div class="hint" style="margin-top:8px">'+esc(L("«من غير لينك» = زيارات مالهاش كود خزامى (دخول مباشر أو اللينك ضاع). «أقسام تانية» = أكواد مش بتاعتك ومش داخلة في حساباتك.","«No link» = visits with no Khzama code. «Other departments» = codes outside your scope."))+"</div>");
+  /* حسب الحملة */
+  const cg={}; D.aff.filter(r=>["ME","TT","SC"].includes(r.code)&&r.camp_no).forEach(r=>{ const k=r.camp_no; (cg[k]=cg[k]||{code:r.code,rows:[]}).rows.push(r); });
+  const ck=MX.cs, camps=Object.keys(cg).map(k=>({k:k,code:cg[k].code,v:mxSum(cg[k].rows)})).filter(x=>(x.v.page_view||0)+(x.v.begin_checkout||0)>0)
+    .sort((x,y)=>(y.v[ck]||0)-(x.v[ck]||0)).slice(0,25);
+  const kzC={}; ((D.ad&&D.ad.kz)||[]).forEach(k=>{ if(k.camp_no) kzC[k.camp_no]=(kzC[k.camp_no]||0)+(+k.donations||0); });
+  const sortB=[["page_view",L("الزيارات","Views")],["begin_checkout",L("بدء الدفع","Checkouts")],["purchase",L("الدفع","Paid")]];
+  h+='<div style="margin-top:14px">'+card(esc(L("حسب الحملة","By campaign")),'<span class="seg">'+sortB.map(s=>'<button class="'+(ck===s[0]?"on":"")+'" data-a="mxCs" data-k="'+s[0]+'">'+esc(s[1])+"</button>").join("")+"</span>",
+    camps.length? mxTable([L("الحملة","Campaign"),L("زيارات","Views"),L("مشاهدة","VC"),L("سلة","ATC"),L("بدء الدفع","Checkout"),L("دفع","Paid"),L("زيارة ← دفع","View→Paid"),L("إتمام الدفع","Checkout→Paid"),L("خزامى","Khzama")],
+      camps.map(x=>{ const pl=(MX_SRC.find(s=>s[0]===x.code)||[])[3]||"";
+        return mxRow(['<a href="#" data-a="rsCamp" data-i="'+esc(x.k)+'" data-p="'+esc(pl)+'"><b>'+esc(x.k)+"</b></a> <small class=\"muted\">"+esc(x.code)+"</small>",fnum(x.v.page_view||0,0),fnum(x.v.view_content||0,0),fnum(x.v.add_to_cart||0,0),
+          fnum(x.v.begin_checkout||0,0),fnum(x.v.purchase||0,0),mxP(x.v.purchase||0,x.v.page_view||0),
+          ((x.v.begin_checkout||0)>=3&&!(x.v.purchase||0)?'<span style="color:var(--bad)">0%</span>':mxP(x.v.purchase||0,x.v.begin_checkout||0)),fnum(kzC[x.k]||0,0)]); }))
+      +'<div class="hint" style="margin-top:8px">'+esc(L("دوسة على رقم الحملة تفتح ملفها.","Click a campaign to open its file."))+"</div>"
+    : '<div class="hint">'+esc(L("مفيش زيارات من لينكات حملاتك في الفترة دي.","No visits from your campaign links in this period."))+"</div>")+"</div>";
+  /* الأجهزة + الدفع */
+  const devRows=Object.keys(dev).sort((x,y)=>(dev[y].session||0)-(dev[x].session||0)).map(k=>{ const v=dev[k];
+    return mxRow(["<b>"+esc(k==="?"?L("مش معروف","Unknown"):k)+"</b>",fnum(v.session||0,0),fnum(v.view_content||0,0),fnum(v.add_to_cart||0,0),fnum(v.begin_checkout||0,0),fnum(v.purchase||0,0),mxP(v.purchase||0,v.session||0),mxP(v.purchase||0,v.begin_checkout||0)]); });
+  const pt=Object.values(pay).reduce((s,v)=>s+(v.purchase||0),0);
+  const payRows=Object.keys(pay).sort((x,y)=>(pay[y].purchase||0)-(pay[x].purchase||0)).map(k=>{ const v=pay[k];
+    return mxRow(["<b>"+esc(MX_PAY[k]?L(MX_PAY[k][0],MX_PAY[k][1]):(k==="?"?L("مش معروف","Unknown"):k))+"</b>",fnum(v.purchase||0,0),mxP(v.purchase||0,pt),fnum(v.revenue||0,0),v.purchase?fnum((v.revenue||0)/v.purchase,0):"—"]); });
+  h+='<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;margin:14px 0">'+
+    card(esc(L("حسب الجهاز","By device")),"",mxTable([L("الجهاز","Device"),L("جلسات","Sessions"),L("مشاهدة","VC"),L("سلة","ATC"),L("بدء الدفع","Checkout"),L("دفع","Paid"),L("تحويل","Conv."),L("إتمام الدفع","Checkout→Paid")],devRows))+
+    card(esc(L("طرق الدفع","Payment methods")),"",payRows.length?mxTable([L("الطريقة","Method"),L("مرات الدفع","Payments"),L("النسبة","Share"),L("القيمة","Value"),L("المتوسط","Avg")],payRows):'<div class="hint">—</div>')+"</div>";
+  /* الساعات */
+  const mxS=Math.max(1,...hrs.map(x=>x.s)), mxPp=Math.max(1,...hrs.map(x=>x.p));
+  h+=card(esc(L("الساعات (توقيت الرياض)","Hours (Riyadh time)")),esc(L("متوسط اليوم على ","Daily average over "))+days+esc(L(" يوم"," days")),
+    '<div class="mx-hr">'+hrs.map(x=>'<div class="mx-hc" title="'+esc(x.h+":00 · "+L("جلسات ","sessions ")+fnum(x.s/days,1)+" · "+L("دفع ","paid ")+fnum(x.p,0))+'">'+
+      '<i class="s" style="height:'+(x.s/mxS*100).toFixed(0)+'%"></i><i class="p" style="height:'+(x.p/mxPp*100).toFixed(0)+'%"></i><span>'+(+x.h%3===0?x.h:"")+"</span></div>").join("")+"</div>"+
+    '<div class="hint" style="margin-top:6px"><span class="mx-k s"></span> '+esc(L("الجلسات","Sessions"))+' &nbsp; <span class="mx-k p"></span> '+esc(L("مرات الدفع","Payments"))+"</div>");
+  /* يوم بيوم */
+  const dg=grp(by("dev",r=>r.val==="_all"),r=>r.date), kzD={}; ((D.ad&&D.ad.kz)||[]).forEach(k=>{ if(["ME","TT","SC","bio","com","DM"].includes(k.code)) kzD[k.date]=(kzD[k.date]||0)+(+k.donations||0); });
+  const dk=Object.keys(dg).sort();
+  if(dk.length>1) h+='<div style="margin-top:14px">'+card(esc(L("يوم بيوم","Day by day")),"",mxTable([L("اليوم","Day"),L("جلسات","Sessions"),L("مشاهدة","VC"),L("بدء الدفع","Checkout"),L("دفع ميكس بانل","Mixpanel paid"),L("تبرعات خزامى","Khzama"),L("تحويل","Conv.")],
+    dk.slice().reverse().map(d=>{ const v=dg[d]; return mxRow([esc(fdate(d)),fnum(v.session||0,0),fnum(v.view_content||0,0),fnum(v.begin_checkout||0,0),fnum(v.purchase||0,0),fnum(kzD[d]||0,0),mxP(v.purchase||0,v.session||0)]); })))+"</div>";
+  return h; }
+ACT.mxWin=t=>{ MX.win=t.dataset.w; if(MX.win==="custom"&&!MX.from){ MX.from=addDays(todayISO(),-6); MX.to=todayISO(); } render(); };
+ACT.mxCs=t=>{ MX.cs=t.dataset.k; render(); };
+CHG.mxF=v=>{ MX.from=v; MX.win="custom"; render(); }; CHG.mxT=v=>{ MX.to=v; MX.win="custom"; render(); };
+/* قمع الموقع جوه ملف الحملة */
+function mxCampBlock(code,a,b){ const D=MX.cache[a+"|"+b]; if(!D) return "";
+  const mine=D.aff.filter(r=>r.camp_no===code), v=mxSum(mine); if(!v.page_view&&!v.begin_checkout) return '<div class="hint" style="margin:10px 0">'+esc(L("ميكس بانل: مفيش زيارات مسجّلة من لينكات الحملة دي في الفترة دي.","Mixpanel: no visits from this campaign's links in this period."))+"</div>";
+  const c=(mine[0]||{}).code, pv=mxSum(D.aff.filter(r=>r.code===c&&r.camp_no!==code));
+  const cmp=(x,y,inv)=>{ if(x==null||y==null||!y) return ""; const g=x/y; return ' <small style="color:'+(g>=1.1?"var(--good)":g<=0.75?"var(--bad)":"var(--ink-3)")+'">'+esc(L("المنصة ","Platform "))+fnum(y,1)+"%</small>"; };
+  const steps=[["view_content","page_view",L("زيارة ← مشاهدة","View → VC")],["add_to_cart","view_content",L("مشاهدة ← سلة","VC → cart")],["begin_checkout","add_to_cart",L("سلة ← دفع","Cart → checkout")],["purchase","begin_checkout",L("بدء الدفع ← دفع","Checkout → paid")]];
+  return '<b style="display:block;margin-top:12px">'+esc(L("قمع الموقع (ميكس بانل)","On-site funnel (Mixpanel)"))+"</b>"+mxFunnelBars(v)+
+    '<div class="tw"><table class="an-tbl">'+steps.map(s=>"<tr><td>"+esc(s[2])+'</td><td class="num">'+mxP(v[s[0]]||0,v[s[1]]||0)+cmp(mxPct(v[s[0]]||0,v[s[1]]||0),mxPct(pv[s[0]]||0,pv[s[1]]||0))+"</td></tr>").join("")+"</table></div>"; }
+/* قمع الفيديو جوه تفاصيل مكتبة الكريتيف */
+async function mxCreativeFill(id){ const box=document.getElementById("clbMx"); if(!box||!window.SUPA_DB) return;
+  try{ const r=await SUPA_DB.client.from("v_mx_aff").select("event,cnt,code").eq("creative_id",id).in("code",["ME","TT","SC"]).limit(5000); if(r.error) throw r.error;
+    const v=mxSum(r.data||[]); if(!v.page_view&&!v.begin_checkout){ box.innerHTML=""; return; }
+    box.innerHTML='<b style="display:block;margin-top:12px">'+esc(L("قمع الموقع للفيديو (ميكس بانل · كل الوقت المسحوب)","On-site funnel for this video (Mixpanel · all pulled days)"))+"</b>"+mxFunnelBars(v); }
+  catch(e){ box.innerHTML=""; } }
+/* كارت الموقع في مركز الإجراءات: امبارح مقابل متوسط الأسبوع اللي قبله */
+function acSite(){ if(!(window.SUPA_DB&&SUPA_DB.client)) return "";
+  const T=todayISO(), Y=addDays(T,-1), a=addDays(Y,-7), k=a+"|"+Y, D=MX.cache[k];
+  if(!D){ if(!MX.acBusy){ MX.acBusy=true; mxFetch(a,Y).then(()=>render()).catch(()=>{}).finally(()=>{ MX.acBusy=false; }); } return ""; }
+  const rows=D.mx.filter(r=>r.dim==="dev"&&r.val==="_all"); if(!rows.length) return "";
+  const y=mxSum(rows.filter(r=>r.date===Y)), w=mxSum(rows.filter(r=>r.date<Y)), nd=Math.max(1,new Set(rows.filter(r=>r.date<Y).map(r=>r.date)).size);
+  const line=(lab,cur,avg,bad)=>'<div class="side-r"><span>'+esc(lab)+'</span><b style="color:'+(bad?"var(--bad)":"inherit")+'">'+fnum(cur,0)+' <small class="muted">/ '+fnum(avg,1)+"</small></b></div>";
+  const sOk=(y.session||0)>=(w.session||0)/nd*0.6, payDead=sOk&&(y.begin_checkout||0)>=3&&!(y.purchase||0);
+  return card(esc(L("الموقع امبارح","Site yesterday")),esc(L("مقابل متوسط ٧ أيام","vs 7-day avg")),
+    line(L("جلسات","Sessions"),y.session||0,(w.session||0)/nd,!sOk)+line(L("بدء الدفع","Checkouts"),y.begin_checkout||0,(w.begin_checkout||0)/nd,false)+
+    line(L("دفع (ميكس بانل)","Paid (Mixpanel)"),y.purchase||0,(w.purchase||0)/nd,payDead)+((y.checkout_error||0)?line(L("أخطاء الدفع","Checkout errors"),y.checkout_error,(w.checkout_error||0)/nd,true):"")+
+    (payDead?'<div class="ins bad" style="margin-top:8px"><div class="ins-b">'+esc(L("الزوار وصلوا للدفع ومحدش دفع — غالباً مشكلة في صفحة الدفع، مش في الإعلانات.","Visitors reached checkout but nobody paid — likely a checkout problem, not the ads."))+"</div></div>":
+      !sOk?'<div class="ins warn" style="margin-top:8px"><div class="ins-b">'+esc(L("الزيارات أقل من الطبيعي — المشكلة قبل الموقع (الإعلانات أو الصرف).","Fewer visits than usual — the issue is upstream (ads or spend)."))+"</div></div>":"")+
+    '<button class="btn btn-s" style="margin-top:8px" data-a="go" data-v="site">'+esc(L("افتح الموقع والقمع","Open Site & funnel"))+"</button>"); }
+/* شريط الموقع في اليوم مباشر */
+function liveSiteStrip(D){ if(!(window.SUPA_DB&&SUPA_DB.client)) return "";
+  const Y=addDays(D,-1), k=Y+"|"+D, M=MX.cache[k];
+  if(!M){ if(!MX.lvBusy){ MX.lvBusy=true; mxFetch(Y,D).then(()=>render()).catch(()=>{}).finally(()=>{ MX.lvBusy=false; }); } return ""; }
+  const hr=M.mx.filter(r=>r.dim==="hour"), t=hr.filter(r=>r.date===D); if(!t.length) return "";
+  const lv=t.filter(r=>r.cnt>0).map(r=>+r.val); if(!lv.length) return ""; const last=Math.max(...lv), upto=r=>+r.val<=last;
+  const c=mxSum(t), p=mxSum(hr.filter(r=>r.date===Y&&upto(r)));
+  const cell=(lab,a,b)=>'<div class="side-r" style="flex:1;min-width:140px;flex-direction:column;align-items:flex-start"><span class="muted">'+esc(lab)+'</span><b class="num">'+fnum(a,0)+' <small class="muted">'+esc(L("امبارح ","yday "))+fnum(b,0)+"</small></b></div>";
+  return card(esc(L("الموقع النهارده (ميكس بانل)","Site today (Mixpanel)")),esc(L("لحد الساعة ","Up to ")+String(last).padStart(2,"0")+":00 · "+L("مقابل امبارح لنفس الساعة","vs yesterday same hour")),
+    '<div style="display:flex;gap:10px;flex-wrap:wrap">'+cell(L("جلسات","Sessions"),c.session||0,p.session||0)+cell(L("مشاهدة مشروع","View content"),c.view_content||0,p.view_content||0)+
+    cell(L("بدء الدفع","Checkouts"),c.begin_checkout||0,p.begin_checkout||0)+cell(L("دفع","Paid"),c.purchase||0,p.purchase||0)+"</div>"+
+    '<div class="hint" style="margin-top:6px">'+esc(L("بيتحدّث مع السحب (كل يوم الصبح، وفي الموسم مع كل لقطة).","Refreshed with each pull (daily, and with every snapshot in season)."))+"</div>","mx-live"); }
 
 /* ══════════════════ اللقطة: صرف كل منصة + إيراد خزامى بالأكواد ══════════════════ */
 const SB={periods:null,sel:"",data:{},busy:false,err:""};
