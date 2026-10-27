@@ -2,3 +2,5 @@
 *.env
 .env*
 secrets/
+supabase/functions/media-sync/
+supabase/functions/ingest/
