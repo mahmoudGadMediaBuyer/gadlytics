@@ -8251,37 +8251,44 @@ function renderMediaAuto(mode){ const MG=mode==="manage";
     '<select class="sel" data-c="maAdv"><option value="">'+esc(L("كل المعلنين","All creators"))+"</option>"+opt(advs,MA.adv)+"</select>"+
     '<select class="sel" data-c="maPlat"><option value="">'+esc(L("كل المنصات","All platforms"))+"</option>"+MA_PL.map(p=>'<option value="'+p[0]+'"'+(MA.plat===p[0]?" selected":"")+">"+esc(L(p[1],p[2]))+"</option>").join("")+"</select>"+
     (MA.q||MA.proj||MA.adv||MA.plat||MA.st?'<button class="btn btn-s" data-a="maClear">'+esc(L("مسح الفلاتر","Clear"))+"</button>":"")+
+    '<button class="btn btn-s'+(MA.pick?" btn-p":"")+'" data-a="maPick">☰ '+esc(L("الأعمدة","Columns"))+'</button>'+
     '<button class="btn btn-s" data-a="maReload" style="margin-inline-start:auto">'+esc(MA.busy?L("بيحدّث…","Refreshing…"):L("↻ تحديث","↻ Refresh"))+"</button></div>";
   h+='<div class="md-sum">'+ST.map(s=>'<div class="md-s pick'+(MA.st===s[0]?" on":"")+'" data-a="maSt" data-s="'+s[0]+'"><div class="l">'+esc(L(s[1],s[2]))+'</div><div class="n"'+(s[4]?' style="color:'+s[4]+'"':"")+">"+base.filter(s[3]).length+"</div></div>").join("")+"</div>";
   if(!vids.length) return h+emptyBox(L("مفيش فيديوهات بالفلاتر دي.","No videos with these filters."),'<button class="btn" data-a="maClear">'+esc(L("شيل الفلاتر","Clear filters"))+"</button>");
   const byP={}; vids.forEach(v=>{ const p=v.m.project||"—"; (byP[p]=byP[p]||[]).push(v); });
   const pOrder=Object.keys(byP).sort((a,b)=>String(byP[b][0].m.created_at).localeCompare(String(byP[a][0].m.created_at)));
-  const head='<tr>'+(MG?"<th>"+esc(L("القرار","Decision"))+"</th>":"")+'<th>'+esc(L("الأداء","Performance"))+"</th><th>"+esc(L("اسم الحملة","Campaign"))+"</th><th>"+esc(L("إطلاق الحملة","Launched"))+"</th><th>"+esc(L("رفع الميديا","Uploaded"))+"</th>"+
-    MA_PL.slice().reverse().map(p=>"<th>"+esc(L(p[1],p[2]))+"</th>").join("")+"<th>"+esc(L("تاريخ الإطلاق","Launch date"))+"</th><th>"+esc(L("الهوك","Hook"))+"</th><th>"+esc(L("رقم الفيديو","Video ID"))+"</th><th>"+esc(L("المشهور","Creator"))+"</th></tr>";
   const chk=on=>'<span class="md-chk'+(on?" on":"")+'">'+(on?"✓":"")+"</span>";
+  /* الأعمدة: تختار اللي يظهر (المشهور ثابت في الآخر) — «اسم الحملة» مخفي افتراضياً عشان السطور متكبرش */
+  const COLS=[
+    ["dec",L("القرار","Decision"),v=>{ const dc=MA_DEC[v.dec.k]; return '<td style="white-space:nowrap"><span class="md-rate" style="color:'+dc[2]+(v.dec.auto?";border-style:dashed":"")+'" title="'+esc(v.dec.auto?L("اقتراح من الأداء — أكّده أو غيّره","Suggested from performance — confirm or change"):L("قرارك","Your decision"))+'">'+esc(L(dc[0],dc[1]))+"</span>"+
+      '<div class="ma-dk">'+["keep","watch","stop"].map(k=>'<button class="btn btn-s'+(!v.dec.auto&&v.dec.k===k?" on":"")+'" data-a="maDecSet" data-id="'+esc(v.id)+'" data-k="'+k+'" title="'+esc(L(MA_DEC[k][0],MA_DEC[k][1]))+'">'+(k==="keep"?"✓":k==="stop"?"✕":"…")+"</button>").join("")+"</div></td>"; }],
+    ["perf",L("الأداء","Performance"),v=>"<td>"+maChip(v.rate)+maPerf(v)+"</td>"],
+    ["camps",L("اسم الحملة","Campaign"),v=>'<td class="md-vid"'+(v.camps.length>3?' title="'+esc(v.camps.join("\n"))+'"':"")+">"+(v.camps.slice(-3).map(esc).join("<br>")||"—")+(v.camps.length>3?'<div class="ma-st">+'+(v.camps.length-3)+esc(L(" حملات تانية"," more"))+"</div>":"")+"</td>"],
+    ["launched",L("إطلاق الحملة","Launched"),v=>"<td>"+chk(v.launched)+"</td>"],
+    ["uploaded",L("رفع الميديا","Uploaded"),v=>"<td>"+chk(v.uploaded)+"</td>"],
+    ["snap",L("سناب","Snap"),v=>"<td>"+chk(v.plats.snap)+"</td>"],
+    ["tiktok",L("تيك توك","TikTok"),v=>"<td>"+chk(v.plats.tiktok)+"</td>"],
+    ["meta",L("ميتا","Meta"),v=>"<td>"+chk(v.plats.meta)+"</td>"],
+    ["first",L("تاريخ الإطلاق","Launch date"),v=>'<td style="white-space:nowrap;text-align:center">'+(v.first? esc(rpDayName(v.first))+"<br><b>"+esc(fdate(v.first))+"</b>" : "—")+"</td>"],
+    ["hook",L("الهوك","Hook"),v=>'<td class="md-hook">'+(v.hook? '<span data-a="maHook" data-id="'+esc(v.id)+'" style="cursor:pointer" title="'+esc(L("دوس تعدّل","Click to edit"))+'">'+esc(v.hook)+"</span>"
+      : '<button class="btn btn-s" data-a="maHook" data-id="'+esc(v.id)+'">'+esc(L("+ الهوك","+ Hook"))+"</button>")+"</td>"],
+    ["id",L("رقم الفيديو","Video ID"),v=>'<td class="md-vid'+(v.launched?"":" ma-idle")+'">'+esc(v.id)+(v.m.url?' <a href="'+esc(v.m.url)+'" target="_blank" rel="noopener" title="'+esc(L("افتح الفيديو","Open video"))+'">▶</a>':"")+
+      (v.isNew?' <span class="ma-new">'+esc(L("جديد","New"))+"</span>":"")+(v.m.status?'<div class="ma-st">'+esc(v.m.status)+"</div>":"")+"</td>"]].filter(c=>MG||c[0]!=="dec");
+  const vis=maColsGet(), cols=COLS.filter(c=>vis.indexOf(c[0])>=0);
+  if(MA.pick) h+='<div class="ex-pick" style="margin-bottom:10px"><div class="hint">'+esc(L("دوس على أي عمود تظهره أو تخفيه — اختيارك بيتحفظ.","Click a column to show or hide it — saved."))+'</div><div class="chips">'+
+    COLS.map(c=>'<button class="chip'+(vis.indexOf(c[0])>=0?" on":"")+'" data-a="maCol" data-k="'+c[0]+'">'+esc(c[1])+"</button>").join("")+"</div></div>";
+  const head="<tr>"+cols.map(c=>"<th>"+esc(c[1])+"</th>").join("")+"<th>"+esc(L("المشهور","Creator"))+"</th></tr>";
   h+='<div class="tw"><table class="md-t ma-t">';
   let shown=0;
   pOrder.forEach(p=>{ if(shown>=600) return; const pv=byP[p], pa=maAgg(pv);
-    h+='<tr class="ma-ph"><td colspan="'+(MG?13:12)+'"><b>'+esc(L("مشروع ","Project "))+esc(p)+"</b>"+
+    h+='<tr class="ma-ph"><td colspan="'+(cols.length+1)+'"><b>'+esc(L("مشروع ","Project "))+esc(p)+"</b>"+
       '<span class="ma-pst">'+pv.length+esc(L(" فيديو"," videos"))+" · "+pv.filter(v=>v.launched).length+esc(L(" اتطلق"," launched"))+
       (pa.spend?" · "+esc(L("صرف ","spend "))+fnum(pa.spend,0)+" · "+fnum(pa.orders,0)+esc(L(" طلب"," orders"))+" · ROAS "+(pa.roas==null?"—":pa.roas.toFixed(2)+"x"):"")+"</span></td></tr>"+head;
     const byA={}; pv.forEach(v=>{ const a=v.m.advertiser||"—"; (byA[a]=byA[a]||[]).push(v); });
     Object.keys(byA).sort((a,b)=>maAgg(byA[b]).spend-maAgg(byA[a]).spend||String(byA[b][0].m.created_at).localeCompare(String(byA[a][0].m.created_at))).forEach(a=>{
       const av=byA[a], aa=maAgg(av), ar=maRate(aa,pAvg[p]);
       av.forEach((v,i)=>{ if(shown>=600) return; shown++;
-        const dc=MA_DEC[v.dec.k];
-        h+="<tr"+(i===0?' class="grp"':"")+">"+
-          (MG? '<td style="white-space:nowrap"><span class="md-rate" style="color:'+dc[2]+(v.dec.auto?";border-style:dashed":"")+'" title="'+esc(v.dec.auto?L("اقتراح من الأداء — أكّده أو غيّره","Suggested from performance — confirm or change"):L("قرارك","Your decision"))+'">'+esc(L(dc[0],dc[1]))+"</span>"+
-            '<div class="ma-dk">'+["keep","watch","stop"].map(k=>'<button class="btn btn-s'+(!v.dec.auto&&v.dec.k===k?" on":"")+'" data-a="maDecSet" data-id="'+esc(v.id)+'" data-k="'+k+'" title="'+esc(L(MA_DEC[k][0],MA_DEC[k][1]))+'">'+(k==="keep"?"✓":k==="stop"?"✕":"…")+"</button>").join("")+"</div></td>" : "")+
-          "<td>"+maChip(v.rate)+maPerf(v)+"</td>"+
-          '<td class="md-vid"'+(v.camps.length>3?' title="'+esc(v.camps.join("\n"))+'"':"")+">"+(v.camps.slice(-3).map(esc).join("<br>")||"—")+(v.camps.length>3?'<div class="ma-st">+'+(v.camps.length-3)+esc(L(" حملات تانية"," more"))+"</div>":"")+"</td>"+
-          "<td>"+chk(v.launched)+"</td><td>"+chk(v.uploaded)+"</td>"+
-          MA_PL.slice().reverse().map(pl=>"<td>"+chk(v.plats[pl[0]])+"</td>").join("")+
-          '<td style="white-space:nowrap;text-align:center">'+(v.first? esc(rpDayName(v.first))+"<br><b>"+esc(fdate(v.first))+"</b>" : "—")+"</td>"+
-          '<td class="md-hook">'+(v.hook? '<span data-a="maHook" data-id="'+esc(v.id)+'" style="cursor:pointer" title="'+esc(L("دوس تعدّل","Click to edit"))+'">'+esc(v.hook)+"</span>"
-            : '<button class="btn btn-s" data-a="maHook" data-id="'+esc(v.id)+'">'+esc(L("+ الهوك","+ Hook"))+"</button>")+"</td>"+
-          '<td class="md-vid'+(v.launched?"":" ma-idle")+'">'+esc(v.id)+(v.m.url?' <a href="'+esc(v.m.url)+'" target="_blank" rel="noopener" title="'+esc(L("افتح الفيديو","Open video"))+'">▶</a>':"")+
-            (v.isNew?' <span class="ma-new">'+esc(L("جديد","New"))+"</span>":"")+(v.m.status?'<div class="ma-st">'+esc(v.m.status)+"</div>":"")+"</td>"+
+        h+="<tr"+(i===0?' class="grp"':"")+">"+cols.map(c=>c[2](v)).join("")+
           (i===0? '<td class="md-cre ma-adv" rowspan="'+av.length+'">'+esc(a)+'<div style="margin-top:6px">'+maChip(ar)+"</div>"+maPerf(aa)+"</td>" : "")+
           "</tr>"; }); }); });
   h+="</table></div>";
@@ -8301,6 +8308,10 @@ CHG.maPlat=v=>{ MA.plat=v||""; render(); };
 ACT.maSt=t=>{ MA.st=MA.st===t.dataset.s? "" : t.dataset.s; render(); };
 ACT.maClear=()=>{ MA.q=""; MA.proj=""; MA.adv=""; MA.plat=""; MA.st=""; render(); };
 ACT.maReload=()=>maLoad(true);
+const MA_COLS_DEF=["dec","perf","launched","uploaded","snap","tiktok","meta","first","hook","id"];
+function maColsGet(){ try{ const v=JSON.parse(localStorage.getItem("gad.maCols")||"null"); if(Array.isArray(v)) return v; }catch(e){} return MA_COLS_DEF.slice(); }
+ACT.maPick=()=>{ MA.pick=!MA.pick; render(); };
+ACT.maCol=t=>{ const a=maColsGet(), k=t.dataset.k, i=a.indexOf(k); i<0? a.push(k) : a.splice(i,1); try{ localStorage.setItem("gad.maCols",JSON.stringify(a)); }catch(e){} render(); };
 ACT.maDecSet=async t=>{ const id=t.dataset.id, k=t.dataset.k, cur=(MA.data.N[id]||{}).decision, n=Object.assign({},MA.data.N[id]||{});
   if(cur===k) delete n.decision; else n.decision=k;   // دوسة تانية على نفس القرار بترجّعه للاقتراح
   try{ await DB.doc("media_notes/"+id).set(n); MA.data.N[id]=n; render(); }
