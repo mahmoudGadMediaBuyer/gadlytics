@@ -12257,11 +12257,11 @@ function rfCard(){ if(!(window.SUPA_DB&&SUPA_DB.client)) return "";
     return '<div class="rf-s'+(late||none?" late":"")+'"><span>'+esc(lab)+"</span><b>"+(d?esc(fdate(String(d).slice(0,10))):"—")+"</b>"+(late?'<small>'+esc(L("متأخر ","behind ")+rfDays(diffDays(String(d).slice(0,10),Y)))+"</small>":"")+"</div>"; };
   const pr=F.pr, pend=pr&&pr.status==="pending";
   return '<div class="card rf-card"><div class="rf-top"><div><div class="card-t">'+esc(L("تحديث السيستم","System refresh"))+'</div><div class="hint">'+
-      esc(L("بضغطة: المكتبة من Airtable، وكل الأرقام من الداتا بيز، وطلب سحب جديد من المنصات وخزامى.","One click: library from Airtable, every number reloaded, and a fresh pull requested from the platforms and Khzama."))+"</div></div>"+
+      esc(L("بضغطة: المكتبة من Airtable، وكل الأرقام من الداتا بيز، وطلب سحب جديد من المنصات وخزامى، وطلب سناب شوت لليوم.","One click: library from Airtable, every number reloaded, a fresh pull from the platforms and Khzama, and a snapshot of today."))+"</div></div>"+
     '<button class="btn btn-p rf-btn" data-a="rfAll"'+(RF.busy?" disabled":"")+">"+(RF.busy?'<span class="rf-spin">↻</span> '+esc(RF.step||L("بحدّث…","Refreshing…")):"↻ "+esc(L("حدّث كل حاجة","Refresh everything")))+"</button></div>"+
     '<div class="rf-grid">'+day(L("المنصات (صرف)","Platforms (spend)"),F.ad)+day(L("خزامى (طلبات وإيراد)","Khzama (orders & revenue)"),F.kz)+day(L("ميكس بانل (الموقع)","Mixpanel (site)"),F.mx)+
       '<div class="rf-s"><span>'+esc(L("مكتبة الكريتيف","Creative library"))+"</span><b>"+(F.md?esc(fdate(String(F.md).slice(0,10))+" "+String(new Date(F.md).toTimeString()).slice(0,5)):"—")+"</b></div></div>"+
-    (pend?'<div class="hint rf-pend">⏳ '+esc(L("فيه طلب سحب من المنصات وخزامى من ","A platform & Khzama pull was requested ")+rfAgo(pr.at)+L(" — Claude بيسحبه مع السحب الجاي، أو قوله «اسحب دلوقتي».",". Claude runs it with the next pull, or tell Claude «pull now»."))+"</div>":
+    (pend?'<div class="hint rf-pend">⏳ '+esc(L("فيه طلب سحب من المنصات وخزامى من ","A platform & Khzama pull was requested ")+rfAgo(pr.at)+L(" (ومعاه سناب شوت) — Claude بيسحبه مع السحب الجاي، أو قوله «اسحب دلوقتي».",", with a snapshot. Claude runs it with the next pull, or tell Claude «pull now»."))+"</div>":
       pr&&pr.done_at?'<div class="hint">✓ '+esc(L("آخر طلب سحب اتنفّذ ","Last pull request done ")+rfAgo(pr.done_at))+"</div>":"")+
     (RF.log.length&&!RF.busy?'<div class="rf-log">'+RF.log.map(x=>'<span class="'+(x[0]==="ok"?"ok":"bad")+'">'+(x[0]==="ok"?"✓ ":"✕ ")+esc(x[1])+"</span>").join("")+"</div>":"")+"</div>"; }
 function rfDays(n){ return L(n===1?"يوم":n===2?"يومين":n<=10?n+" أيام":n+" يوم",n+" day"+(n===1?"":"s")); }
@@ -12275,6 +12275,8 @@ ACT.rfAll=async()=>{ if(RF.busy||!(window.SUPA_DB&&SUPA_DB.client)) return; RF.b
     await reload(); try{ S.changes=await Store.getColl("changes"); }catch(e){} });
   await step(L("طلب سحب جديد من المنصات وخزامى","Pull requested from platforms & Khzama"),async()=>{
     await RT.set("sys/pullreq",{at:Date.now(),by:ME.email||"",status:"pending"}); });
+  await step(L("طلب سناب شوت (لقطة النهارده)","Snapshot requested (today)"),async()=>{   // الطلب بس — من غير ما نشغّل اللقطات التلقائية (مقفولة لحد الموسم)
+    await schLoad(); SCH.cfg=Object.assign({every:30,start:"09:00"},SCH.cfg||{},{requested:new Date().toISOString()}); await schSave(); });
   RF.fresh=null; RF.busy=false; RF.step=""; await rfFresh(); render();
   toast(RF.log.every(x=>x[0]==="ok")? L("اتحدّث كل حاجة","Everything refreshed") : L("اتحدّث مع ملاحظات — شوف تحت الزرار","Refreshed with notes — see below the button"),!RF.log.every(x=>x[0]==="ok")); };
 

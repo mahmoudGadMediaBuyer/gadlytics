@@ -221,10 +221,11 @@ A personal home screen.
 
 **System refresh (تحديث السيستم)** — at the top of My dashboard:
 
-- **↻ Refresh everything** does three things in order, showing each step:
+- **↻ Refresh everything** does four things in order, showing each step:
   1. Refreshes the **creative library from Airtable**.
   2. Reloads **every number from the database**: reports, analyzer, site (Mixpanel), creative fatigue, media management and the change log.
   3. Registers a **new pull request for the platforms and Khzama**. The site cannot talk to the ad platforms itself, so Claude runs the pull: with the next daily pull, or right away when you tell Claude «اسحب دلوقتي». The request then shows as done.
+  4. Requests a **snapshot of today** for *Today live* (only the request: the automatic snapshot schedule stays off until the season).
 - Under the button, the **latest day received from each source**: platforms (spend), Khzama (orders and revenue), Mixpanel, and the last Airtable sync. A source more than a day behind turns red with how many days it is late.
 
 ### 6.2 Tasks and Community (المهام / المجتمع)
