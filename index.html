@@ -8283,7 +8283,7 @@ async function maLoad(force){ if(MA.busy||(MA.data&&!force)) return; MA.busy=tru
     const media=await all(()=>sb.from("media").select("*").eq("client",cname).order("created_at",{ascending:false}));
     const perf=await all(()=>sb.from("v_media_perf").select("*").order("creative_id"));
     const notes=await all(()=>sb.from("docs").select("path,data").eq("coll","media_notes").order("path"));
-    const daily=await all(()=>sb.from("v_media_daily").select("*").order("creative_id").order("date")); await ftLoad(); await thumbUrls(media.map(m=>m.thumb));
+    const daily=await all(()=>sb.from("v_media_daily").select("*").order("creative_id").order("date")); await ftLoad(); thumbVer(media); await thumbUrls(media.map(m=>m.thumb));
     const DY={}; daily.forEach(d=>{ (DY[d.creative_id]=DY[d.creative_id]||[]).push(d); });
     const disp={}, one=v=>{ v=String(v||"").trim(); if(!v) return v; const k=arKey(v); return disp[k]||(disp[k]=v); };
     media.forEach(m=>{ m.advertiser=one(m.advertiser); m.project=one(m.project); });
@@ -8318,7 +8318,7 @@ function renderMediaAuto(mode){ const MG=mode==="manage";
   if(!MA.data){ setTimeout(()=>maLoad(),0);
     return card(L("إدارة الميديا","Media"),"",'<div class="hint">'+esc(MA.err||L("بحمّل الميديا…","Loading media…"))+"</div>"); }
   const D=MA.data, q=MA.q.trim().toLowerCase();
-  const base=D.media.map(maVid).filter(v=>(!MG||v.uploaded||(D.N[v.id]||{}).inMgmt)&&(!MA.proj||(v.m.project||"—")===MA.proj)&&(!MA.adv||(v.m.advertiser||"—")===MA.adv)&&(!MA.plat||v.plats[MA.plat])
+  const base=D.media.map(maVid).filter(v=>(!MG||v.uploaded||(D.N[v.id]||{}).inMgmt)&&(!MA.local||v.m.local_file)&&(!MA.proj||(v.m.project||"—")===MA.proj)&&(!MA.adv||(v.m.advertiser||"—")===MA.adv)&&(!MA.plat||v.plats[MA.plat])
     &&(!q||[v.id,v.hook,v.m.advertiser,v.m.project,v.camps.join(" ")].some(x=>x&&String(x).toLowerCase().indexOf(q)>=0)));
   const pAvg={}; [...new Set(base.map(v=>v.m.project||"—"))].forEach(p=>{ pAvg[p]=maAgg(base.filter(v=>(v.m.project||"—")===p)).roas; });
   base.forEach(v=>{ v.rate=maRate(v,pAvg[v.m.project||"—"]); v.dec=maDec(v); });
@@ -8336,6 +8336,7 @@ function renderMediaAuto(mode){ const MG=mode==="manage";
     '<select class="sel" data-c="maAdv"><option value="">'+esc(L("كل المعلنين","All creators"))+"</option>"+opt(advs,MA.adv)+"</select>"+
     '<select class="sel" data-c="maPlat"><option value="">'+esc(L("كل المنصات","All platforms"))+"</option>"+MA_PL.map(p=>'<option value="'+p[0]+'"'+(MA.plat===p[0]?" selected":"")+">"+esc(L(p[1],p[2]))+"</option>").join("")+"</select>"+
     (MA.q||MA.proj||MA.adv||MA.plat||MA.st?'<button class="btn btn-s" data-a="maClear">'+esc(L("مسح الفلاتر","Clear"))+"</button>":"")+
+    '<button class="btn btn-s'+(MA.local?" btn-p":"")+'" data-a="maLocal" title="'+esc(L("الفيديوهات اللي موجودة على الماك في Downloads","Videos already on the Mac (Downloads)"))+'">💾 '+esc(L("على الجهاز","On this Mac"))+" "+D.media.filter(m=>m.local_file).length+"</button>"+
     '<button class="btn btn-s'+(MA.pick?" btn-p":"")+'" data-a="maPick">☰ '+esc(L("الأعمدة","Columns"))+'</button>'+tblSizeCtl()+
     '<button class="btn btn-s" data-a="maReload" style="margin-inline-start:auto">'+esc(MA.busy?L("بيحدّث…","Refreshing…"):L("↻ تحديث","↻ Refresh"))+"</button></div>";
   h+='<div class="md-sum">'+ST.map(s=>'<div class="md-s pick'+(MA.st===s[0]?" on":"")+'" data-a="maSt" data-s="'+s[0]+'"><div class="l">'+esc(L(s[1],s[2]))+'</div><div class="n"'+(s[4]?' style="color:'+s[4]+'"':"")+">"+base.filter(s[3]).length+"</div></div>").join("")+"</div>";
@@ -8403,7 +8404,8 @@ CHG.maProj=v=>{ MA.proj=v||""; MA.adv=""; render(); };
 CHG.maAdv=v=>{ MA.adv=v||""; render(); };
 CHG.maPlat=v=>{ MA.plat=v||""; render(); };
 ACT.maSt=t=>{ MA.st=MA.st===t.dataset.s? "" : t.dataset.s; render(); };
-ACT.maClear=()=>{ MA.q=""; MA.proj=""; MA.adv=""; MA.plat=""; MA.st=""; MA.stg=0; render(); };
+ACT.maClear=()=>{ MA.q=""; MA.proj=""; MA.adv=""; MA.plat=""; MA.st=""; MA.stg=0; MA.local=false; render(); };
+ACT.maLocal=()=>{ MA.local=!MA.local; render(); };
 ACT.maReload=()=>maLoad(true);
 const MA_COLS_DEF=["dec","stage","perf","launched","uploaded","snap","tiktok","meta","first","hook","id","thumb"];
 function maColsGet(){ try{ const v=JSON.parse(localStorage.getItem("gad.maCols")||"null");
@@ -10072,6 +10074,7 @@ html [style*="drop-shadow"]{filter:none!important}
 .nm-strip{display:flex;gap:12px;overflow-x:auto;margin-top:14px;padding-bottom:4px}
 .nm-i{display:flex;gap:8px;align-items:center;min-width:170px}.nm-i b{display:block;font-size:12.5px;color:var(--ink)}.nm-i span{display:block;font-size:11.5px;color:var(--ink-3);max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .up-pend{margin-top:12px;color:var(--warn)}
+.lf-b{display:inline-block;margin-top:6px;margin-inline-start:4px;font-size:11px;font-weight:600;color:var(--cyan);background:color-mix(in srgb,var(--cyan) 12%,transparent);border-radius:999px;padding:1px 8px}
 .up-b{display:inline-block;margin-top:6px;font-size:11px;font-weight:600;color:var(--good);background:color-mix(in srgb,var(--good) 12%,transparent);border-radius:999px;padding:1px 8px}
 .nm-more{align-self:center;font-size:13px;color:var(--ink-3);padding:0 8px}
 /* غلاف الفيديو */
@@ -10083,7 +10086,7 @@ html [style*="drop-shadow"]{filter:none!important}
 .ht-p{opacity:.65;font-weight:600}
 .ht-a{position:relative;z-index:1;color:rgba(255,255,255,.75);font-size:clamp(10px,5.4cqw,13px);padding:0 9% 9%;text-align:center}
 .ht.img .ht-a{text-align:start}
-.ht.mini{width:var(--lbt,72px);border-radius:8px}.ht.mini .ht-t{font-size:clamp(6px,9cqw,15px);line-height:1.5;margin:6%;-webkit-line-clamp:5}
+.ht.mini{width:var(--lbt,72px);border-radius:8px;aspect-ratio:9/16}   /* the full frame — the hook is written at the bottom of the image */.ht.mini .ht-t{font-size:clamp(6px,9cqw,15px);line-height:1.5;margin:6%;-webkit-line-clamp:5}
 .ma-th{width:calc(var(--lbt,72px) + 12px)}
 /* كروت المكتبة */
 .lb-vw{display:flex;align-items:center;gap:12px}
@@ -11079,7 +11082,7 @@ const LB_AT=["Creative ID","تاريخ الإدخال","المعلن","الأس�
 const LB_CALC=[["_hook","الهوك","Hook"],["_spend","الصرف","Spend"],["_sp_meta","صرف Meta","Meta spend"],["_sp_tiktok","صرف TikTok","TikTok spend"],["_sp_snap","صرف Snap","Snap spend"],
   ["_orders","الطلبات (خزامى)","Orders (Khzama)"],["_revenue","الإيراد (خزامى)","Revenue (Khzama)"],["_roas","ROAS (خزامى)","ROAS (Khzama)"],["_cpa","تكلفة الطلب","CPA"],["_first","أول صرف","First spend"],["_last","آخر صرف","Last spend"],["_camps","الحملات","Campaigns"],["_plats","المنصات","Platforms"],
   ["_hookr","Hook Rate (المنصات)","Hook rate (platforms)"],["_holdr","Hold Rate (المنصات)","Hold rate (platforms)"],["_ctr","CTR","CTR"],["_cpm","CPM","CPM"],
-  ["_rate","التقييم","Rating"],["_fatigue","التشبّع","Fatigue"],["_tags","التاجز","Tags"],["_note","ملاحظات","Notes"],["_mgmt","في إدارة الميديا","In media management"]];
+  ["_local","على الجهاز","On this Mac"],["_rate","التقييم","Rating"],["_fatigue","التشبّع","Fatigue"],["_tags","التاجز","Tags"],["_note","ملاحظات","Notes"],["_mgmt","في إدارة الميديا","In media management"]];
 const LB_PCT={_hookr:1,_holdr:1,_ctr:1};
 const LB_NUM={_hookr:1,_holdr:1,_ctr:1,_cpm:1,_spend:1,_sp_meta:1,_sp_tiktok:1,_sp_snap:1,_orders:1,_revenue:1,_roas:1,_cpa:1,"Hook Rate":1,"Hold Rate":1,"ROAS":1};
 const LB_DEF=["Creative ID","المعلن","الأسلوب","المشروع","الموسم","حالة الإعلان","_hook","_spend","_orders","_revenue","_roas","_camps","URL"];
@@ -11090,8 +11093,8 @@ function lbLabel(k){ const c=LB_CALC.find(x=>x[0]===k); return c? L(c[1],c[2]) :
 async function lbLoad(force){ if(LB.busy||(LB.data&&!force)) return; LB.busy=true; LB.err=""; render();
   try{ const sb=SUPA_DB.client, cl=(S.ws&&clientById(S.ws))||S.cfg.clients[0]||{}, cname=cl.name||"ملبي";
     const all=async q=>{ const out=[]; for(let i=0;;i+=1000){ const r=await q().range(i,i+999); if(r.error) throw r.error; out.push(...r.data); if(r.data.length<1000) break; } return out; };
-    const media=await all(()=>sb.from("media").select("creative_id,fields,hook,hook_auto,created_at,synced_at,style,kind,url,thumb,asset_note,thumb_hook").eq("client",cname).eq("kind","Video").in("style",LB_STYLES).order("creative_id"));
-    await thumbUrls(media.map(m=>m.thumb));
+    const media=await all(()=>sb.from("media").select("creative_id,fields,hook,hook_auto,created_at,synced_at,style,kind,url,thumb,thumb_at,asset_note,thumb_hook,local_file").eq("client",cname).eq("kind","Video").in("style",LB_STYLES).order("creative_id"));
+    thumbVer(media); await thumbUrls(media.map(m=>m.thumb));
     const perf=await all(()=>sb.from("v_media_perf").select("*").order("creative_id"));
     const notes=await all(()=>sb.from("docs").select("path,data").eq("coll","media_notes").order("path")); await ftLoad();
     const P={}; perf.forEach(p=>{ (P[p.creative_id]=P[p.creative_id]||[]).push(p); });
@@ -11119,7 +11122,7 @@ function lbRows(){ const D=LB.data, pf=lbPerf()||{};
     f._hookr=p&&p.im? (p.v2||p.pv)/p.im*100 : null; f._holdr=p&&p.pv? p.p100/p.pv*100 : null; f._ctr=p&&p.im? p.ck/p.im*100 : null; f._cpm=p&&p.im? p.sp/p.im*1000 : null;
     f._tags=(n.tags||[]).join("، "); f._note=n.note||""; f._mgmt=(p&&p.sp>0)||n.inMgmt? L("أيوه","Yes") : L("لأ","No");
     f._first=p&&p.first||""; f._last=p&&p.last||""; f._camps=p? [...p.camps].sort().join("، ") : ""; f._plats=p? Object.keys(p.pl).map(x=>(platById(x)||{}).name||x).join("، ") : "";
-    f._fatigue=ftLabel(m.creative_id); f.__id=m.creative_id; f.__thumb=THUMB[m.thumb]||""; f.__note=m.asset_note||""; f.__burned=!!m.thumb_hook; return f; });
+    f._fatigue=ftLabel(m.creative_id); f.__id=m.creative_id; f.__thumb=THUMB[m.thumb]||""; f.__note=m.asset_note||""; f.__burned=!!m.thumb_hook; f._local=m.local_file? L("على الجهاز","On this Mac") : ""; f.__lf=m.local_file||""; return f; });
   /* التقييم = ROAS الفيديو مقارنة بمتوسط مشروعه (وبشرط صرف ٣٠٠ ريال على الأقل) */
   const pa={}; rows.forEach(r=>{ const k=r["المشروع"]||"—", o=pa[k]||(pa[k]={s:0,a:0}); o.s+=r._spend; o.a+=r._revenue; });
   rows.forEach(r=>{ const o=pa[r["المشروع"]||"—"], avg=o&&o.s? o.a/o.s : null;
@@ -11160,10 +11163,11 @@ function lbCmp(a,b,k,dir){ const x=a[k], y=b[k], ex=x==null||x==="", ey=y==null|
   if(ex||ey) return ex===ey? 0 : ex? 1 : -1;   // الفاضي دايماً تحت
   return (lbType(k)==="num"? (+x)-(+y) : String(x).localeCompare(String(y),"ar"))*dir; }
 /* ══════════ غلاف الفيديو: صورة أول لقطة لو موجودة (media_notes.thumb)، وإلا غلاف هادي مكتوب عليه جملة الهوك ══════════ */
-const THUMB={};   // مسار الصورة في Storage ← رابط موقّع (٧ أيام)
+const THUMB={}, THV={};   // مسار الصورة في Storage ← رابط موقّع (٧ أيام) · THV = وقت آخر تحديث للصورة
+function thumbVer(rows){ (rows||[]).forEach(m=>{ if(m&&m.thumb&&m.thumb_at) THV[m.thumb]=m.thumb_at; }); }
 async function thumbUrls(paths){ const need=[...new Set(paths.filter(p=>p&&!THUMB[p]))]; if(!need.length||!(window.SUPA_DB&&SUPA_DB.client)) return;
   for(let i=0;i<need.length;i+=200){ try{ const r=await SUPA_DB.client.storage.from("thumbs").createSignedUrls(need.slice(i,i+200),604800);
-      (r.data||[]).forEach(x=>{ if(x.signedUrl&&x.path) THUMB[x.path]=x.signedUrl; }); }catch(e){} } }
+      (r.data||[]).forEach(x=>{ if(x.signedUrl&&x.path) THUMB[x.path]=x.signedUrl+(THV[x.path]?"&v="+Date.parse(THV[x.path]):""); }); }catch(e){} } }
 const HT_G=[["#173F37","#2E6B5E"],["#1E2F4A","#3A5A8A"],["#2F2A45","#5A4F86"],["#3A3324","#7A6A44"],["#1F3B44","#3F7584"],["#3A2830","#7A5060"]];
 function htHook(s){ s=String(s||"").trim(); return /^https?:/i.test(s)? "" : s; }
 function hookThumb(o){ let h=0; String(o.proj||"").split("").forEach(c=>{ h=(h*31+c.charCodeAt(0))>>>0; }); const g=HT_G[h%HT_G.length], hk=htHook(o.hook);
@@ -11187,6 +11191,11 @@ function tblSizeCtl(){ return '<label class="lb-sz"><span>'+esc(L("حجم الص
 ACT.lbView=t=>{ LB.view=t.dataset.v; try{ localStorage.setItem("gad.lbView",LB.view); }catch(e){} render(); };
 document.addEventListener("input",e=>{ if(!e.target||e.target.id!=="lbSize") return; LB.size=+e.target.value;
   document.querySelectorAll(".lbc-grid").forEach(g=>g.style.setProperty("--lbw",LB.size+"px")); try{ localStorage.setItem("gad.lbSize",LB.size); }catch(e){} });
+/* «💾 على الجهاز»: الفيديوهات اللي محمود نزّلها على الماك (Downloads) باسم رقم الكريتيف — local_videos.py بيعلّم عليها */
+function lbLocalOn(){ return LB.filters.some(f=>f.f==="_local"&&f.op==="full"); }
+function lbLocalBtn(all){ const n=all.filter(r=>r._local).length; if(!n&&!lbLocalOn()) return "";
+  return '<button class="lb-tb'+(lbLocalOn()?" on":"")+'" data-a="lbLocal" title="'+esc(L("الفيديوهات اللي موجودة على الماك في Downloads","Videos already on the Mac (Downloads)"))+'">💾 '+esc(L("على الجهاز","On this Mac"))+" <b>"+n+"</b></button>"; }
+ACT.lbLocal=()=>{ if(lbLocalOn()) LB.filters=LB.filters.filter(f=>!(f.f==="_local"&&f.op==="full")); else LB.filters=LB.filters.concat([{f:"_local",op:"full",v:""}]); render(); };
 function lbViewBar(){ return '<div class="lb-vw"><div class="pm-seg">'+[["cards","▦ "+L("كروت","Cards")],["table","☰ "+L("جدول","Table")]].map(v=>'<button class="'+(LB.view===v[0]?"on":"")+'" data-a="lbView" data-v="'+v[0]+'">'+esc(v[1])+"</button>").join("")+"</div>"+
   (LB.view==="cards"?'<label class="lb-sz"><span>'+esc(L("حجم الكروت","Card size"))+'</span><input type="range" id="lbSize" min="150" max="360" step="10" value="'+LB.size+'"></label>':tblSizeCtl())+"</div>"; }
 function lbCard(r){ const id=r.__id, st=r["حالة الإعلان"]||"", fat=String(r._fatigue||""), hk=htHook(r._hook);
@@ -11198,6 +11207,7 @@ function lbCard(r){ const id=r.__id, st=r["حالة الإعلان"]||"", fat=St
       (r.__thumb?'<button class="lbc-zm" data-a="thZoom" data-id="'+esc(id)+'" title="'+esc(L("كبّر الصورة","Enlarge"))+'">⤢</button>':"")+"</div>"+
     '<div class="lbc-b"><div class="lbc-t"><b class="num">'+esc(id)+"</b>"+(r._rate?'<span class="lbc-r">'+lbFmt("_rate",r._rate)+"</span>":"")+"</div>"+
       '<div class="lbc-s">'+esc([r["المعلن"],r["الأسلوب"],st].filter(Boolean).join(" · ")||"—")+"</div>"+upBadges((LB.data.N||{})[id])+
+      (r.__lf?'<span class="lf-b" title="'+esc(r.__lf)+'">💾 '+esc(L("على الجهاز","On this Mac"))+"</span>":"")+
       (hk||r.__thumb?"":'<div class="lbc-hk no">'+esc(r.__note==="no_video"?L("مفيش فيديو على الدرايف","No video on Drive"):L("لسه مفيش هوك","No hook yet"))+"</div>")+
       '<div class="lbc-m">'+met.map(m=>"<div><span>"+esc(m[0])+'</span><b class="num">'+esc(m[1])+"</b></div>").join("")+"</div></div></div>"; }
 function lbCardsHTML(rows,g){ let body="", shown=0;
@@ -11269,8 +11279,8 @@ async function newmLoad(){ if(NEWM.busy||NEWM.loaded) return; if(!(window.SUPA_D
     if(!seen||!seen.at){ const top=await sb.from("media").select("created_at").eq("client",cname).order("created_at",{ascending:false}).limit(1);   // أول مرة: نبدأ من دلوقتي مش من أول المكتبة
       seen={at:((top.data||[])[0]||{}).created_at||new Date().toISOString()}; try{ await RT.set("mediaSeen/"+ME.id,seen); }catch(e){} }
     NEWM.seenAt=seen.at;
-    const r=await sb.from("media").select("creative_id,created_at,project,advertiser,style,kind,thumb,hook,hook_auto",{count:"exact"}).eq("client",cname).gt("created_at",seen.at).order("created_at",{ascending:false}).limit(40);
-    NEWM.list=r.data||[]; NEWM.n=r.count!=null? r.count : NEWM.list.length; await thumbUrls(NEWM.list.map(m=>m.thumb)); await upqLoad();
+    const r=await sb.from("media").select("creative_id,created_at,project,advertiser,style,kind,thumb,thumb_at,hook,hook_auto",{count:"exact"}).eq("client",cname).gt("created_at",seen.at).order("created_at",{ascending:false}).limit(40);
+    NEWM.list=r.data||[]; NEWM.n=r.count!=null? r.count : NEWM.list.length; thumbVer(NEWM.list); await thumbUrls(NEWM.list.map(m=>m.thumb)); await upqLoad();
   }catch(e){}
   NEWM.busy=false; NEWM.loaded=true; render(); }
 function newmCard(){ if(!NEWM.loaded){ setTimeout(newmLoad,0); return ""; }
@@ -11325,7 +11335,7 @@ function renderCreativeLibrary(){
     tb("cols","☰",L("الأعمدة","Fields"),0)+tb("filter","⧩",L("فلتر","Filter"),nF)+tb("group","▤",L("تجميع","Group"),nG)+tb("sort","⇅",L("ترتيب","Sort"),nS)+
     '<select class="sel lb-per" data-c="lbPer">'+selOpts([["all","الأرقام: كل الوقت","Numbers: all time"],["range","الأرقام: فترة","Numbers: date range"]],LB.per)+"</select>"+
     (LB.per==="range"?'<input class="inp" type="date" data-c="clbFrom" value="'+esc(LB.from)+'"><input class="inp" type="date" data-c="lbT" value="'+esc(LB.to)+'">':"")+
-    lbViewBar()+'<button class="btn btn-p btn-s" data-a="lbSync" style="margin-inline-start:auto">'+esc(LB.syncing?L("بيحدّث…","Syncing…"):L("↻ تحديث من Airtable","↻ Sync Airtable"))+"</button></div>";
+    lbLocalBtn(all)+lbViewBar()+'<button class="btn btn-p btn-s" data-a="lbSync" style="margin-inline-start:auto">'+esc(LB.syncing?L("بيحدّث…","Syncing…"):L("↻ تحديث من Airtable","↻ Sync Airtable"))+"</button></div>";
   /* لوحة الأعمدة */
   if(LB.panel==="cols"){ const on=LB.cols.filter(k=>colsAll.indexOf(k)>=0), off=colsAll.filter(k=>on.indexOf(k)<0);
     h+='<div class="lb-pnl"><div class="lb-ph"><b>'+esc(L("الأعمدة","Fields"))+'</b><span class="hint">'+esc(L("اسحب الظاهر يمين وشمال عشان ترتّبه · دوسة بتخفي · دوسة على المخفي بتظهره","Drag to reorder · click to hide/show"))+"</span>"+

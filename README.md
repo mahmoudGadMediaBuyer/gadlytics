@@ -537,6 +537,7 @@ A video needs at least **300 SAR of spend** to be rated. Below that it shows "li
 - **Cards:** each video is a card with its **cover** — the video's opening frame **with the hook written on the image** in white bold text on a dark band — then the creative ID and rating, talent · style · status, and six numbers (ROAS, spend, orders, revenue, hook rate, CTR). A **card size** slider sets how big the cards are. Groups (from *Group*) show as section bars with their count, spend, orders and ROAS; click a bar to fold it. ⤢ on a card enlarges the cover.
 - **Table:** the Airtable-style table, with a small **cover** column; the **image size** slider (shared with Media management) makes it bigger, and a click on a cover enlarges it with its hook.
 - Covers marked **"No video on Drive"** are videos whose Drive folder (and its subfolders) has no video file, or whose link is broken.
+- **💾 On this Mac:** one click shows only the videos already in `~/Downloads` (file named with the Creative ID). The same button is in Media management. `local_videos.py` reads the file names (it never opens, moves or deletes them) and marks `media.local_file`.
 - Select videos to **➕ Add to media management** or **⇪ Upload to the platforms**. Cards show **⇪ Meta · TikTok · Snap** once a video is uploaded.
 
 
@@ -839,7 +840,7 @@ The ✦ button (bottom-left) opens an assistant that reads your numbers from the
 | `khzama_rev` | Khzama revenue per source code (ME/TT/SC/bio/com/DM) for a date range, with the time it was taken. Used for period snapshot cards. |
 | `snapshots` | Cumulative intraday snapshots for *Today live*. |
 | `mx_daily` | Mixpanel events per day: `dim` = `aff` (Khzama link), `dev` (device), `src` (utm source), `pay` (payment method) or `hour`; `event` = session, page_view, view_content, add_to_cart, begin_checkout, purchase, revenue, checkout_error. |
-| `media` | One row per Airtable video: key fields, every board column (`fields` JSON), `hook_auto` (first sentence), `hook_full` (first 12 s), `thumb` (cover path in Storage `thumbs`), `thumb_hook` (hook written on the cover), `asset_note` (`no_video`). |
+| `media` | One row per Airtable video: key fields, every board column (`fields` JSON), `hook_auto` (first sentence), `hook_full` (first 12 s), `thumb` (cover path in Storage `thumbs`), `thumb_hook` (hook written on the cover), `asset_note` (`no_video`), `local_file` (file name in ~/Downloads, for the «On this Mac» filter). |
 
 ### 13.2 Views (all `security_invoker`)
 
