@@ -8370,7 +8370,7 @@ function renderMediaAuto(mode){ const MG=mode==="manage";
         '<button class="btn btn-s" data-a="maHook" data-id="'+esc(v.id)+'" title="'+esc(L("اكتبه بإيدك","Type it"))+'">✎</button>')+"</td>"],
     ["id",L("رقم الفيديو","Video ID"),v=>'<td class="md-vid'+(v.launched?"":" ma-idle")+'">'+esc(v.id)+(v.m.url?' <a href="'+esc(v.m.url)+'" target="_blank" rel="noopener" title="'+esc(L("افتح الفيديو","Open video"))+'">▶</a>':"")+
       (v.isNew?' <span class="ma-new">'+esc(L("جديد","New"))+"</span>":"")+(v.m.status?'<div class="ma-st">'+esc(v.m.status)+"</div>":"")+"</td>"],
-    ["thumb",L("الغلاف","Cover"),v=>'<td class="ma-th">'+thumbMini(v.id,v.m.project,v.hook,THUMB[v.m.thumb]||"")+"</td>"]].filter(c=>MG||c[0]!=="dec");
+    ["thumb",L("الغلاف","Cover"),v=>'<td class="ma-th">'+thumbMini(v.id,v.m.project,v.hook,THUMB[v.m.thumb]||"",v.m.asset_note)+"</td>"]].filter(c=>MG||c[0]!=="dec");
   const vis=maColsGet(), cols=COLS.filter(c=>vis.indexOf(c[0])>=0).reverse();   // من اليمين: المشهور ← رقم الفيديو ← … ← القرار
   if(MA.pick) h+='<div class="ex-pick" style="margin-bottom:10px"><div class="hint">'+esc(L("دوس على أي عمود تظهره أو تخفيه — اختيارك بيتحفظ.","Click a column to show or hide it — saved."))+'</div><div class="chips">'+
     COLS.map(c=>'<button class="chip'+(vis.indexOf(c[0])>=0?" on":"")+'" data-a="maCol" data-k="'+c[0]+'">'+esc(c[1])+"</button>").join("")+"</div></div>";
@@ -10060,7 +10060,7 @@ html [style*="drop-shadow"]{filter:none!important}
 .pm-demo{background:color-mix(in srgb,var(--warn) 12%,transparent);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);color:var(--ink);border-radius:12px;padding:10px 14px;font-size:13px;margin-bottom:14px}
 .pm-demo-g{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .ht.mini.img .ht-t{display:none}.ht.mini.img::after{display:none}
-.lb-thc{width:calc(var(--lbt,46px) + 10px);padding-top:4px!important;padding-bottom:4px!important}
+.lb-thc{width:calc(var(--lbt,72px) + 10px);padding-top:4px!important;padding-bottom:4px!important}
 .ht-zoom{border:0;background:none;padding:0;cursor:zoom-in;display:block;line-height:0}
 .ht-zoom:hover .ht{outline:2px solid var(--cyan);outline-offset:1px}
 .thz img{display:block;max-width:100%;max-height:68vh;margin:0 auto;border-radius:12px}
@@ -10083,8 +10083,8 @@ html [style*="drop-shadow"]{filter:none!important}
 .ht-p{opacity:.65;font-weight:600}
 .ht-a{position:relative;z-index:1;color:rgba(255,255,255,.75);font-size:clamp(10px,5.4cqw,13px);padding:0 9% 9%;text-align:center}
 .ht.img .ht-a{text-align:start}
-.ht.mini{width:var(--lbt,46px);border-radius:8px}.ht.mini .ht-t{font-size:clamp(6px,9cqw,15px);line-height:1.5;margin:6%;-webkit-line-clamp:5}
-.ma-th{width:calc(var(--lbt,46px) + 12px)}
+.ht.mini{width:var(--lbt,72px);border-radius:8px}.ht.mini .ht-t{font-size:clamp(6px,9cqw,15px);line-height:1.5;margin:6%;-webkit-line-clamp:5}
+.ma-th{width:calc(var(--lbt,72px) + 12px)}
 /* كروت المكتبة */
 .lb-vw{display:flex;align-items:center;gap:12px}
 .lb-sz{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-3)}.lb-sz input{width:120px;accent-color:var(--cyan)}
@@ -10103,6 +10103,16 @@ html [style*="drop-shadow"]{filter:none!important}
 .lbc-m span{display:block;font-size:10.5px;color:var(--ink-3)}.lbc-m b{font-size:13.5px;font-weight:700;color:var(--ink)}
 .lbc-gh{display:flex;gap:10px;align-items:baseline;width:100%;border:0;background:transparent;font:inherit;color:var(--ink);text-align:start;padding:10px 4px 8px;cursor:pointer}
 .lbc-gh b{font-size:14.5px}.lbc-gh span{font-size:12.5px;color:var(--ink-3)}.lbc-gh.l1{padding-inline-start:18px}.lbc-gh.l1 b{font-size:13.5px}
+/* الهوك مكتوب على الصورة: أبيض، عريض، على شريط غامق متدرّج عشان يتقري على أي صورة */
+.ht-ov{position:absolute;inset-inline:0;bottom:0;z-index:1;padding:22% 7% 8%;background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.72) 30%,rgba(0,0,0,.9));
+  color:#fff;font-weight:800;font-size:clamp(13px,8.6cqw,22px);line-height:1.6;text-align:center;text-shadow:0 1px 4px rgba(0,0,0,.8);
+  display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.ht.plain.img{display:block}
+.ht.nov{background:repeating-linear-gradient(135deg,var(--ground-2) 0 10px,var(--ground-1) 10px 20px);border:1px dashed var(--line-2)}
+.ht.nov .ht-p,.ht.nov .ht-no{color:var(--ink-3);opacity:1}.ht.nov .ht-a{color:var(--ink-3)}
+.thz-i{position:relative;width:fit-content;max-width:100%;margin:0 auto;container-type:inline-size;border-radius:12px;overflow:hidden}
+.thz-i img{border-radius:0}
+.thz-i .ht-ov{font-size:clamp(14px,5.5cqw,22px)}
 /* كروت المكتبة v2: الصورة كاملة، الهوك تحتها، والتقسيمات بشريط واضح */
 .ht.plain{aspect-ratio:9/16;justify-content:center}
 .ht.plain.img::after{display:none}
@@ -10110,7 +10120,7 @@ html [style*="drop-shadow"]{filter:none!important}
 .ht-no{position:absolute;bottom:10px;inset-inline:0;text-align:center;font-size:11px;color:rgba(255,255,255,.55)}
 .lbc{display:flex;flex-direction:column}
 .lbc-th .ht{border-radius:10px}
-.lbc-zm{position:absolute;bottom:14px;inset-inline-start:14px;z-index:2;width:30px;height:30px;border-radius:8px;border:0;background:rgba(15,20,32,.6);color:#fff;font-size:15px;cursor:zoom-in;display:grid;place-items:center}
+.lbc-zm{position:absolute;top:12px;inset-inline-start:46px;z-index:2;width:30px;height:30px;border-radius:8px;border:0;background:rgba(15,20,32,.6);color:#fff;font-size:15px;cursor:zoom-in;display:grid;place-items:center}
 .lbc-zm:hover{background:rgba(15,20,32,.85)}
 .lbc-b{flex:1;display:flex;flex-direction:column}
 .lbc-hk{font-size:12.5px;line-height:1.7;color:var(--ink-2);margin-top:8px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:calc(1.7em*3)}
@@ -11080,7 +11090,7 @@ function lbLabel(k){ const c=LB_CALC.find(x=>x[0]===k); return c? L(c[1],c[2]) :
 async function lbLoad(force){ if(LB.busy||(LB.data&&!force)) return; LB.busy=true; LB.err=""; render();
   try{ const sb=SUPA_DB.client, cl=(S.ws&&clientById(S.ws))||S.cfg.clients[0]||{}, cname=cl.name||"ملبي";
     const all=async q=>{ const out=[]; for(let i=0;;i+=1000){ const r=await q().range(i,i+999); if(r.error) throw r.error; out.push(...r.data); if(r.data.length<1000) break; } return out; };
-    const media=await all(()=>sb.from("media").select("creative_id,fields,hook,hook_auto,created_at,synced_at,style,kind,url,thumb").eq("client",cname).eq("kind","Video").in("style",LB_STYLES).order("creative_id"));
+    const media=await all(()=>sb.from("media").select("creative_id,fields,hook,hook_auto,created_at,synced_at,style,kind,url,thumb,asset_note,thumb_hook").eq("client",cname).eq("kind","Video").in("style",LB_STYLES).order("creative_id"));
     await thumbUrls(media.map(m=>m.thumb));
     const perf=await all(()=>sb.from("v_media_perf").select("*").order("creative_id"));
     const notes=await all(()=>sb.from("docs").select("path,data").eq("coll","media_notes").order("path")); await ftLoad();
@@ -11109,7 +11119,7 @@ function lbRows(){ const D=LB.data, pf=lbPerf()||{};
     f._hookr=p&&p.im? (p.v2||p.pv)/p.im*100 : null; f._holdr=p&&p.pv? p.p100/p.pv*100 : null; f._ctr=p&&p.im? p.ck/p.im*100 : null; f._cpm=p&&p.im? p.sp/p.im*1000 : null;
     f._tags=(n.tags||[]).join("، "); f._note=n.note||""; f._mgmt=(p&&p.sp>0)||n.inMgmt? L("أيوه","Yes") : L("لأ","No");
     f._first=p&&p.first||""; f._last=p&&p.last||""; f._camps=p? [...p.camps].sort().join("، ") : ""; f._plats=p? Object.keys(p.pl).map(x=>(platById(x)||{}).name||x).join("، ") : "";
-    f._fatigue=ftLabel(m.creative_id); f.__id=m.creative_id; f.__thumb=THUMB[m.thumb]||""; return f; });
+    f._fatigue=ftLabel(m.creative_id); f.__id=m.creative_id; f.__thumb=THUMB[m.thumb]||""; f.__note=m.asset_note||""; f.__burned=!!m.thumb_hook; return f; });
   /* التقييم = ROAS الفيديو مقارنة بمتوسط مشروعه (وبشرط صرف ٣٠٠ ريال على الأقل) */
   const pa={}; rows.forEach(r=>{ const k=r["المشروع"]||"—", o=pa[k]||(pa[k]={s:0,a:0}); o.s+=r._spend; o.a+=r._revenue; });
   rows.forEach(r=>{ const o=pa[r["المشروع"]||"—"], avg=o&&o.s? o.a/o.s : null;
@@ -11157,15 +11167,18 @@ async function thumbUrls(paths){ const need=[...new Set(paths.filter(p=>p&&!THUM
 const HT_G=[["#173F37","#2E6B5E"],["#1E2F4A","#3A5A8A"],["#2F2A45","#5A4F86"],["#3A3324","#7A6A44"],["#1F3B44","#3F7584"],["#3A2830","#7A5060"]];
 function htHook(s){ s=String(s||"").trim(); return /^https?:/i.test(s)? "" : s; }
 function hookThumb(o){ let h=0; String(o.proj||"").split("").forEach(c=>{ h=(h*31+c.charCodeAt(0))>>>0; }); const g=HT_G[h%HT_G.length], hk=htHook(o.hook);
-  if(o.plain) return '<div class="ht plain'+(o.thumb?" img":"")+'" style="--g1:'+g[0]+";--g2:"+g[1]+'">'+(o.thumb?'<img src="'+esc(o.thumb)+'" alt="" loading="lazy">':
-    '<div class="ht-t"><span class="ht-p">'+esc(o.proj||"—")+"</span></div>"+(o.adv?'<div class="ht-a">'+esc(o.adv)+"</div>":"")+'<div class="ht-no">'+esc(L("الغلاف لسه بيتجهّز","Cover coming"))+"</div>")+"</div>";
+  const nov=o.note==="no_video";
+  if(o.plain) return '<div class="ht plain'+(o.thumb?" img":"")+(nov&&!o.thumb?" nov":"")+'" style="--g1:'+g[0]+";--g2:"+g[1]+'">'+(o.thumb?'<img src="'+esc(o.thumb)+'" alt="" loading="lazy">'+(hk&&!o.burned?'<div class="ht-ov">'+esc(hk)+"</div>":""):
+    '<div class="ht-t">'+(hk&&!nov?esc(hk):'<span class="ht-p">'+esc(o.proj||"—")+"</span>")+"</div>"+(o.adv?'<div class="ht-a">'+esc(o.adv)+"</div>":"")+
+    '<div class="ht-no">'+esc(nov?L("الدرايف مفيهوش فيديو","No video on Drive"):L("الصورة لسه بتتجهّز","Cover coming"))+"</div>")+"</div>";
+  if(nov&&!o.thumb) return '<div class="ht nov'+(o.mini?" mini":"")+'" style="--g1:'+g[0]+";--g2:"+g[1]+'" title="'+esc(L("الدرايف مفيهوش فيديو","No video on Drive"))+'"><div class="ht-t"><span class="ht-p">'+esc(o.mini?L("مفيش فيديو","No video"):L("الدرايف مفيهوش فيديو","No video on Drive"))+"</span></div></div>";
   return '<div class="ht'+(o.thumb?" img":"")+(o.mini?" mini":"")+'" style="--g1:'+g[0]+";--g2:"+g[1]+'">'+(o.thumb?'<img src="'+esc(o.thumb)+'" alt="" loading="lazy">':"")+
     '<div class="ht-t">'+(hk?esc(hk):'<span class="ht-p">'+esc(o.proj||"—")+"</span>")+"</div>"+(o.adv&&!o.mini?'<div class="ht-a">'+esc(o.adv)+"</div>":"")+"</div>"; }
 
 /* ══════════ مكتبة الكريتيف: عرض الكروت (زي إدارة الميديا في النموذج) ══════════ */
 LB.view=(()=>{ try{ return localStorage.getItem("gad.lbView")||"cards"; }catch(e){ return "cards"; } })();
 LB.size=(()=>{ try{ return +localStorage.getItem("gad.lbSize")||220; }catch(e){ return 220; } })();
-LB.tsize=(()=>{ try{ return +localStorage.getItem("gad.lbTSize")||46; }catch(e){ return 46; } })();
+LB.tsize=(()=>{ try{ return +localStorage.getItem("gad.lbTSize")||72; }catch(e){ return 72; } })();   // the hook is written on the image — 72px keeps it legible
 document.documentElement.style.setProperty("--lbt",LB.tsize+"px");
 document.addEventListener("input",e=>{ if(!e.target||!e.target.classList||!e.target.classList.contains("lbTSize")) return; LB.tsize=+e.target.value;
   document.documentElement.style.setProperty("--lbt",LB.tsize+"px"); document.querySelectorAll(".lbTSize").forEach(x=>{ if(x!==e.target) x.value=LB.tsize; });
@@ -11179,13 +11192,13 @@ function lbViewBar(){ return '<div class="lb-vw"><div class="pm-seg">'+[["cards"
 function lbCard(r){ const id=r.__id, st=r["حالة الإعلان"]||"", fat=String(r._fatigue||""), hk=htHook(r._hook);
   const met=[["ROAS",r._roas==null?"—":(+r._roas).toFixed(2)+"x"],[L("صرف","Spend"),r._spend?fcompact(r._spend,0):"—"],[L("طلبات","Orders"),r._orders?fnum(r._orders,0):"—"],
     [L("إيراد","Revenue"),r._revenue?fcompact(r._revenue,0):"—"],["Hook",r._hookr==null?"—":fnum(r._hookr,1)+"%"],["CTR",r._ctr==null?"—":fnum(r._ctr,2)+"%"]];
-  return '<div class="lbc" data-a="clbOpen" data-id="'+esc(id)+'"><div class="lbc-th">'+hookThumb({proj:r["المشروع"],adv:r["المعلن"],thumb:r.__thumb,plain:true})+
+  return '<div class="lbc" data-a="clbOpen" data-id="'+esc(id)+'"><div class="lbc-th">'+hookThumb({proj:r["المشروع"],adv:r["المعلن"],thumb:r.__thumb,hook:hk,note:r.__note,burned:r.__burned,plain:true})+
       '<label class="lbc-ck" title="'+esc(L("حدّد","Select"))+'"><input type="checkbox" data-a="lbSel" data-id="'+esc(id)+'"'+(LB.sel.has(id)?" checked":"")+"></label>"+
       (/يتحرق|Burning/.test(fat)?'<span class="pm-tag r lbc-bd">'+esc(L("تعبان","Fatigued"))+"</span>":/علامات|Early/.test(fat)?'<span class="pm-tag y lbc-bd">'+esc(L("بدأ يتعب","Tiring"))+"</span>":"")+
       (r.__thumb?'<button class="lbc-zm" data-a="thZoom" data-id="'+esc(id)+'" title="'+esc(L("كبّر الصورة","Enlarge"))+'">⤢</button>':"")+"</div>"+
     '<div class="lbc-b"><div class="lbc-t"><b class="num">'+esc(id)+"</b>"+(r._rate?'<span class="lbc-r">'+lbFmt("_rate",r._rate)+"</span>":"")+"</div>"+
       '<div class="lbc-s">'+esc([r["المعلن"],r["الأسلوب"],st].filter(Boolean).join(" · ")||"—")+"</div>"+upBadges((LB.data.N||{})[id])+
-      '<div class="lbc-hk'+(hk?"":" no")+'">'+esc(hk||L("لسه مفيش هوك","No hook yet"))+"</div>"+
+      (hk||r.__thumb?"":'<div class="lbc-hk no">'+esc(r.__note==="no_video"?L("مفيش فيديو على الدرايف","No video on Drive"):L("لسه مفيش هوك","No hook yet"))+"</div>")+
       '<div class="lbc-m">'+met.map(m=>"<div><span>"+esc(m[0])+'</span><b class="num">'+esc(m[1])+"</b></div>").join("")+"</div></div></div>"; }
 function lbCardsHTML(rows,g){ let body="", shown=0;
   const grid=list=>{ const part=list.slice(0,Math.max(0,600-shown)); shown+=part.length; return part.length?'<div class="lbc-grid" style="--lbw:'+LB.size+'px">'+part.map(lbCard).join("")+"</div>":""; };
@@ -11238,11 +11251,11 @@ function liveTop(D){
 /* ══════════ تكبير الغلاف: دوسة على الصورة الصغيرة (جدول المكتبة وإدارة الميديا) ══════════ */
 function thumbRow(id){ const a=(LB.data&&LB.data.media||[]).find(m=>m.creative_id===id)||(MA.data&&MA.data.media||[]).find(m=>m.creative_id===id)||{};
   const n=(LB.data&&LB.data.N||{})[id]||(MA.data&&MA.data.N||{})[id]||{}, f=a.fields||{};
-  return {id:id,thumb:THUMB[a.thumb]||"",hook:n.hook||a.hook_auto||a.hook||"",proj:a.project||f["المشروع"]||"",adv:a.advertiser||f["المعلن"]||"",url:a.url||f.URL||""}; }
-function thumbMini(id,proj,hook,thumb){ return '<button class="ht-zoom" data-a="thZoom" data-id="'+esc(id)+'" title="'+esc(L("كبّر الصورة","Enlarge"))+'">'+hookThumb({proj:proj,hook:hook,thumb:thumb,mini:true})+"</button>"; }
+  return {id:id,burned:!!a.thumb_hook,thumb:THUMB[a.thumb]||"",hook:n.hook||a.hook_auto||a.hook||"",proj:a.project||f["المشروع"]||"",adv:a.advertiser||f["المعلن"]||"",url:a.url||f.URL||""}; }
+function thumbMini(id,proj,hook,thumb,note){ return '<button class="ht-zoom" data-a="thZoom" data-id="'+esc(id)+'" title="'+esc(L("كبّر الصورة","Enlarge"))+'">'+hookThumb({proj:proj,hook:hook,thumb:thumb,note:note,mini:true})+"</button>"; }
 ACT.thZoom=t=>{ const r=thumbRow(t.dataset.id), hk=htHook(r.hook);
   modal(L("الفيديو ","Video ")+r.id+(r.adv?" · "+r.adv:""),
-    '<div class="thz">'+(r.thumb?'<img src="'+esc(r.thumb)+'" alt="">':hookThumb({proj:r.proj,hook:r.hook,adv:r.adv}))+
+    '<div class="thz">'+(r.thumb?'<div class="thz-i"><img src="'+esc(r.thumb)+'" alt="">'+(hk&&!r.burned?'<div class="ht-ov">'+esc(hk)+"</div>":"")+"</div>":hookThumb({proj:r.proj,hook:r.hook,adv:r.adv}))+
       (hk?'<div class="thz-h"><span>'+esc(L("الهوك","Hook"))+"</span>"+esc(hk)+"</div>":"")+"</div>",
     (r.url?'<a class="btn" href="'+esc(r.url)+'" target="_blank" rel="noopener">▶ '+esc(L("افتح الفيديو","Open video"))+"</a>":"")+
     (LB.data&&LB.data.media.some(m=>m.creative_id===r.id)?'<button class="btn btn-p" data-a="clbOpen" data-id="'+esc(r.id)+'">'+esc(L("التفاصيل","Details"))+"</button>":"")); };
@@ -11358,7 +11371,7 @@ function renderCreativeLibrary(){
   if(!LB.sel) LB.sel=new Set();
   if(LB.sel.size) h+='<div class="lb-bulk"><b>'+LB.sel.size+esc(L(" فيديو متحدد"," selected"))+'</b><button class="btn btn-p btn-s" data-a="lbAddMg">➕ '+esc(L("أضف لإدارة الميديا","Add to media management"))+'</button><button class="btn btn-s" data-a="upSel">⇪ '+esc(L("ارفع على المنصات","Upload to platforms"))+'</button><button class="btn btn-s" data-a="lbSelNone">'+esc(L("إلغاء التحديد","Clear selection"))+"</button></div>";
   const head="<tr><th class=\"lb-ck\"></th><th class=\"lb-thc\"></th>"+cols.map(k=>'<th data-a="lbSort" data-k="'+esc(k)+'" class="'+(LB_NUM[k]?"num":"")+'">'+esc(lbLabel(k))+(s0.k===k?(s0.dir<0?" ▾":" ▴"):"")+"</th>").join("")+"</tr>";
-  const rowH=r=>'<tr data-a="clbOpen" data-id="'+esc(r.__id)+'"><td class="lb-ck"><input type="checkbox" data-a="lbSel" data-id="'+esc(r.__id)+'"'+(LB.sel.has(r.__id)?" checked":"")+'></td><td class="lb-thc">'+thumbMini(r.__id,r["المشروع"],r._hook,r.__thumb)+"</td>"+cols.map(k=>'<td class="'+(LB_NUM[k]?"num":"")+(k==="_hook"?" lb-hook":"")+'">'+lbFmt(k,r[k])+"</td>").join("")+"</tr>";
+  const rowH=r=>'<tr data-a="clbOpen" data-id="'+esc(r.__id)+'"><td class="lb-ck"><input type="checkbox" data-a="lbSel" data-id="'+esc(r.__id)+'"'+(LB.sel.has(r.__id)?" checked":"")+'></td><td class="lb-thc">'+thumbMini(r.__id,r["المشروع"],r._hook,r.__thumb,r.__note)+"</td>"+cols.map(k=>'<td class="'+(LB_NUM[k]?"num":"")+(k==="_hook"?" lb-hook":"")+'">'+lbFmt(k,r[k])+"</td>").join("")+"</tr>";
   const g=LB.groups.filter(x=>x.k); let body="", shown=0;
   const grp=(list,lvl,path)=>{ if(lvl>=g.length){ list.forEach(r=>{ if(shown<800){ body+=rowH(r); shown++; } }); return; }
     const G=g[lvl], by={}; list.forEach(r=>{ const k=r[G.k]==null||r[G.k]===""?"—":String(r[G.k]); (by[k]=by[k]||[]).push(r); });

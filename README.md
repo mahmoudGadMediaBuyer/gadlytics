@@ -26,7 +26,7 @@ The site **only displays data**. It never writes to or changes an ad account. Al
 7. [Metrics and formulas](#7-metrics-and-formulas)
 8. [Decision rules (how suggestions are made)](#8-decision-rules-how-suggestions-are-made)
 9. [Refresh schedule](#9-refresh-schedule)
-10. [Automatic hooks (Whisper, on-device)](#10-automatic-hooks-whisper-on-device)
+10. [Covers and hooks; upload to the platforms](#10-covers-and-hooks-on-the-mac--videos-never-stay-on-disk)
 11. [AI assistant](#11-ai-assistant)
 12. [Repository layout](#12-repository-layout)
 13. [Database reference](#13-database-reference)
@@ -35,6 +35,7 @@ The site **only displays data**. It never writes to or changes an ad account. Al
 16. [Troubleshooting](#16-troubleshooting)
 17. [FAQ](#17-faq)
 18. [Glossary](#18-glossary)
+19. [Look and feel (November 2026)](#19-look-and-feel-november-2026)
 
 ---
 
@@ -203,21 +204,18 @@ The sidebar is grouped into **Work (شغلي)**, **Monitoring (متابعة)**, 
 
 ### 6.1 My dashboard (لوحتي)
 
-A personal home screen.
+A personal home screen, top to bottom:
 
-- **Header:** your photo, name, role or job title, and an "Edit profile" button.
-- **KPI tiles:**
-  - My clients.
-  - Spend today.
-  - Revenue today, with today's ROAS underneath.
-  - **Spend yesterday.**
-  - **Revenue yesterday (Khzama).**
-  - **ROAS yesterday:** green at 3x or above, red below 1.5x, with today's ROAS underneath for comparison.
-  - Open tasks, with the number overdue.
-  - Unread messages.
-- **Morning summary:** what changed overnight.
-- **My clients today:** spend, revenue and ROAS per client, compared with yesterday.
-- **My tasks** and **Team** (who is online).
+- **Greeting** with your name, today's date, "numbers up to <last day with spend>", and a dot per source (platforms, Khzama, Mixpanel): green when fresh, red with how many days late. Buttons: **Demo data** and **Edit profile**.
+- **🆕 New on Airtable** (only when there is something new): how many videos/media were added on Airtable since you last looked, a strip of their covers, and three buttons — **⇪ Upload them to the platforms**, **Open in library** (opens the library filtered to the new ones) and **✓ Seen**. Seeing them clears the alert and the count badge on *Creative library* in the sidebar. "Last seen" is kept per user (`mediaSeen/<uid>`), so it follows you across devices.
+- **System refresh** (below).
+- **Six KPI tiles** for the last day with spend: spend, revenue (Khzama), ROAS, orders (Khzama), cost per order, average donation — each with the change vs the day before and a 10-day sparkline. Clicking a tile shows it in the main chart.
+- **Main chart:** spend vs revenue (or the metric you clicked), 7 / 14 / 30 days, daily / weekly / monthly; click a legend item to hide it.
+- **Platforms:** share of spend and ROAS per platform (click to filter the table) and **Needs you**: campaigns below target (or the account average) three days in a row.
+- **Campaign performance:** campaign, platform, spend, orders, revenue, ROAS, 14-day trend, status (Scale / Watch / Pause vs the reference). Search, platform filter, sort by any column; a click opens a side panel with the campaign's numbers, chart, recommendation, and links to the campaign file and the change log.
+- **Morning summary, My clients today, My tasks, Mentions, Team** — as before.
+
+**Demo data (بيانات تجريبية):** fills every screen that reads the report data (dashboard, overview, today live, action center, reports) with random numbers, **in the browser's memory only** — nothing is saved or sent. A bar on every screen says it's on, with a button to turn it off. Screens that read the database directly (analyzer, media, library, site, change log) keep showing real data.
 
 **System refresh (تحديث السيستم)** — at the top of My dashboard:
 
@@ -469,6 +467,9 @@ Plan budgets and how they split across platforms for a period.
 
 ### 6.11 Media management (إدارة الميديا)
 
+A **Cover** column (the same image as the library, hook written on it) sits next to the video ID; the **image size** slider above the table sets its size and a click enlarges it.
+
+
 Where you manage the videos that have **launched**, or that you added from the library, and decide which ones continue and which stop.
 
 **Layout:** grouped by **project**, then by **influencer**, read right to left.
@@ -530,6 +531,14 @@ A video needs at least **300 SAR of spend** to be rated. Below that it shows "li
 - **🎙 Auto hook:** queues a video for transcription; see [§10](#10-automatic-hooks-whisper-on-device).
 
 ### 6.12 Creative library (مكتبة الكريتيف)
+
+**Two views** — switch with **▦ Cards / ☰ Table** (remembered):
+
+- **Cards:** each video is a card with its **cover** — the video's opening frame **with the hook written on the image** in white bold text on a dark band — then the creative ID and rating, talent · style · status, and six numbers (ROAS, spend, orders, revenue, hook rate, CTR). A **card size** slider sets how big the cards are. Groups (from *Group*) show as section bars with their count, spend, orders and ROAS; click a bar to fold it. ⤢ on a card enlarges the cover.
+- **Table:** the Airtable-style table, with a small **cover** column; the **image size** slider (shared with Media management) makes it bigger, and a click on a cover enlarges it with its hook.
+- Covers marked **"No video on Drive"** are videos whose Drive folder (and its subfolders) has no video file, or whose link is broken.
+- Select videos to **➕ Add to media management** or **⇪ Upload to the platforms**. Cards show **⇪ Meta · TikTok · Snap** once a video is uploaded.
+
 
 An Airtable-style board of **every Molabi video**, built to be simpler and faster than Airtable. It includes only the styles **Influencer (مشهور)**, **Model (مودل)** and **Creative (ابداعي)**; designs and photo shoots are excluded.
 
@@ -724,7 +733,28 @@ The thresholds are set in Settings.
 
 ---
 
-## 10) Automatic hooks (Whisper, on-device)
+## 10) Covers and hooks (on the Mac — videos never stay on disk)
+
+For every library video (`~/.gadlytics/media_assets.py`, runbook `skill/gadlytics/runbooks/covers_and_hooks.md`):
+
+1. Read the video's public Drive folder (and up to two levels of subfolders); prefer the Snap/story file.
+2. Download **one** file into a temp folder → save the **opening frame** (540 px JPEG, skipping a black first frame) → take the audio → **delete the video**.
+3. **Whisper** (`large-v3-turbo`, MLX, on-device) on the first 12 s: the **hook** = the first sentence (up to the first pause); the whole 12 s text is kept in `media.hook_full`. Four videos run at once; Whisper takes turns.
+4. **Distinct hooks** (`hooks_dedupe.py`): hooks that read alike are extended to one word past where they differ (e.g. "تسمع هذا الصوت؟ هذا صوت توثيق وجبات…"). Videos with the same script word for word (edits of one video) keep the short hook — their ID tells them apart. Hooks typed by hand are never changed.
+5. **Hook on the image** (`hook_covers.py` + `bin/hookcover`): the hook is drawn onto the frame (white, heavy Arabic, right-to-left, dark band) and uploaded as the cover to the private Storage bucket `thumbs`; `media.thumb_hook` records the written text.
+
+Only the small frame images are kept (`~/.gadlytics/frames/`). New videos get their cover and hook with the daily pull.
+
+### 10.1 Upload new media to the platforms (⇪)
+
+The button saves a request (`sys/uploadreq`); Claude runs it on the Mac when you say «ارفع الميديا» (runbook `upload_media.md`):
+
+- the **Snap/story** version (never the TikTok file), named by its **Creative ID**, uploaded **as is** to **Meta (account 312559678073897 only)**, **TikTok** and **Snap** (resized to 1080×1920 through Canva when needed; music off);
+- links first, so Meta and TikTok uploads start together; downloads, covers, hooks and the Snap upload run five at a time;
+- the video is deleted from the Mac afterwards; each video's uploads are saved in `media_notes/<id>.uploads`;
+- media-library uploads only — no campaigns, ad sets or ads are created.
+
+### 10.2 Hooks — older notes
 
 The **hook** is the first sentence the creator says in the video.
 
@@ -775,6 +805,7 @@ The ✦ button (bottom-left) opens an assistant that reads your numbers from the
 | `tools/prep_ad_daily.py` | Turns raw platform pulls into `ad_daily` rows: parses campaign and ad names, converts USD, flags Smart+ |
 | `tools/rebuild_entries.sql` | Rebuilds the daily report docs (platform metrics + Khzama orders and revenue) |
 | `supabase/functions/ai/` | The AI assistant function; calls the Claude API with the stored secret |
+| `skill/gadlytics/` | The Claude skill: how to run everything (runbooks + Mac scripts), so the work moves to another account or machine. No secrets in it. |
 
 **Deployed, but intentionally left out of this public repo:**
 
@@ -808,7 +839,7 @@ The ✦ button (bottom-left) opens an assistant that reads your numbers from the
 | `khzama_rev` | Khzama revenue per source code (ME/TT/SC/bio/com/DM) for a date range, with the time it was taken. Used for period snapshot cards. |
 | `snapshots` | Cumulative intraday snapshots for *Today live*. |
 | `mx_daily` | Mixpanel events per day: `dim` = `aff` (Khzama link), `dev` (device), `src` (utm source), `pay` (payment method) or `hour`; `event` = session, page_view, view_content, add_to_cart, begin_checkout, purchase, revenue, checkout_error. |
-| `media` | One row per Airtable video: key fields, every board column (`fields` JSON), and `hook_auto`. |
+| `media` | One row per Airtable video: key fields, every board column (`fields` JSON), `hook_auto` (first sentence), `hook_full` (first 12 s), `thumb` (cover path in Storage `thumbs`), `thumb_hook` (hook written on the cover), `asset_note` (`no_video`). |
 
 ### 13.2 Views (all `security_invoker`)
 
@@ -925,3 +956,12 @@ Yes. They are stored separately in `media_notes`, and the sync never overwrites 
 | **Project (المشروع)** | The charity project a video promotes, for example سقيا |
 | **Creator / Advertiser (المعلن)** | The influencer or model in the video, from Airtable |
 | **Snapshot** | A cumulative intraday reading of today's numbers |
+
+---
+
+## 19) Look and feel (November 2026)
+
+- **Calm palette** across the whole app: the same colour families, less saturated, no glow, no coloured page background; spend is always blue, revenue green, red only for problems.
+- **Soft charts** everywhere: smooth curves, thin lines, light fill, faint grid, rounded bars.
+- **Tasks** open on the board: four soft columns with white cards (title, priority, client, assignee, due date in red when late) and a joined KPI strip on top.
+- **Today live** starts with live KPIs vs the same hour yesterday, spend hour by hour (today vs yesterday) and spend pace per platform against where it should be by now.
