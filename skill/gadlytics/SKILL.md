@@ -19,7 +19,7 @@ Reply to Mahmoud in Egyptian Arabic. Tool and field names stay English.
 ## Architecture
 - **Site:** one file. Source `~/Desktop/claude/mediabuyer-console.html` → `python3 gadlytics-site/tools/build.py` → `gadlytics-site/index.html` (+ `config.js`, `supa-db.js`). Vanilla JS inside one IIFE: `render()`, `ACT[...]` click actions (`data-a`), `CHG[...]` change handlers (`data-c`), `RT.get/set` doc store, `card()`, `chPlot()` charts (soft by default), `modal()`. Syntax-check every build: `node -e` + `new Function(script)` over inline scripts.
 - **Supabase** project `ibpwudzjwjraqhfdmzet`, client_id `3sa3k1k`.
-  - Tables: `docs` (path/coll/data JSON store), `ad_daily`, `khzama_link_daily`, `khzama_rev`, `snapshots`, `media` (Airtable library: `url`, `hook`, `hook_auto`, `hook_full`, `thumb`, `thumb_hook`, `asset_note`), `mx_daily`, `camp_budget_daily`.
+  - Tables: `docs` (path/coll/data JSON store), `ad_daily`, `khzama_link_daily`, `khzama_rev`, `snapshots`, `media` (Airtable library: `url`, `hook`, `hook_auto`, `hook_full`, `thumb`, `thumb_at`, `thumb_hook`, `asset_note`, `local_file`), `mx_daily`, `camp_budget_daily`.
   - Views (security_invoker): `v_media_perf`, `v_media_daily`, `v_creative`, `v_mx_aff`, `v_fatigue`, `v_camp_day`.
   - Storage: private bucket `thumbs` (`<creative_id>.jpg`, readable by signed-in users; the site uses signed URLs).
   - Edge functions: `ingest` (write-only, key header; tables: ad_daily, khzama_link_daily, khzama_rev, snapshots, media, mx_daily, camp_budget_daily, auto_changes → docs `changes/auto_*`, media_thumbs → Storage + media.thumb/thumb_hook), `media-sync` (Airtable → media), `ai`.
@@ -27,7 +27,7 @@ Reply to Mahmoud in Egyptian Arabic. Tool and field names stay English.
 - **Ad accounts:** Meta 312559678073897 (uploads go here only) and 1355849785679367 (reporting) · TikTok advertiser 7338783723795595266 · Snap 828aa8bb-bd63-44ee-8cf8-b735981ca06f.
 
 ## Screens worth knowing
-لوحتي (greeting + source freshness, new-media alert with «ارفعها على المنصات», «حدّث كل حاجة», 6 KPI tiles → main chart, platforms + «محتاج تدخلك», campaigns table + side panel, «بيانات تجريبية» in-memory demo) · اليوم مباشر (live KPIs, spend by hour vs yesterday, spend pace) · المهام (board by default) · مكتبة الكريتيف (cards with the cover — hook written on the image — card size slider; table view with image-size slider and click-to-enlarge; Airtable-style fields/filter/group/sort; bulk «أضف لإدارة الميديا» / «ارفع على المنصات») · إدارة الميديا (stages, decisions, hooks, cover column) · سجل التغييرات v2 · المحلل · الموقع والقمع (Mixpanel) · التقارير (daily + weekly).
+لوحتي (greeting + source freshness, new-media alert with «ارفعها على المنصات», «حدّث كل حاجة», 6 KPI tiles → main chart, platforms + «محتاج تدخلك», campaigns table + side panel, «بيانات تجريبية» in-memory demo) · اليوم مباشر (live KPIs, spend by hour vs yesterday, spend pace) · المهام (board by default) · مكتبة الكريتيف (cards with the cover — hook written on the image — card size slider; table view with image-size slider and click-to-enlarge; Airtable-style fields/filter/group/sort; bulk «أضف لإدارة الميديا» / «ارفع على المنصات»; «💾 على الجهاز» filter for videos already on the Mac). Covers are linked with `&v=<thumb_at>` so a re-written cover isn't served from Storage's 1-hour cache; table covers show the full 9:16 frame (the hook band is at the bottom)) · إدارة الميديا (stages, decisions, hooks, cover column) · سجل التغييرات v2 · المحلل · الموقع والقمع (Mixpanel) · التقارير (daily + weekly).
 
 ## Runbooks (in `runbooks/`)
 | Ask | Runbook |
@@ -36,6 +36,7 @@ Reply to Mahmoud in Egyptian Arabic. Tool and field names stay English.
 | «اكتب الهوكات» / covers | `covers_and_hooks.md` |
 | «ارفع الميديا» | `upload_media.md` |
 | Deploy / «ارفع» / update README | `deploy.md` |
+| «على الجهاز» filter (videos already in ~/Downloads) | `python3 ~/.gadlytics/local_videos.py` → run the SQL it prints with execute_sql (clears old marks, marks existing videos only; never touches the files) |
 | Mixpanel, snapshots, hooks queue | `snapshot.md`, `hooks.md` |
 
 ## New machine / new account
