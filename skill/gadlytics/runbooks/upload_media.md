@@ -32,3 +32,22 @@
 7. اقفل الطلب: `update public.docs set data = data || jsonb_build_object('status','done','done_at',extract(epoch from now())*1000) where path='sys/uploadreq'`.
 8. تأكد إن مفيش أي فيديو فاضل: `find /var/folders -maxdepth 4 -name "gad-up-*"` فاضي، ومفيش ملفات ID.mp4 في Downloads أو أي فولدر اشتغلنا فيه.
 9. لخّص لمحمود: كام فيديو اترفع على كل منصة، والـ IDs، وأي حاجة فشلت.
+
+## Learned on the first run (2026-11-04)
+- **TikTok:** `file_video_ad_upload` answers NOT_AVAILABLE / IN_ROLL_OUT for advertiser 7338783723795595266 ("estimated December"). Call shape: `tool_execute` with `params` (not `arguments`). Until it opens, skip TikTok and say so.
+- **Snap:** the API accepts only 9:16 **and at least 1080×1920**. Most Snap.mp4 files are 607–617×1080 → Snap rejects them (E2601). The script now uploads to Snap only when the file qualifies and returns `needs_canva` otherwise — don't create a Snap media item first (a failed upload leaves an empty PENDING_UPLOAD item).
+- **Meta:** URL upload of the Drive direct link works; status goes uploading → processing → ready within minutes.
+- Use `prep --keep=ID,ID` for videos that already have a hooked cover, so their cover isn't replaced by a plain frame.
+
+## Snap resize via Canva — the working recipe (2026-11-04)
+1. `upload-asset-from-url` each Snap.mp4 direct link (name = Creative ID) → video asset ids.
+2. `create-design` (format "Instagram Story") gives a 1080×1920 page (it comes with a template — that's fine).
+3. `read-design` with open_transaction → `edit-design` keep_open: delete every element on page 1, `insert_fill` video at top 0 / left 0 / 1080×1920; `add_page` 1080×1920 for each further video and `insert_fill` the next video on it. One video per page, nothing else.
+4. Show Mahmoud the page thumbnails and get his OK → `edit-design` commit (Canva requires approval before saving).
+5. `export-design` mp4, quality `vertical_1080p`, one call per page (`pages: [n]`).
+6. Download each export to a temp folder, check 1080×1920 and the same length as the original, upload to Snap (reuse an empty PENDING_UPLOAD item of the same name if one exists), delete the file.
+
+## TikTok via Chrome (until the API opens)
+- **Check first:** `tool_execute file_video_ad_search` (params advertiser_id, page_size 100) and look for `file_name` starting with the Creative ID — most videos are already in the TikTok library; don't upload duplicates.
+- Creative Library → Upload or import → «Upload from computer». Before clicking, patch `HTMLInputElement.prototype.click` for type=file in the page so the Mac file picker doesn't open; then `file_upload` to the input (≤10 MB per call — one file at a time). TikTok rejects non-9:16 files (e.g. 720×1260) — use the Canva 1080×1920 export for those.
+- Files over 10 MB can't go through Chrome. «Import from Meta» (Meta account Molabi [2] 312559678073897, linked 2026-11-04) shows Meta's videos newest first, but the imported file has no `.mp4` extension and TikTok rejects it with a format error — not usable. Ask Mahmoud to upload those himself.
