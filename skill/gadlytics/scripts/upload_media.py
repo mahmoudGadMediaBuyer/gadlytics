@@ -35,7 +35,8 @@ def info(path):
     return (int(out[0]), int(out[1]), float(out[2])) if len(out) == 3 else (0, 0, 0)
 
 def is_916(w, h):
-    return w and h and abs(w / h - 9 / 16) < 0.01
+    """Snap takes it as-is only when it is 9:16 AND at least 1080×1920 (a 607×1080 file is rejected with E2601)."""
+    return bool(w and h and abs(w / h - 9 / 16) < 0.01 and w >= 1080 and h >= 1920)
 
 def _multipart(fields, file_field=None, file_name=None, data=None):
     b = uuid.uuid4().hex; body = bytearray()
@@ -80,7 +81,7 @@ class _OneAtATime:
 def emit(o):
     with PRINT_LOCK: print(json.dumps(o, ensure_ascii=False), flush=True)
 
-def prep_one(cid, url, whisper):
+def prep_one(cid, url, whisper, keep_cover=False):
     out = {"id": cid}; tmp = tempfile.mkdtemp(prefix="gad-up-")
     try:
         v = pick(url)
@@ -94,10 +95,12 @@ def prep_one(cid, url, whisper):
             snap = threading.Thread(target=lambda: out.__setitem__("snap_media_id", snap_upload(cid, path)))
             snap.start()
         else: out["snap"] = "needs_canva"
-        cover, hook = media_assets.cover_and_hook(path, tmp, whisper)    # the system's cover + hook, same pass
-        if cover: media_assets.push("media_thumbs", [{"creative_id": cid, "jpg": __import__("base64").b64encode(cover).decode()}])
-        if hook: media_assets.push_hook(cid, hook)
-        out["cover"], out["hook"] = bool(cover), hook
+        if keep_cover: out["cover"] = "kept"                              # it already has its cover with the hook written on it
+        else:
+            cover, hook = media_assets.cover_and_hook(path, tmp, whisper)    # the system's cover + hook, same pass
+            if cover: media_assets.push("media_thumbs", [{"creative_id": cid, "jpg": __import__("base64").b64encode(cover).decode()}])
+            if hook: media_assets.push_hook(cid, hook)
+            out["cover"], out["hook"] = bool(cover), hook
         if snap: snap.join()
     except SystemExit as e: out["error"] = str(e)[:200]
     except Exception as e: out["error"] = str(e)[:200]
@@ -105,11 +108,11 @@ def prep_one(cid, url, whisper):
         shutil.rmtree(tmp, ignore_errors=True)                           # the video never stays on the Mac
         emit(out)
 
-def prep(items, workers=5):
+def prep(items, workers=5, keep=()):
     import mlx_whisper
     w = _OneAtATime(mlx_whisper)
     with ThreadPoolExecutor(max_workers=workers) as ex:
-        list(ex.map(lambda it: prep_one(it[0], it[1], w), items))
+        list(ex.map(lambda it: prep_one(it[0], it[1], w, it[0] in keep), items))
 
 def urls(items):
     def one(it):
@@ -122,7 +125,9 @@ def snapfile(cid, path):
         if os.path.exists(path): os.remove(path)
 
 if __name__ == "__main__":
-    if len(sys.argv) > 2 and sys.argv[1] == "prep": prep([a.split("=", 1) for a in sys.argv[2:]])
+    if len(sys.argv) > 2 and sys.argv[1] == "prep":
+        keep = set(x for a in sys.argv[2:] if a.startswith("--keep=") for x in a[7:].split(","))   # ids that already have a hooked cover
+        prep([a.split("=", 1) for a in sys.argv[2:] if not a.startswith("--")], keep=keep)
     elif len(sys.argv) == 4 and sys.argv[1] == "snapfile": snapfile(sys.argv[2], sys.argv[3])
     elif len(sys.argv) > 2 and sys.argv[1] == "urls": urls([a.split("=", 1) for a in sys.argv[2:]])
     else: sys.exit(__doc__)
