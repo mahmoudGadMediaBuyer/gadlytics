@@ -29,6 +29,9 @@ Reply to Mahmoud in Egyptian Arabic. Tool and field names stay English.
 ## Screens worth knowing
 لوحتي (greeting + source freshness, new-media alert with «ارفعها على المنصات», «حدّث كل حاجة», 6 KPI tiles → main chart, platforms + «محتاج تدخلك», campaigns table + side panel, «بيانات تجريبية» in-memory demo) · اليوم مباشر (live KPIs, spend by hour vs yesterday, spend pace) · المهام (board by default) · مكتبة الكريتيف (cards with the cover — hook written on the image — card size slider; table view with image-size slider and click-to-enlarge; Airtable-style fields/filter/group/sort; bulk «أضف لإدارة الميديا» / «ارفع على المنصات»; «💾 على الجهاز» filter for videos already on the Mac). Covers are linked with `&v=<thumb_at>` so a re-written cover isn't served from Storage's 1-hour cache; table covers show the full 9:16 frame (the hook band is at the bottom)) · إدارة الميديا (stages, decisions, hooks, cover column) · سجل التغييرات v2 · المحلل · الموقع والقمع (Mixpanel) · التقارير (daily + weekly).
 
+## Look
+Default = calm palette + soft charts. Trial skins via URL, remembered in localStorage `gad.skin`: `?skin=clay` (Claymorphism), `?skin=clayglass` (Clay + frosted glass, plain background — Mahmoud rejected green/purple background blobs), `?skin=off` resets. CSS lives in the `/* ══ Claymorphism` and `/* ══ Clay + Glass` blocks; the init IIFE sits right before `function render(){` and sets `data-skin` / `data-glass` on <html>. Light + dark tokens for both.
+
 ## Runbooks (in `runbooks/`)
 | Ask | Runbook |
 |---|---|
