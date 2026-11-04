@@ -5348,6 +5348,9 @@ function renderSetup(){
       '<select class="sel" data-c="aiTier" style="width:100%">'+[["quick","سريع — أقل استهلاك","Quick — lowest usage"],["default","متوازن — الموصى بيه","Balanced — recommended"],["complex","الأقوى — أبطأ وأعلى استهلاك","Most capable — slower, higher usage"]]
         .map(x=>'<option value="'+x[0]+'"'+(aiTier()===x[0]?" selected":"")+">"+esc(L(x[1],x[2]))+"</option>").join("")+"</select>"+
       '<div class="hint" style="margin-top:8px">'+esc(L("المتوازن هو الموديل اليومي في Claude: إجابات كويسة باستهلاك معقول. السريع أوفر بس أقل عمق.","Balanced is Claude's everyday model: good answers at a reasonable cost. Quick saves more but goes less deep."))+"</div>");
+    h+=card(L("شكل الواجهة","Interface style"),L("بيتحفظ على المتصفح ده بس","Saved on this browser only"),
+      '<div class="chips">'+SKINS.map(x=>'<button class="chip'+(skinGet()===x[0]?" on":"")+'" data-a="skinSet" data-k="'+x[0]+'">'+esc(L(x[1],x[2]))+"</button>").join("")+"</div>"+
+      '<div class="hint" style="margin-top:8px">'+esc(L("Clay: كروت بارزة وناعمة. Clay + Glass: نفس الكروت بلمسة زجاج شفاف. الفاتح والغامق من زرار الثيم فوق.","Clay: soft raised cards. Clay + Glass: the same with a frosted-glass touch. Light/dark comes from the theme button."))+"</div>");
     h+=card(L("العملة","Currency"),"",'<select class="sel" data-c="currency" style="width:100%">'+
       Object.keys(CURR).map(k=>'<option value="'+k+'"'+(S.cfg.settings.currency===k?" selected":"")+">"+k+" — "+CURR[k]+"</option>").join("")+"</select>");
     h+=card(L("شاشة اليوم مباشر","Live Today screen"),"الميترِكس في منحنى اليوم",
@@ -6206,6 +6209,14 @@ ACT.kpiMove=t=>{ const x=secById(t.dataset.id); if(!x) return;
   const i=x.metrics.indexOf(t.dataset.k), j=i+(+t.dataset.d);
   if(i<0||j<0||j>=x.metrics.length) return;
   const a=x.metrics[i]; x.metrics[i]=x.metrics[j]; x.metrics[j]=a; saveCfg(); reSec(); };
+
+/* — شكل الواجهة (Clay / Clay + Glass) — localStorage gad.skin، ونفس ?skin= في الرابط — */
+const SKINS=[["","كلاسيك","Classic"],["clay","Clay","Clay"],["clayglass","Clay + Glass","Clay + Glass"]];
+function skinGet(){ try{ return localStorage.getItem("gad.skin")||""; }catch(e){ return ""; } }
+function applySkin(v){ const r=document.documentElement;
+  if(v) r.setAttribute("data-skin",v==="clayglass"?"clay":v); else r.removeAttribute("data-skin");
+  if(v==="clayglass") r.setAttribute("data-glass","1"); else r.removeAttribute("data-glass"); }
+ACT.skinSet=t=>{ const v=t.dataset.k||""; try{ localStorage.setItem("gad.skin",v); }catch(e){} applySkin(v); render(); };
 
 /* — الثيم — */
 const THEMES=[["system","يتبع النظام"],["light","فاتح"],["dark","غامق"]];
