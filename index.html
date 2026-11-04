@@ -10022,6 +10022,88 @@ document.addEventListener("input",e=>{ if(!e.target||e.target.id!=="pmQ") return
   const c=$("#pmCount"); if(c) c.textContent=n+" "+L("حملة","campaigns"); });
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&PM.open&&S.view==="me"){ PM.open=""; render(); } });
 document.head.insertAdjacentHTML("beforeend","<style>"+`
+/* ══ Claymorphism (تجربة): ?skin=clay — باستيل، كروت منفوخة، ظل برّه + إضاءة جوّه، حواف كبيرة. ══ */
+html[data-skin="clay"]:root{
+  --ground-0:#ECEFF7; --ground-1:#F6F7FC; --ground-2:#E6EAF4; --glass:#F6F7FC; --glass-2:#FAFBFE;
+  --line:rgba(140,155,190,.18); --line-2:rgba(140,155,190,.32); --ink:#2B3150; --ink-2:#5A6285; --ink-3:#8A91AE;
+  --grid:rgba(120,135,175,.10); --glow:0; --bg-a:none; --bg-b:none; --bg-c:none;
+  --cyan:#7C8CF8; --teal:#46C7A0; --violet:#A98BF5; --amber:#F2B65E; --rose:#F08DA0; --lime:#8FCB6B;
+  --good:#3DB990; --warn:#E9A84A; --bad:#EE7D93; --info:#7C8CF8; --orange:#F4A06B;
+  --clay-out:10px 10px 24px rgba(150,163,198,.42),-8px -8px 20px rgba(255,255,255,.95);
+  --clay-in:inset 3px 3px 6px rgba(255,255,255,.85),inset -4px -4px 8px rgba(150,163,198,.22);
+  --clay-press:inset 4px 4px 9px rgba(150,163,198,.38),inset -4px -4px 9px rgba(255,255,255,.9);
+  --clay-btn:6px 6px 14px rgba(150,163,198,.4),-5px -5px 12px rgba(255,255,255,.95);
+  --clay-chip:inset 1px 1px 2px rgba(255,255,255,.7),2px 2px 5px rgba(150,163,198,.25);
+  --clay-pri:6px 6px 16px rgba(111,127,242,.45),-4px -4px 12px rgba(255,255,255,.9),inset 2px 2px 5px rgba(255,255,255,.45),inset -3px -3px 6px rgba(60,70,170,.25);
+  --r:26px; --r-s:16px;
+}
+/* الوضع الغامق: كحلي عميق، نفس الكروت المنفوخة — ظل أسود ناعم برّه، ولمعة خفيفة من فوق جوّه */
+html[data-skin="clay"]:root[data-theme="dark"]{
+  --ground-0:#1B1F2E; --ground-1:#242A3D; --ground-2:#1F2436; --glass:#242A3D; --glass-2:#2A3046;
+  --line:rgba(160,175,220,.10); --line-2:rgba(160,175,220,.20); --ink:#E9ECF8; --ink-2:#B8BFD9; --ink-3:#858DAD;
+  --grid:rgba(160,175,220,.08); --glow:0; --bg-a:none; --bg-b:none; --bg-c:none;
+  --cyan:#9AA6FF; --teal:#5FD6B0; --violet:#B9A2FF; --amber:#F5C47A; --rose:#F59AAE; --lime:#A6DB84;
+  --good:#5FD6B0; --warn:#F5C47A; --bad:#F59AAE; --info:#9AA6FF; --orange:#F7B184;
+  --clay-out:10px 12px 26px rgba(5,8,18,.62),-6px -6px 18px rgba(255,255,255,.035);
+  --clay-in:inset 2px 2px 5px rgba(255,255,255,.07),inset -4px -4px 9px rgba(0,0,0,.30);
+  --clay-press:inset 4px 4px 10px rgba(0,0,0,.45),inset -3px -3px 8px rgba(255,255,255,.05);
+  --clay-btn:6px 7px 16px rgba(5,8,18,.6),-4px -4px 12px rgba(255,255,255,.035);
+  --clay-chip:inset 1px 1px 2px rgba(255,255,255,.08),2px 3px 6px rgba(0,0,0,.35);
+  --clay-pri:6px 8px 18px rgba(70,80,200,.45),-3px -3px 10px rgba(255,255,255,.04),inset 2px 2px 5px rgba(255,255,255,.30),inset -3px -3px 7px rgba(30,35,120,.40);
+}
+@media (prefers-color-scheme: dark){ html[data-skin="clay"]:root:not([data-theme="light"]){
+  --ground-0:#1B1F2E; --ground-1:#242A3D; --ground-2:#1F2436; --glass:#242A3D; --glass-2:#2A3046;
+  --line:rgba(160,175,220,.10); --line-2:rgba(160,175,220,.20); --ink:#E9ECF8; --ink-2:#B8BFD9; --ink-3:#858DAD;
+  --grid:rgba(160,175,220,.08); --cyan:#9AA6FF; --teal:#5FD6B0; --violet:#B9A2FF; --amber:#F5C47A; --rose:#F59AAE;
+  --good:#5FD6B0; --warn:#F5C47A; --bad:#F59AAE; --info:#9AA6FF;
+  --clay-out:10px 12px 26px rgba(5,8,18,.62),-6px -6px 18px rgba(255,255,255,.035);
+  --clay-in:inset 2px 2px 5px rgba(255,255,255,.07),inset -4px -4px 9px rgba(0,0,0,.30);
+  --clay-press:inset 4px 4px 10px rgba(0,0,0,.45),inset -3px -3px 8px rgba(255,255,255,.05);
+  --clay-btn:6px 7px 16px rgba(5,8,18,.6),-4px -4px 12px rgba(255,255,255,.035);
+  --clay-chip:inset 1px 1px 2px rgba(255,255,255,.08),2px 3px 6px rgba(0,0,0,.35);
+  --clay-pri:6px 8px 18px rgba(70,80,200,.45),-3px -3px 10px rgba(255,255,255,.04),inset 2px 2px 5px rgba(255,255,255,.30),inset -3px -3px 7px rgba(30,35,120,.40);
+}}
+html[data-skin="clay"] body{background:var(--ground-0);background-image:none}
+html[data-skin="clay"] .card,html[data-skin="clay"] .pm-k,html[data-skin="clay"] .tv-stat,html[data-skin="clay"] .lbc,html[data-skin="clay"] .md-s,html[data-skin="clay"] .tsk,html[data-skin="clay"] .rep{
+  border:0!important;border-radius:26px!important;background:var(--ground-1)!important;box-shadow:var(--clay-out),var(--clay-in)!important}
+html[data-skin="clay"] .pm-kpis,html[data-skin="clay"] .tv-top .tv-stats{background:transparent!important;border:0!important;box-shadow:none!important;gap:16px!important;overflow:visible!important}
+html[data-skin="clay"] .pm-k{padding:18px 18px 4px!important;overflow:hidden}
+html[data-skin="clay"] .pm-k.on::before{display:none}
+html[data-skin="clay"] .pm-k.on{box-shadow:var(--clay-press)!important}
+html[data-skin="clay"] .btn{border:0!important;border-radius:999px!important;background:var(--ground-1)!important;color:var(--ink)!important;box-shadow:var(--clay-btn),var(--clay-in)!important;transition:transform .12s,box-shadow .12s}
+html[data-skin="clay"] .btn:hover{transform:translateY(-1px)}
+html[data-skin="clay"] .btn:active{box-shadow:var(--clay-press)!important;transform:none}
+html[data-skin="clay"] .btn-p{background:linear-gradient(145deg,#97A4FB,#6F7FF2)!important;color:#fff!important;box-shadow:var(--clay-pri)!important}
+html[data-skin="clay"] .inp,html[data-skin="clay"] .sel,html[data-skin="clay"] .lb-q,html[data-skin="clay"] .pm-q{border:0!important;border-radius:16px!important;background:var(--ground-2)!important;box-shadow:var(--clay-press)!important}
+html[data-skin="clay"] .pm-seg,html[data-skin="clay"] .seg{background:var(--ground-2)!important;border-radius:999px!important;box-shadow:var(--clay-press)!important;padding:4px!important}
+html[data-skin="clay"] .pm-seg button.on,html[data-skin="clay"] .seg button.on{border-radius:999px!important;background:var(--ground-1)!important;color:var(--ink)!important;box-shadow:var(--clay-btn)!important}
+html[data-skin="clay"] .rail,html[data-skin="clay"] .side{background:var(--ground-0)!important;border:0!important}
+html[data-skin="clay"] .nav-i{border-radius:18px!important}
+html[data-skin="clay"] .nav-i.on{background:var(--ground-1)!important;box-shadow:var(--clay-out),var(--clay-in)!important;color:var(--ink)!important}
+html[data-skin="clay"] .pm-bar,html[data-skin="clay"] .bar{height:12px!important;border-radius:999px!important;box-shadow:var(--clay-press)}
+html[data-skin="clay"] .pm-bar i{border-radius:999px!important;background:linear-gradient(90deg,#97A4FB,#7C8CF8)!important}
+html[data-skin="clay"] .pm-tag,html[data-skin="clay"] .pm-d,html[data-skin="clay"] .tsk-pill{border-radius:999px!important;box-shadow:var(--clay-chip)}
+html[data-skin="clay"] .ht,html[data-skin="clay"] .lbc-th .ht{border-radius:20px!important}
+html[data-skin="clay"] table td{border-color:rgba(140,155,190,.12)!important}
+html[data-skin="clay"] .tsk-board .tsk-col{background:var(--ground-2)!important;border-radius:26px!important;box-shadow:var(--clay-press)!important}
+html[data-skin="clay"] .tb-ib,html[data-skin="clay"] .av{border-radius:999px!important;box-shadow:var(--clay-btn)!important}
+html[data-skin="clay"] .topbar,html[data-skin="clay"] #topbar{background:var(--ground-0)!important;border:0!important}
+/* ══ Clay + Glass (تجربة): ?skin=clayglass — نفس الـ clay، بس الكروت زجاج مغبّش فوق خلفية فيها بقع ألوان ناعمة ══ */
+html[data-glass]:root{ --gl-card:rgba(255,255,255,.52); --gl-edge:rgba(255,255,255,.75); --gl-side:rgba(255,255,255,.38);
+  --gl-bg:linear-gradient(180deg,#EEF0F6 0%,#E6E9F1 100%); }
+html[data-glass]:root[data-theme="dark"]{ --gl-card:rgba(255,255,255,.07); --gl-edge:rgba(255,255,255,.14); --gl-side:rgba(20,24,40,.45);
+  --gl-bg:linear-gradient(180deg,#191D2B 0%,#141824 100%); }
+@media (prefers-color-scheme: dark){ html[data-glass]:root:not([data-theme="light"]){ --gl-card:rgba(255,255,255,.07); --gl-edge:rgba(255,255,255,.14); --gl-side:rgba(20,24,40,.45);
+  --gl-bg:linear-gradient(180deg,#191D2B 0%,#141824 100%); }}
+html[data-glass] body{background:var(--gl-bg)!important;background-attachment:fixed!important}
+html[data-glass] .card,html[data-glass] .pm-k,html[data-glass] .tv-stat,html[data-glass] .lbc,html[data-glass] .md-s,html[data-glass] .tsk,html[data-glass] .rep{
+  background:var(--gl-card)!important;-webkit-backdrop-filter:blur(18px) saturate(150%);backdrop-filter:blur(18px) saturate(150%);
+  border:1px solid var(--gl-edge)!important;box-shadow:var(--clay-out),inset 0 1px 0 var(--gl-edge),var(--clay-in)!important}
+html[data-glass] .rail,html[data-glass] .side,html[data-glass] #topbar,html[data-glass] .topbar{background:var(--gl-side)!important;-webkit-backdrop-filter:blur(20px) saturate(150%);backdrop-filter:blur(20px) saturate(150%)}
+html[data-glass] .rail{border-inline-start:1px solid var(--gl-edge)!important}
+html[data-glass] .nav-i.on,html[data-glass] .btn:not(.btn-p),html[data-glass] .pm-seg button.on,html[data-glass] .seg button.on{background:var(--gl-card)!important;border:1px solid var(--gl-edge)!important;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+html[data-glass] .inp,html[data-glass] .sel,html[data-glass] .pm-seg,html[data-glass] .seg,html[data-glass] .tsk-board .tsk-col{background:rgba(0,0,0,.06)!important}
+html[data-glass]:root[data-theme="dark"] .inp,html[data-glass]:root[data-theme="dark"] .sel,html[data-glass]:root[data-theme="dark"] .pm-seg,html[data-glass]:root[data-theme="dark"] .seg,html[data-glass]:root[data-theme="dark"] .tsk-board .tsk-col{background:rgba(0,0,0,.22)!important}
 /* ══ باليتة هادية للسيستم كله: نفس عائلات الألوان القديمة بس أقل تشبّع، من غير توهّج ولا خلفيات ملوّنة.
    html:root أقوى من :root فبتكسب على طبقات الألوان القديمة مهما كان ترتيبها. ══ */
 html:root{
@@ -13158,6 +13240,7 @@ document.addEventListener("input",e=>{ if(!e.target||e.target.id!=="navQ") retur
 document.addEventListener("keydown",e=>{ const t=e.target;
   if(t&&t.id==="navQ"&&e.key==="Enter"){ const b=document.querySelector("#nav .nav-i:not(.q-no)"); if(b){ e.preventDefault(); t.value=""; b.click(); } return; }
   if(e.key==="/"&&!/INPUT|TEXTAREA|SELECT/.test((t&&t.tagName)||"")&&!(t&&t.isContentEditable)){ const q=document.getElementById("navQ"); if(q){ e.preventDefault(); q.focus(); } } });
+(function(){ try{ const q=new URLSearchParams(location.search).get("skin"); if(q) localStorage.setItem("gad.skin",q==="off"?"":q); const v=localStorage.getItem("gad.skin"); if(v){ document.documentElement.setAttribute("data-skin",v==="clayglass"?"clay":v); if(v==="clayglass") document.documentElement.setAttribute("data-glass","1"); } }catch(e){} })();
 function render(){
   $("#topbar").innerHTML=topbarHTML();
   { const m=$("#railMe"); if(m) m.innerHTML=(meVis()&&!isPending())? '<div class="rail-me" data-a="profEdit" title="'+esc(L("ملفي الشخصي","My profile"))+'">'+pav(ME.id,36)+'<div><b>'+esc(pname(ME.id))+"</b><small>"+esc(meSub())+"</small></div></div>" : ""; }
