@@ -35,6 +35,8 @@ Default = calm palette + soft charts. Skin picker: Settings → Display → «ش
 ## Media-buyer tools (Nov 2026)
 ⚡ تحديث سريع (`sys/pullreq` mode quick → today only, see daily_pull.md) · library: views/frequency/retention (`v_video_stats`), AI hook tags (`media.ai_tags`, step 3e), «الدرجة /100», ✦ الأنماط + ✍ Brief, 🚀 الإطلاقات (`settings.launch`) · مركز الإجراءات: «حوّلها لمهمة» / «تجاهل» · التجارب: مختبر الاختبارات (`labtests/*`; split by tag in ad set + Khzama link names, or city holdout from `mx_daily dim=city`) · التقارير: «الشهر والمواسم» (forecast, Hijri months, weekdays; `settings.month`). Details: README section 20.
 
+**▶ الفيديو opens the video file, not the folder:** Airtable's URL is a Drive *folder* per creative. `video_links.py` (run by `media_sync.py` after every sync; cache `~/.gadlytics/video_links.json`) lists each public folder, picks the Snap/story version, and stores `https://drive.google.com/file/d/<id>/view` in `media.video_file`. The site uses `video_file || url` everywhere, with a small 📁 link to the folder. Backfill/recheck: `python3 ~/.gadlytics/video_links.py --all <pairs.json>`.
+
 ## Runbooks (in `runbooks/`)
 | Ask | Runbook |
 |---|---|
