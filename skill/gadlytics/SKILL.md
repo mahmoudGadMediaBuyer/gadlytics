@@ -32,6 +32,9 @@ Reply to Mahmoud in Egyptian Arabic. Tool and field names stay English.
 ## Look
 Default = calm palette + soft charts. Skin picker: Settings → Display → «شكل الواجهة» (Classic / Clay / Clay + Glass; `SKINS`, `skinGet`, `applySkin`, `ACT.skinSet`). Also via URL, remembered in localStorage `gad.skin`: `?skin=clay` (Claymorphism), `?skin=clayglass` (Clay + frosted glass, plain background — Mahmoud rejected green/purple background blobs), `?skin=off` resets. CSS lives in the `/* ══ Claymorphism` and `/* ══ Clay + Glass` blocks; the init IIFE sits right before `function render(){` and sets `data-skin` / `data-glass` on <html>. Light + dark tokens for both.
 
+## Media-buyer tools (Nov 2026)
+⚡ تحديث سريع (`sys/pullreq` mode quick → today only, see daily_pull.md) · library: views/frequency/retention (`v_video_stats`), AI hook tags (`media.ai_tags`, step 3e), «الدرجة /100», ✦ الأنماط + ✍ Brief, 🚀 الإطلاقات (`settings.launch`) · مركز الإجراءات: «حوّلها لمهمة» / «تجاهل» · التجارب: مختبر الاختبارات (`labtests/*`; split by tag in ad set + Khzama link names, or city holdout from `mx_daily dim=city`) · التقارير: «الشهر والمواسم» (forecast, Hijri months, weekdays; `settings.month`). Details: README section 20.
+
 ## Runbooks (in `runbooks/`)
 | Ask | Runbook |
 |---|---|
