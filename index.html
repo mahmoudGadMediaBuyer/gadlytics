@@ -13170,10 +13170,10 @@ const RF={busy:false,step:"",fresh:null,log:[],loading:false};
 async function rfFresh(){ if(!(window.SUPA_DB&&SUPA_DB.client)||RF.loading) return; RF.loading=true;
   const sb=SUPA_DB.client, cid=S.ws||(S.cfg.clients[0]||{}).id;
   const last=async(t,col,ws)=>{ try{ let q=sb.from(t).select(col).order(col,{ascending:false}).limit(1); if(ws&&cid) q=q.eq("client_id",cid); const r=await q; return r.error?null:(((r.data||[])[0]||{})[col]||null); }catch(e){ return null; } };
-  const [ad,kz,mx,md,pr]=await Promise.all([last("ad_daily","date",1),last("khzama_link_daily","date",1),last("mx_daily","date",1),last("media","synced_at"),RT.get("sys/pullreq").catch(()=>null)]);
-  RF.fresh={ad:ad,kz:kz,mx:mx,md:md,pr:pr}; RF.loading=false; render(); }
+  const [ad,kz,mx,md,pr]=await Promise.all([last("ad_daily","date",1),last(convClient(cid)?"conv_daily":"khzama_link_daily","date",1),last("mx_daily","date",1),last("media","synced_at"),RT.get("sys/pullreq").catch(()=>null)]);
+  RF.fresh={ad:ad,kz:kz,mx:mx,md:md,pr:pr,cid:cid}; RF.loading=false; render(); }
 function rfCard(){ if(!(window.SUPA_DB&&SUPA_DB.client)) return "";
-  if(!RF.fresh&&!RF.loading) setTimeout(rfFresh,0);
+  if((!RF.fresh||RF.fresh.cid!==(S.ws||(S.cfg.clients[0]||{}).id))&&!RF.loading) setTimeout(rfFresh,0);   // تاريخ آخر داتا بيتقري للعميل المختار
   const F=RF.fresh||{}, Y=addDays(todayISO(),-1);
   const day=(lab,d)=>{ const late=d&&d<addDays(Y,-1), none=!d;
     return '<div class="rf-s'+(late||none?" late":"")+'"><span>'+esc(lab)+"</span><b>"+(d?esc(fdate(String(d).slice(0,10))):"—")+"</b>"+(late?'<small>'+esc(L("متأخر ","behind ")+rfDays(diffDays(String(d).slice(0,10),Y)))+"</small>":"")+"</div>"; };
