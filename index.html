@@ -667,7 +667,11 @@ let _lang="ar";
 const LANG=()=>_lang;
 function syncLang(){ try{ _lang=(S.cfg.settings.lang)||"ar"; }catch(e){ _lang="ar"; } return _lang; }
 const EN=()=>LANG()==="en";
-const L=(ar,en)=>(EN()&&en!=null)?en:ar;
+/* عميل من غير خزامى (ديمان): كل نص بيقول «خزامى/تبرع» بيتقري «AppsFlyer وسلة/طلب» وهو مختار — من غير ما نلمس نصوص ملبي */
+let CONV_WS=false;
+const convTxt=s=>typeof s!=="string"? s : s.replace(/وخزامى/g," وAppsFlyer وسلة").replace(/خزامى/g,"AppsFlyer وسلة").replace(/Khzama/g,"AppsFlyer + Salla")
+  .replace(/التبرعات/g,"الطلبات").replace(/تبرعات/g,"طلبات").replace(/التبرع/g,"الطلب").replace(/تبرع/g,"طلب").replace(/[Dd]onations/g,m=>m[0]==="D"?"Orders":"orders").replace(/[Dd]onation/g,m=>m[0]==="D"?"Order":"order");
+const L=(ar,en)=>{ const s=(EN()&&en!=null)?en:ar; return CONV_WS? convTxt(s) : s; };
 const mLabel=m=>m?L(m.label,m.labelEn):"";
 const mkLabel=k=>{ const m=metricByKey(k); return m?mLabel(m):k; };
 const esc = s => String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -6346,9 +6350,9 @@ ACT.themeCycle=()=>{
 };
 
 /* — مساحة العمل — */
-CHG.ws=v=>{ S.ws=v||null; S.f.clients=[]; if(S.view==="admin") S.view="overview"; refresh(); };
-ACT.wsExit=()=>{ S.ws=null; refresh(); };
-ACT.jumpClient=t=>{ S.ws=t.dataset.id; S.f.clients=[]; S.f.platforms=[]; S.f.campaign=""; refresh(); };
+CHG.ws=v=>{ S.ws=v||null; lsSet("gad.ws",v||"*"); S.f.clients=[]; if(S.view==="admin") S.view="overview"; refresh(); };
+ACT.wsExit=()=>{ S.ws=null; lsSet("gad.ws","*"); refresh(); };
+ACT.jumpClient=t=>{ S.ws=t.dataset.id; lsSet("gad.ws",S.ws); S.f.clients=[]; S.f.platforms=[]; S.f.campaign=""; refresh(); };
 ACT.clearAllF=()=>{ S.ws=null; S.f.clients=[]; S.f.platforms=[]; S.f.campaign=""; refresh(); };
 ACT.jumpLast=t=>{ const d=t.dataset.d;
   S.f.preset="custom"; S.f.from=addDays(d,-6); S.f.to=d; S.liveDate=d; refresh(); };
@@ -7393,7 +7397,7 @@ const ACS={key:"",busy:false,err:""};
 async function acsLoad(a,b,c,d){ const k=a+"|"+b+"|"+(c||""); if(ACS.key===k||ACS.busy) return; ACS.busy=true; ACS.err="";
   try{ await exFetch(a,b); if(c) await exFetch(c,d); ACS.key=k; }catch(e){ ACS.err=e.message||String(e); }
   ACS.busy=false; render(); }
-function acsAgg(rows,kz,dim){ const cm=exCrMap(rows), sc=exScope(rows,dim), g=exGroup(sc,dim), kg=exKzGroup((kz||[]).filter(k=>["meta","tiktok","snap"].indexOf(k.platform)>=0),dim,cm);
+function acsAgg(rows,kz,dim){ const cm=exCrMap(rows), sc=exScope(rows,dim), g=exGroup(sc,dim), kg=exKzGroup((kz||[]).filter(k=>PAIDP().indexOf(k.platform)>=0),dim,cm);
   Object.keys(kg).forEach(k=>{ if(!g[k]) g[k]=[]; }); const o={}; Object.keys(g).forEach(k=>{ o[k]=exUseKz(exAgg(g[k]),kg[k]); }); return o; }
 function acsChip(ro,avg){ if(ro==null||!avg) return ""; const r=ro/avg; const c= r>=1.15? ["ممتاز","Strong","#1D9E75"] : r>=0.9? ["كويس","OK","#888780"] : ["ضعيف","Weak","#E24B4A"];
   return '<span class="acs-chip" style="color:'+c[2]+';border-color:'+c[2]+'">'+esc(L(c[0],c[1]))+"</span>"; }
@@ -7410,12 +7414,12 @@ function acsRank(map,minSpend,label,dim,rows){ const arr=Object.keys(map).map(k=
 function acSummary(from,to){
   if(!(window.SUPA_DB&&SUPA_DB.client)) return "";
   const len=diffDays(from,to)+1, pt=addDays(from,-1), pf=addDays(pt,-(len-1));
-  const cur=EX.cache[from+"|"+to], prv=EX.cache[pf+"|"+pt];
+  const cur=exC(from,to), prv=exC(pf,pt);
   if(!cur||!prv){ setTimeout(()=>acsLoad(from,to,pf,pt),0); return '<div class="card acs"><div class="card-t">'+esc(L("الملخص","Summary"))+'</div><div class="hint">'+esc(ACS.err||L("بحمّل الملخص…","Loading summary…"))+"</div></div>"; }
   const P=acsAgg(cur,cur.kz,"platform"), PP=acsAgg(prv,prv.kz,"platform");
-  let ts=0,tr=0,tn=0; ["meta","tiktok","snap"].forEach(id=>{ const v=P[id]; if(v){ ts+=v.spend; tr+=v.revenue; tn+=v.purchases; } });
+  let ts=0,tr=0,tn=0; PAIDP().forEach(id=>{ const v=P[id]; if(v){ ts+=v.spend; tr+=v.revenue; tn+=v.purchases; } });
   const avg=ts? tr/ts : null, minSp=Math.max(300,ts*0.01);
-  const cards=["meta","tiktok","snap"].filter(id=>P[id]&&(P[id].spend||P[id].revenue)).map(id=>{ const v=P[id], p=PP[id], pl=platById(id)||{name:id,color:"#888"};
+  const cards=PAIDP().filter(id=>P[id]&&(P[id].spend||P[id].revenue)).map(id=>{ const v=P[id], p=PP[id], pl=platById(id)||{name:id,color:"#888"};
     const d=(a,b,inv)=>{ if(a==null||b==null||!b) return ""; const x=(a-b)/Math.abs(b)*100, good=inv?x<0:x>0; return ' <small style="color:'+(good?"#1D9E75":"#E24B4A")+'">'+(x>0?"▲":"▼")+fnum(Math.abs(x),Math.abs(x)<10?1:0)+"%</small>"; };
     return '<div class="acs-pc" style="border-top:3px solid '+pl.color+'"><div class="acs-ph"><b>'+esc(pl.name)+"</b>"+acsChip(v.roas,avg)+"</div>"+
       '<div class="acs-kv"><span>'+esc(L("الصرف","Spend"))+"</span><b>"+fnum(v.spend,0)+d(v.spend,p&&p.spend)+"</b></div>"+
@@ -8826,14 +8830,14 @@ function rcBody(){
     (RC.win==="custom"?'<div class="row" style="display:flex;gap:10px;align-items:center;margin:-4px 0 12px;flex-wrap:wrap"><label class="fld"><span>'+esc(L("من","From"))+'</span><input class="inp" type="date" data-c="rcF" value="'+esc(RC.from)+'"'+(RC.first?' min="'+esc(RC.first)+'"':"")+' max="'+todayISO()+'"></label>'+
       '<label class="fld"><span>'+esc(L("إلى","To"))+'</span><input class="inp" type="date" data-c="rcT" value="'+esc(RC.to)+'" max="'+todayISO()+'"></label></div>':"");
   if(RC.err) return h+'<div class="hint">'+esc(RC.err)+"</div>";
-  const [a,b]=rcRange(), cur=EX.cache[a+"|"+b];
+  const [a,b]=rcRange(), cur=exC(a,b);
   if(RC.busy||!cur) return h+'<div class="empty" style="padding:24px">'+esc(L("بحمّل أرقام الحملة…","Loading the campaign…"))+"</div>";
   const mine=r=>(r.camp_no||"")===RC.code;
   const rows=exScope(cur,"campaign").filter(mine), kz=(cur.kz||[]).filter(mine);
   const plat=RC.plat||(rows[0]||kz[0]||{}).platform||"";
   const sumKz=z=>({n:z.reduce((s,k)=>s+(+k.donations||0),0),a:z.reduce((s,k)=>s+(+k.amount||0),0)});
   const v=exUseKz(exAgg(rows),sumKz(kz));
-  const pr=exScope(cur,"campaign").filter(r=>r.platform===plat), pk=(cur.kz||[]).filter(k=>k.platform===plat&&["meta","tiktok","snap"].indexOf(k.platform)>=0);
+  const pr=exScope(cur,"campaign").filter(r=>r.platform===plat), pk=(cur.kz||[]).filter(k=>k.platform===plat&&PAIDP().indexOf(k.platform)>=0);
   const avg=exUseKz(exAgg(pr),sumKz(pk));
   const name=(rows.find(r=>r.campaign_name)||{}).campaign_name||"";
   const days=new Set(rows.filter(r=>+r.spend>0).map(r=>r.date)).size;
@@ -11315,7 +11319,7 @@ function lbPerf(){ const D=LB.data, out={};
   const put=(cid,plat,sp,n,a,d1,d2,camps,v)=>{ const o=out[cid]||(out[cid]={sp:0,n:0,a:0,pl:{},first:null,last:null,camps:new Set(),im:0,ck:0,pv:0,v2:0,p100:0});
     o.sp+=sp; o.n+=n; o.a+=a; if(v){ o.im+=+v.im||0; o.ck+=+v.ck||0; o.pv+=+v.pv||0; o.v2+=+v.v2||0; o.p100+=+v.p100||0; } if(sp) o.pl[plat]=(o.pl[plat]||0)+sp; if(d1&&(!o.first||d1<o.first)) o.first=d1; if(d2&&(!o.last||d2>o.last)) o.last=d2; (camps||[]).forEach(c=>o.camps.add(c)); };
   if(LB.per==="all"){ Object.keys(D.P).forEach(cid=>D.P[cid].forEach(p=>put(cid,p.platform,+p.spend||0,+p.orders||0,+p.revenue||0,p.first_day,p.last_day,p.camps,{im:p.impressions,ck:p.clicks,pv:p.video_plays,v2:p.video_2s,p100:p.video_p100}))); return out; }
-  const cur=EX.cache[LB.from+"|"+LB.to]; if(!cur) return null;
+  const cur=exC(LB.from,LB.to); if(!cur) return null;
   exScope(cur,"creative").forEach(r=>{ if(r.creative_id) put(r.creative_id,r.platform,+r.spend||0,0,0,+r.spend>0?r.date:null,+r.spend>0?r.date:null,r.camp_no?[r.camp_no]:[],{im:r.impressions,ck:(+r.link_clicks>0?r.link_clicks:r.clicks),pv:r.video_plays,v2:r.video_2s,p100:r.video_p100}); });
   (cur.kz||[]).forEach(k=>{ if(k.creative_id) put(k.creative_id,k.platform,0,+k.donations||0,+k.amount||0,null,null,k.camp_no?[k.camp_no]:[]); });
   return out; }
@@ -11578,7 +11582,7 @@ ACT.upCancel=async()=>{ try{ UPQ.req={ids:[],at:Date.now(),by:ME.email||ME.id||"
 function renderCreativeLibrary(){
   if(!LB.cols) LB.cols=lbColsGet();
   if(!LB.data){ setTimeout(()=>lbLoad(),0); return card(L("مكتبة الكريتيف","Creative library"),"",'<div class="hint">'+esc(LB.err||L("بحمّل المكتبة…","Loading the library…"))+"</div>"); }
-  if(LB.per==="range"&&LB.from&&!EX.cache[LB.from+"|"+LB.to]){ setTimeout(async()=>{ try{ await exFetch(LB.from,LB.to); }catch(e){} render(); },0); }
+  if(LB.per==="range"&&LB.from&&!exC(LB.from,LB.to)){ setTimeout(async()=>{ try{ await exFetch(LB.from,LB.to); }catch(e){} render(); },0); }
   const all=lbRows(), rows=all.filter(lbPass), colsAll=LB_AT.concat(LB_CALC.map(c=>c[0]));
   const sorts=LB.sorts.filter(x=>x.k); rows.sort((a,b)=>{ for(const x of sorts){ const c=lbCmp(a,b,x.k,x.dir); if(c) return c; } return 0; });
   const distinct=k=>[...new Set([].concat(...all.map(r=>k==="_tags"? String(r[k]||"").split("، ") : [r[k]])).filter(v=>v!=null&&v!==""))].map(String).sort((a,b)=>a.localeCompare(b,"ar"));
@@ -12626,15 +12630,34 @@ function exScope(rows,dim){   // للفيديو والمشهور: فيديوها
   return rows.filter(r=> r.level==="material" || (r.level==="ad" && !smart.has(r.account_id+"|"+r.ad_id) && !(hasMat&&r.platform==="tiktok"&&!smart.size&&/Smart:ON/i.test(r.campaign_name||"")))); }
 function exFilter(rows){ const q=EX.q.trim().toLowerCase();
   return rows.filter(r=>(!EX.plats.length||EX.plats.indexOf(r.platform)>=0)&&exFF(d=>exKey(r,d))&&(EX.qk==null||exKey(r,EX.qdim)===EX.qk)&&(!q||[r.campaign_name,r.ad_name,r.video_name,r.creative_id,r.influencer,r.product,r.variation].some(x=>x&&String(x).toLowerCase().indexOf(q)>=0))); }
+/* عميل من غير خزامى (ديمان: تطبيق + متجر سلة): الطلبات والإيراد من conv_daily
+   (AppsFlyer لكل منصة وحملة + طلبات سلة)، بنفس شكل صفوف خزامى عشان كل الشاشات تقراها زي ما هي.
+   كود المنصة: ME/TT/SC/AS/GG، وطلبات الموقع (سلة) كود com. العضوي وQR وواتساب مش بيتحسبوا على الإعلانات. */
+/* المنصات المدفوعة للعميل الحالي (ديمان عنده Apple Search Ads وجوجل كمان) */
+const PAIDP=()=>convClient(S.ws||(S.cfg.clients[0]||{}).id)? ["meta","tiktok","snap","asa","google"] : ["meta","tiktok","snap"];
+const CONV_CODE={meta:"ME",tiktok:"TT",snap:"SC",asa:"AS",google:"GG"};
+const convClient=cid=>{ const c=cid&&clientById(cid); return !!(c&&c.convSource); };
+async function convAsKz(sb,cid,from,to){ const out=[];
+  for(let i=0;;i+=1000){ const r=await sb.from("conv_daily").select("date,channel,platform,camp_no,campaign,purchases,revenue")
+      .eq("client_id",cid).gte("date",from).lte("date",to).or("platform.not.is.null,channel.eq.web").order("date").order("source_raw").order("campaign").range(i,i+999);
+    if(r.error) break;
+    r.data.forEach(x=>{ if(!x.purchases&&!x.revenue) return; const web=x.channel==="web";
+      out.push({date:x.date, platform:web?null:x.platform, camp_no:web?null:x.camp_no, creative_id:null, code:web?"com":(CONV_CODE[x.platform]||"other"),
+        product:null, rest:x.campaign||null, title:web?"salla":x.campaign, donations:x.purchases||0, amount:+x.revenue||0}); });
+    if(r.data.length<1000) break; }
+  return out; }
+/* كاش السحب لكل عميل: نفس الفترة لعميلين مختلفين مش نفس الداتا */
+const exC=(a,b)=>EX.cache[(S.ws||(S.cfg.clients[0]||{}).id||"")+"|"+a+"|"+b];
 async function exFetch(from,to){
-  const k=from+"|"+to; if(EX.cache[k]) return EX.cache[k];
+  const cid=S.ws||(S.cfg.clients[0]||{}).id;
+  const k=(cid||"")+"|"+from+"|"+to; if(EX.cache[k]) return EX.cache[k];
   const sb=window.SUPA_DB&&SUPA_DB.client; if(!sb) throw new Error("site-only");
-  const cid=S.ws||(S.cfg.clients[0]||{}).id, out=[]; let i=0;
+  const out=[]; let i=0;
   for(;;){ let q=sb.from("ad_daily").select("*").gte("date",from).lte("date",to).order("date").order("platform").order("ad_id").order("video_id").range(i,i+999);
     if(cid) q=q.eq("client_id",cid);
     const r=await q; if(r.error) throw r.error; out.push(...r.data); if(r.data.length<1000) break; i+=1000; }
-  const kz=[]; let ki=0;
-  for(;;){ let q=sb.from("khzama_link_daily").select("date,platform,camp_no,creative_id,code,product,rest,donations,amount").gte("date",from).lte("date",to).order("date").order("link_id").range(ki,ki+999);
+  const kz=convClient(cid)? await convAsKz(sb,cid,from,to) : []; let ki=0;
+  for(;!convClient(cid);){ let q=sb.from("khzama_link_daily").select("date,platform,camp_no,creative_id,code,product,rest,donations,amount").gte("date",from).lte("date",to).order("date").order("link_id").range(ki,ki+999);
     if(cid) q=q.eq("client_id",cid);
     const r=await q; if(r.error) break; kz.push(...r.data); if(r.data.length<1000) break; ki+=1000; }
   if(!EX.md){ const md={}, al={inf:{},prod:{},vr:{},disp:{}}; for(let mi=0;;mi+=1000){ const r=await sb.from("media").select("creative_id,advertiser,project,season,product,style,launch_url").order("creative_id").range(mi,mi+999);
@@ -12681,7 +12704,7 @@ function exUseKz(v,z){ const pp=v.purchases||0, pr=v.revenue||0; v.purchases=z?z
   v.pf_purchases=pp; v.pf_revenue=pr; v.pf_roas=v.spend? pr/v.spend : null; v.gap_orders=v.purchases? (pp-v.purchases)/v.purchases*100 : null; v.gap_rev=v.revenue? (pr-v.revenue)/v.revenue*100 : null; return v; }   // الطلبات والإيراد من خزامى، والباقي من المنصات
 function exGroup(rows,dim){ const g={}; rows.forEach(r=>{ const k=exKey(r,dim); (g[k]=g[k]||[]).push(r); }); return g; }
 function renderExplorer(){
-  const [a,b,c,d]=exRange(), cur=EX.cache[a+"|"+b], prv=c?EX.cache[c+"|"+d]:null;
+  const [a,b,c,d]=exRange(), cur=exC(a,b), prv=c?exC(c,d):null;
   if(!cur&&!EX.busy&&!EX.err) setTimeout(exLoad,0);
   if(!EX.met) EX.met=exMetGet();
   const cols=EX.met.map(k=>EX_CAT.find(c=>c[0]===k)).filter(Boolean), dimL=(EX_DIMS.find(x=>x[0]===EX.dim)||EX_DIMS[0]);
@@ -12804,7 +12827,7 @@ ACT.exMet=t=>{ const k=t.dataset.k, a=(EX.met||exMetGet()).slice(), i=a.indexOf(
 ACT.exSort=t=>{ const k=t.dataset.k; if(EX.sort===k) EX.dir=-EX.dir; else { EX.sort=k; EX.dir=-1; } render(); };
 ACT.exSel=t=>{ EX.sel=EX.sel===t.dataset.k?null:t.dataset.k; render(); };
 ACT.exReload=()=>{ EX.cache={}; exLoad(); };
-ACT.exCsv=async()=>{ const [a,b]=exRange(), cur=EX.cache[a+"|"+b]; if(!cur) return;
+ACT.exCsv=async()=>{ const [a,b]=exRange(), cur=exC(a,b); if(!cur) return;
   const scope=exFilter(exScope(cur,EX.dim)), g=exGroup(scope,EX.dim), cols=EX_CAT, cm=exCrMap(cur), kg=exKzGroup(exKzFilter(cur.kz,cm),EX.dim,cm); Object.keys(kg).forEach(k=>{ if(!g[k]) g[k]=[]; });
   const lines=[[L("البند","Item")].concat(cols.map(c=>L(c[1],c[2])))].concat(Object.keys(g).map(k=>{ const v=exUseKz(exAgg(g[k]),kg[k]); return [exLabel(k,EX.dim)].concat(cols.map(c=>v[c[0]]==null?"":(+v[c[0]]).toFixed(c[3]==="n"?0:2))); }));
   const csv="﻿"+lines.map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(",")).join("\n");
@@ -13062,15 +13085,15 @@ async function wkLoad(){ if(WK.busy) return; WK.busy=true; WK.err=""; render();
     await exFetch(a,b); await exFetch(pa,pb); try{ await mxFetch(a,b); }catch(e){} try{ await ftLoad(); }catch(e){} }
   catch(e){ WK.err=e.message==="site-only"? L("التقرير بيقرا من الداتا بيز — افتحه من رابط الموقع.","Open it from the site link.") : (e.message||String(e)); }
   WK.busy=false; render(); }
-const WK_PAID=["meta","tiktok","snap"];
-function wkData(){ const [a,b]=wkRange(WK.off), pa=addDays(a,-7), pb=addDays(b,-7), cur=EX.cache[a+"|"+b], prv=EX.cache[pa+"|"+pb]; if(!cur||!prv) return null;
-  const cm=exCrMap(cur.concat(prv)), paid=k=>WK_PAID.indexOf(k.platform)>=0;
+/* المنصات المدفوعة بتتحدد لكل عميل: PAIDP() */
+function wkData(){ const [a,b]=wkRange(WK.off), pa=addDays(a,-7), pb=addDays(b,-7), cur=exC(a,b), prv=exC(pa,pb); if(!cur||!prv) return null;
+  const cm=exCrMap(cur.concat(prv)), paid=k=>PAIDP().indexOf(k.platform)>=0;
   const pack=(rows,kz,dim)=>{ const g=exGroup(exScope(rows,dim),dim), kg=exKzGroup(kz,dim,cm); Object.keys(kg).forEach(k=>{ if(!g[k]) g[k]=[]; });
     return Object.keys(g).filter(k=>k!=="—"&&k!=="null").map(k=>({k:k,v:exUseKz(exAgg(g[k]),kg[k])})); };
   const kz=(cur.kz||[]).filter(paid), pkz=(prv.kz||[]).filter(paid), sumKz=z=>({n:z.reduce((s,x)=>s+(+x.donations||0),0),a:z.reduce((s,x)=>s+(+x.amount||0),0)});
-  const tot=exUseKz(exAgg(exScope(cur,"platform").filter(r=>WK_PAID.indexOf(r.platform)>=0)),sumKz(kz)), ptot=exUseKz(exAgg(exScope(prv,"platform").filter(r=>WK_PAID.indexOf(r.platform)>=0)),sumKz(pkz));
+  const tot=exUseKz(exAgg(exScope(cur,"platform").filter(r=>PAIDP().indexOf(r.platform)>=0)),sumKz(kz)), ptot=exUseKz(exAgg(exScope(prv,"platform").filter(r=>PAIDP().indexOf(r.platform)>=0)),sumKz(pkz));
   const org=(cur.kz||[]).filter(k=>["bio","com","DM"].indexOf(k.code)>=0), orgP=(prv.kz||[]).filter(k=>["bio","com","DM"].indexOf(k.code)>=0);
-  const plat=pack(cur,kz,"platform").filter(x=>WK_PAID.indexOf(x.k)>=0), pplat={}; pack(prv,pkz,"platform").forEach(x=>{ pplat[x.k]=x.v; });
+  const plat=pack(cur,kz,"platform").filter(x=>PAIDP().indexOf(x.k)>=0), pplat={}; pack(prv,pkz,"platform").forEach(x=>{ pplat[x.k]=x.v; });
   const minSp=Math.max(150,(tot.spend||0)*0.03), rank=list=>{ const ok=list.filter(x=>(x.v.spend||0)>=minSp&&x.v.roas!=null);
     return {best:ok.slice().sort((x,y)=>y.v.roas-x.v.roas).slice(0,3),worst:ok.slice().sort((x,y)=>x.v.roas-y.v.roas).slice(0,3).filter(x=>!ok.slice().sort((p,q)=>q.v.roas-p.v.roas).slice(0,3).some(z=>z.k===x.k))}; };
   const camps=rank(pack(cur,kz,"campaign")), vids=rank(pack(cur,kz,"creative")), infs=rank(pack(cur,kz,"influencer"));
@@ -13277,7 +13300,7 @@ function renderChangeLog(){
     '<label class="fld"><span>'+esc(L("من الساعة","From hour"))+'</span><select class="sel" data-c="clH0">'+Array.from({length:24},(_,i)=>'<option value="'+i+'"'+(CL.h0===i?" selected":"")+">"+String(i).padStart(2,"0")+":00</option>").join("")+"</select></label>"+
     '<label class="fld"><span>'+esc(L("لحد الساعة","To hour"))+'</span><select class="sel" data-c="clH1">'+Array.from({length:24},(_,i)=>'<option value="'+i+'"'+(CL.h1===i?" selected":"")+">"+String(i).padStart(2,"0")+":59</option>").join("")+"</select></label>"+
     '<div class="fld"><span>'+esc(L("المنصة","Platform"))+'</span><div class="chips"><button class="chip'+(CL.plat.length?"":" on")+'" data-a="clPl" data-id="">'+esc(L("الكل","All"))+"</button>"+
-      ["meta","tiktok","snap"].map(id=>'<button class="chip'+(CL.plat.indexOf(id)>=0?" on":"")+'" data-a="clPl" data-id="'+id+'"><i class="sw" style="background:'+((platById(id)||{}).color||"#888")+'"></i>'+esc((platById(id)||{}).name||id)+"</button>").join("")+"</div></div>"+
+      PAIDP().map(id=>'<button class="chip'+(CL.plat.indexOf(id)>=0?" on":"")+'" data-a="clPl" data-id="'+id+'"><i class="sw" style="background:'+((platById(id)||{}).color||"#888")+'"></i>'+esc((platById(id)||{}).name||id)+"</button>").join("")+"</div></div>"+
     '<div class="fld ms"><span>'+esc(L("الحملة","Campaign"))+'</span><button class="sel ms-b'+(CL.camps.length?" on":"")+'" data-a="clCampOpen">'+esc(CL.camps.length? (CL.camps.length===1?CL.camps[0]:CL.camps.length+L(" مختارين"," selected")) : L("كل الحملات","All campaigns"))+(CL.campOpen?" ▴":" ▾")+"</button></div>"+
     '<div class="fld"><span>'+esc(L("نوع التغيير","Change type"))+'</span><div class="chips">'+CL_TYPES.map(t=>'<button class="chip'+(CL.types.indexOf(t[0])>=0?" on":"")+'" data-a="clTy" data-k="'+t[0]+'">'+esc(L(t[1],t[2]))+"</button>").join("")+"</div></div>"+
     ((CL.plat.length||CL.camps.length||CL.types.length||CL.h0||CL.h1!==23)?'<button class="btn btn-s" data-a="clClear">'+esc(L("مسح الفلاتر","Clear filters"))+"</button>":"")+
@@ -13519,6 +13542,9 @@ document.addEventListener("keydown",e=>{ const t=e.target;
   if(e.key==="/"&&!/INPUT|TEXTAREA|SELECT/.test((t&&t.tagName)||"")&&!(t&&t.isContentEditable)){ const q=document.getElementById("navQ"); if(q){ e.preventDefault(); q.focus(); } } });
 (function(){ try{ const q=new URLSearchParams(location.search).get("skin"); if(q) localStorage.setItem("gad.skin",q==="off"?"":q); const v=localStorage.getItem("gad.skin"); if(v){ document.documentElement.setAttribute("data-skin",v==="clayglass"?"clay":v); if(v==="clayglass") document.documentElement.setAttribute("data-glass","1"); } }catch(e){} })();
 function render(){
+  /* أكتر من عميل: السيستم بيفتح على آخر عميل اخترته (أو أول عميل) بدل ما يجمع أرقام العملا مع بعض. «كل العملاء» بتتحفظ برضه. */
+  if(!S.wsInit&&S.cfg.clients.length>1){ S.wsInit=1; const r=lsGet("gad.ws",""); if(r!=="*"&&!S.ws) S.ws=(r&&clientById(r))? r : S.cfg.clients[0].id; }
+  CONV_WS=!!(S.ws&&convClient(S.ws));
   $("#topbar").innerHTML=topbarHTML();
   { const m=$("#railMe"); if(m) m.innerHTML=(meVis()&&!isPending())? '<div class="rail-me" data-a="profEdit" title="'+esc(L("ملفي الشخصي","My profile"))+'">'+pav(ME.id,36)+'<div><b>'+esc(pname(ME.id))+"</b><small>"+esc(meSub())+"</small></div></div>" : ""; }
   const cs=(S.cfg.screens||[]);

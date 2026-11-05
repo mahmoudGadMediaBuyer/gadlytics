@@ -1006,3 +1006,12 @@ All of these are free: they run on data the site already has (Supabase free tier
   - Month-end forecast for spend and Khzama revenue, with needed daily spend and revenue. Budget and target are editable (`settings.month`).
   - Every Hijri month (Umm al-Qura) with spend, revenue, ROAS and per-day averages. Ramadan and Dhul Hijjah are highlighted. Hijri months and weekdays come from the view `v_daily_totals` (all days in the database: ad_daily spend at ad level + Khzama orders/revenue for ME/TT/SC/bio/com/DM), not only the period loaded in the page.
   - Weekdays over the last 90 days.
+
+
+## 21) Second client: ديمان — app + Salla store (November 2026)
+- Pick the client from «العميل» in the side menu. With more than one client the site opens on the last one you picked (or the first), so the numbers of two clients are never added together by accident. «كل العملاء» is still there and is remembered too.
+- ديمان has no Khzama. Its orders and revenue come from **AppsFlyer** (app purchases, per platform and campaign, on the day of purchase) and **Salla** (website orders). ROAS counts app purchases from the paid sources plus Salla orders; organic, QR and WhatsApp purchases are stored but not credited to ads.
+- Accounts: Meta, TikTok (Smart+, iOS), Snapchat, Apple Search Ads and Google (spend for these two comes from AppsFlyer cost), the two AppsFlyer apps (iOS + Android), the Salla store, and the Airtable board (rows where client = ديمان). History from the first paid day, 22 Sep 2025.
+- Every screen reads the same way as for ملبي; labels that say «خزامى» or «تبرع» read «AppsFlyer وسلة» and «طلب» while ديمان is selected. Per-video orders use each platform's own purchase count, because there is no per-video order source for the app.
+- Data: table `conv_daily` (client_id, date, channel app/web, os, source, platform, campaign, camp_no, installs, registrations, purchases, revenue, cost — SAR). `v_daily_totals`, `v_camp_day`, `v_media_perf` and `v_media_daily` include it. `ad_daily` has two new columns, `app_installs` and `registrations`.
+- Daily pull: the ديمان section of the pull runbook (`skill/gadlytics/runbooks/daily_pull.md`), scripts `platform_rows.py`, `log_results.py`, `conv_prep.py`, `conv_spend_to_ad_daily.py`, `rebuild_entries_conv.sql`.
