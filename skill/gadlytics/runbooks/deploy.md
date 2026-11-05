@@ -8,3 +8,5 @@
 5. Wait until `curl -s https://mahmoudgadmediabuyer.github.io/gadlytics/?v=$RANDOM | shasum` equals the local index.html sha.
 6. Reload the live site **signed in** (add ?v=… — browsers cache) and confirm ملبي's numbers show on لوحتي, not the welcome screen.
 7. Update this skill + README with whatever changed, and upload them in the same pass. Never upload secrets (ingest key, Snap/Meta tokens, Khzama headers) — the repo is public.
+
+Gotcha (Nov 2026): GitHub's upload page often ignores the first click on «Commit changes» (and a typed summary sometimes vanishes). Wait ~15 s after file_upload until every file shows a file icon, set the summary with JS (input[name=message] + input event), click the button by screenshot coordinate, then confirm the URL left /upload and compare blob SHAs via the API (`git hash-object` locally vs contents API `sha`) — raw.githubusercontent is cached for minutes.
