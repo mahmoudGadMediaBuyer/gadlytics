@@ -319,7 +319,8 @@ textarea.inp{resize:vertical;min-height:96px;font-family:var(--f-num);font-size:
 .cl-f{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end}.cl-f .fld{margin:0}
 .cl-t tr.on td{background:rgba(70,95,255,.08)}.cl-x td{background:rgba(127,127,127,.04);padding:10px 14px!important}
 .cl-e{display:flex;gap:12px;align-items:baseline;padding:5px 0;border-bottom:1px dashed var(--line);font-size:13px}.cl-e:last-child{border-bottom:0}.cl-e .num{width:44px;color:var(--ink-3)}.cl-e span:nth-child(3){flex:1}
-.rf-card{margin-bottom:14px}.rf-top{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+.rf-card{margin-bottom:14px}.rf-top>div:first-child{flex:1}.rf-top{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+.lbc-v{font-size:11.5px;color:var(--ink-2);margin-top:6px}.vs-box{margin:8px 0 4px}.vs-svg{width:100%;height:auto;display:block}.vs-leg{display:flex;gap:14px;font-size:12px;color:var(--ink-2);margin-bottom:4px}.vs-leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-inline-end:5px;vertical-align:-1px}
 .rf-btn{font-size:15px;padding:10px 22px}.rf-spin{display:inline-block;animation:rfs 1s linear infinite}@keyframes rfs{to{transform:rotate(360deg)}}
 .rf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
 .rf-s{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:rgba(127,127,127,.04);display:flex;flex-direction:column;gap:2px}
@@ -11190,9 +11191,11 @@ async function lbLoad(force){ if(LB.busy||(LB.data&&!force)) return; LB.busy=tru
     thumbVer(media); await thumbUrls(media.map(m=>m.thumb));
     const perf=await all(()=>sb.from("v_media_perf").select("*").order("creative_id"));
     const notes=await all(()=>sb.from("docs").select("path,data").eq("coll","media_notes").order("path")); await ftLoad();
+    let vstat=[]; try{ vstat=await all(()=>sb.from("v_video_stats").select("*").order("creative_id")); }catch(e){}   // مشاهدات كل فيديو من كل الحملات (مع Smart+ على مستوى الفيديو)
+    const V={}; vstat.forEach(v=>{ (V[v.creative_id]=V[v.creative_id]||[]).push(v); });
     const P={}; perf.forEach(p=>{ (P[p.creative_id]=P[p.creative_id]||[]).push(p); });
     const N={}; notes.forEach(n=>{ N[n.path.split("/")[1]]=n.data||{}; });
-    LB.data={media:media,P:P,N:N,synced:media.reduce((m,x)=>x.synced_at>m?x.synced_at:m,"")};
+    LB.data={media:media,P:P,N:N,V:V,synced:media.reduce((m,x)=>x.synced_at>m?x.synced_at:m,"")};
     if(!EX.md){ try{ await exFetch(todayISO(),todayISO()); }catch(e){} }   // قاموس توحيد الأسماء (منصور السالمي = Mnswr-Alsalmy)
   }catch(e){ LB.err=e.message||String(e); }
   LB.busy=false; render(); }
@@ -11291,6 +11294,30 @@ function lbLocalBtn(all){ const n=all.filter(r=>r._local).length; if(!n&&!lbLoca
 ACT.lbLocal=()=>{ if(lbLocalOn()) LB.filters=LB.filters.filter(f=>!(f.f==="_local"&&f.op==="full")); else LB.filters=LB.filters.concat([{f:"_local",op:"full",v:""}]); render(); };
 function lbViewBar(){ return '<div class="lb-vw"><div class="pm-seg">'+[["cards","▦ "+L("كروت","Cards")],["table","☰ "+L("جدول","Table")]].map(v=>'<button class="'+(LB.view===v[0]?"on":"")+'" data-a="lbView" data-v="'+v[0]+'">'+esc(v[1])+"</button>").join("")+"</div>"+
   (LB.view==="cards"?'<label class="lb-sz"><span>'+esc(L("حجم الكروت","Card size"))+'</span><input type="range" id="lbSize" min="150" max="360" step="10" value="'+LB.size+'"></label>':tblSizeCtl())+"</div>"; }
+/* ══ مشاهدات الفيديو (كل الوقت، كل الحملات والمنصات) — v_video_stats من ad_daily
+   المشاهدات = video plays · التكرار = الظهور ÷ الوصول، وبما إن الوصول متجمّع يوم بيوم فده «متوسط التكرار اليومي» مش التكرار الفريد على كل الفترة.
+   منحنى المشاهدة: من بدأ الفيديو ← 25% ← 50% ← 75% ← 100%، كنسبة من اللي بدأوه، لكل منصة لوحدها. */
+function vsSum(id){ const rows=((LB.data&&LB.data.V)||{})[id]||[]; if(!rows.length) return null;
+  const o={plays:0,im:0,imR:0,reach:0,pl:{}}; rows.forEach(v=>{ o.plays+=+v.plays||0; o.im+=+v.impressions||0; if(+v.reach_daily_sum>0){ o.imR+=+v.impressions||0; o.reach+=+v.reach_daily_sum; } o.pl[v.platform]=v; });
+  o.freq=o.reach>0? o.imR/o.reach : null; return o; }
+function vsCurve(id){ const rows=((LB.data&&LB.data.V)||{})[id]||[]; if(!rows.length) return "";
+  const col={meta:"#6F7FF2",tiktok:"#2BB3A3",snap:"#E7B416"}, labs=[L("البداية","Start"),"25%","50%","75%","100%"];
+  const W=520,H=170,pl=34,pr=10,pt=10,pb=24, X=i=>pl+i*(W-pl-pr)/4, Y=v=>pt+(1-v)*(H-pt-pb);
+  let svg='<svg viewBox="0 0 '+W+" "+H+'" class="vs-svg" role="img">'+[0,.25,.5,.75,1].map(v=>'<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="var(--line)" stroke-width="1"/><text x="'+(pl-6)+'" y="'+(Y(v)+4)+'" font-size="10" text-anchor="end" fill="var(--ink-3)">'+Math.round(v*100)+"%</text>").join("")+
+    labs.map((t,i)=>'<text x="'+X(i)+'" y="'+(H-6)+'" font-size="10" text-anchor="middle" fill="var(--ink-3)">'+esc(t)+"</text>").join("");
+  let worst=null; const leg=[];
+  rows.forEach(v=>{ const st=+v.plays||0; if(!st) return; const pts=[st,+v.p25||0,+v.p50||0,+v.p75||0,+v.p100||0].map(x=>Math.min(1,x/st));
+    const c=col[v.platform]||"var(--ink-2)";
+    svg+='<polyline fill="none" stroke="'+c+'" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" points="'+pts.map((y,i)=>X(i)+","+Y(y)).join(" ")+'"/>'+pts.map((y,i)=>'<circle cx="'+X(i)+'" cy="'+Y(y)+'" r="3" fill="'+c+'"><title>'+esc(labs[i]+": "+fnum(y*100,1)+"%")+"</title></circle>").join("");
+    for(let i=1;i<pts.length;i++){ const d=pts[i-1]>0?1-pts[i]/pts[i-1]:0; if(!worst||d>worst.d) worst={d:d,i:i,p:v.platform}; }
+    leg.push('<span><i style="background:'+c+'"></i>'+esc((platById(v.platform)||{}).name||v.platform)+"</span>"); });
+  svg+="</svg>";
+  return '<div class="vs-box"><div class="vs-leg">'+leg.join("")+"</div>"+svg+
+    (worst&&worst.d>0?'<div class="hint">'+esc(L("أكبر نزول: من ","Biggest drop: ")+labs[worst.i-1]+L(" لـ "," → ")+labs[worst.i]+" (−"+fnum(worst.d*100,0)+"%) "+L("على ","on ")+((platById(worst.p)||{}).name||worst.p)+(worst.i===1?L(" — الهوك مش ماسك الناس"," — the hook isn't holding people"):""))+"</div>":"")+"</div>"; }
+function vsTable(id){ const rows=((LB.data&&LB.data.V)||{})[id]||[]; if(!rows.length) return '<div class="hint">'+esc(L("مفيش أرقام مشاهدة للفيديو ده لسه.","No view data for this video yet."))+"</div>";
+  const n=x=>x==null||x===""?"—":fcompact(+x,0), pc=(x,st)=>st&&x!=null?fnum(100*x/st,1)+"%":"—";
+  return '<div class="tw"><table class="an-tbl"><tr><th>'+esc(L("المنصة","Platform"))+'</th><th class="num">'+esc(L("مشاهدات","Views"))+'</th><th class="num">2s</th><th class="num">6s</th><th class="num">ThruPlay</th><th class="num">25%</th><th class="num">50%</th><th class="num">75%</th><th class="num">100%</th><th class="num" title="'+esc(L("متوسط التكرار اليومي","Average daily frequency"))+'">'+esc(L("التكرار","Freq."))+"</th><th class=\"num\">"+esc(L("حملات","Campaigns"))+"</th></tr>"+
+    rows.map(v=>{ const st=+v.plays||0; return "<tr><td>"+esc((platById(v.platform)||{}).name||v.platform)+'</td><td class="num">'+n(v.plays)+'</td><td class="num">'+n(v.v2s)+'</td><td class="num">'+n(v.v6s)+'</td><td class="num">'+n(v.thruplays)+'</td><td class="num">'+pc(v.p25,st)+'</td><td class="num">'+pc(v.p50,st)+'</td><td class="num">'+pc(v.p75,st)+'</td><td class="num">'+pc(v.p100,st)+'</td><td class="num">'+(+v.reach_daily_sum>0?fnum(v.impressions/v.reach_daily_sum,2):"—")+'</td><td class="num">'+fnum(+v.campaigns||0,0)+"</td></tr>"; }).join("")+"</table></div>"; }
 function lbCard(r){ const id=r.__id, st=r["حالة الإعلان"]||"", fat=String(r._fatigue||""), hk=htHook(r._hook);
   const met=[["ROAS",r._roas==null?"—":(+r._roas).toFixed(2)+"x"],[L("صرف","Spend"),r._spend?fcompact(r._spend,0):"—"],[L("طلبات","Orders"),r._orders?fnum(r._orders,0):"—"],
     [L("إيراد","Revenue"),r._revenue?fcompact(r._revenue,0):"—"],["Hook",r._hookr==null?"—":fnum(r._hookr,1)+"%"],["CTR",r._ctr==null?"—":fnum(r._ctr,2)+"%"]];
@@ -11302,7 +11329,8 @@ function lbCard(r){ const id=r.__id, st=r["حالة الإعلان"]||"", fat=St
       '<div class="lbc-s">'+esc([r["المعلن"],r["الأسلوب"],st].filter(Boolean).join(" · ")||"—")+"</div>"+upBadges((LB.data.N||{})[id])+
       (r.__lf?'<span class="lf-b" title="'+esc(r.__lf)+'">💾 '+esc(L("على الجهاز","On this Mac"))+"</span>":"")+
       (hk||r.__thumb?"":'<div class="lbc-hk no">'+esc(r.__note==="no_video"?L("مفيش فيديو على الدرايف","No video on Drive"):L("لسه مفيش هوك","No hook yet"))+"</div>")+
-      '<div class="lbc-m">'+met.map(m=>"<div><span>"+esc(m[0])+'</span><b class="num">'+esc(m[1])+"</b></div>").join("")+"</div></div></div>"; }
+      '<div class="lbc-m">'+met.map(m=>"<div><span>"+esc(m[0])+'</span><b class="num">'+esc(m[1])+"</b></div>").join("")+"</div>"+
+      (()=>{ const v=vsSum(id); return v&&v.plays? '<div class="lbc-v" title="'+esc(L("كل الوقت، من كل الحملات والمنصات","All time, every campaign and platform"))+'">👁 '+esc(fcompact(v.plays,0)+L(" مشاهدة"," views"))+(v.freq?" · "+esc(L("تكرار ","freq ")+fnum(v.freq,2)):"")+"</div>":""; })()+"</div></div>"; }
 function lbCardsHTML(rows,g){ let body="", shown=0;
   const grid=list=>{ const part=list.slice(0,Math.max(0,600-shown)); shown+=part.length; return part.length?'<div class="lbc-grid" style="--lbw:'+LB.size+'px">'+part.map(lbCard).join("")+"</div>":""; };
   const grp=(list,lvl,path)=>{ if(lvl>=g.length){ body+=grid(list); return; }
@@ -11567,7 +11595,9 @@ ACT.clbOpen=t=>{ const id=t.dataset.id, r=lbRows().find(x=>x.__id===id); if(!r) 
       '<datalist id="lbTagList">'+[...new Set([].concat(...Object.values(LB.data.N).map(n=>n.tags||[])))].map(t=>'<option value="'+esc(t)+'">').join("")+"</datalist>"+
       '<label class="fld"><span>'+esc(L("ملاحظات","Notes"))+'</span><textarea class="inp" id="lbNote" style="min-height:54px;direction:rtl;text-align:right">'+esc((LB.data.N[id]||{}).note||"")+"</textarea></label>"+
       '<button class="btn btn-s btn-p" data-a="lbNoteSave" data-id="'+esc(id)+'">'+esc(L("حفظ التاجز والملاحظات","Save tags & notes"))+"</button></div>"+
-    '<b>'+esc(L("الأداء","Performance"))+"</b>"+perf+'<div id="clbMx"></div>'+'<b style="display:block;margin-top:12px">'+esc(L("بيانات البورد","Board fields"))+'</b><div class="tw"><table class="an-tbl lb-kv">'+fields+"</table></div>",""); };
+    '<b>'+esc(L("الأداء","Performance"))+"</b>"+perf+
+    '<b style="display:block;margin-top:12px">'+esc(L("المشاهدات ومنحنى المشاهدة (كل الحملات)","Views & retention (all campaigns)"))+"</b>"+vsTable(id)+vsCurve(id)+
+    '<div id="clbMx"></div>'+'<b style="display:block;margin-top:12px">'+esc(L("بيانات البورد","Board fields"))+'</b><div class="tw"><table class="an-tbl lb-kv">'+fields+"</table></div>",""); };
 
 { const _clbOpen=ACT.clbOpen; ACT.clbOpen=t=>{ _clbOpen(t); mxCreativeFill(t.dataset.id); }; }
 function renderLibrary(){
@@ -12901,10 +12931,12 @@ function rfCard(){ if(!(window.SUPA_DB&&SUPA_DB.client)) return "";
   const pr=F.pr, pend=pr&&pr.status==="pending";
   return '<div class="card rf-card"><div class="rf-top"><div><div class="card-t">'+esc(L("تحديث السيستم","System refresh"))+'</div><div class="hint">'+
       esc(L("بضغطة: المكتبة من Airtable، وكل الأرقام من الداتا بيز، وطلب سحب جديد من المنصات وخزامى، وطلب سناب شوت لليوم.","One click: library from Airtable, every number reloaded, a fresh pull from the platforms and Khzama, and a snapshot of today."))+"</div></div>"+
-    '<button class="btn btn-p rf-btn" data-a="rfAll"'+(RF.busy?" disabled":"")+">"+(RF.busy?'<span class="rf-spin">↻</span> '+esc(RF.step||L("بحدّث…","Refreshing…")):"↻ "+esc(L("حدّث كل حاجة","Refresh everything")))+"</button></div>"+
+    '<button class="btn btn-p rf-btn" data-a="rfAll"'+(RF.busy?" disabled":"")+">"+(RF.busy?'<span class="rf-spin">↻</span> '+esc(RF.step||L("بحدّث…","Refreshing…")):"↻ "+esc(L("حدّث كل حاجة","Refresh everything")))+"</button>"+
+    '<button class="btn rf-btn" data-a="rfQuick"'+(RF.busy?" disabled":"")+' title="'+esc(L("أرقام النهارده بس (صرف المنصات + خزامى) — أسرع وأخف","Today only (platform spend + Khzama) — faster and lighter"))+'">⚡ '+esc(L("تحديث سريع","Quick refresh"))+"</button></div>"+
     '<div class="rf-grid">'+day(L("المنصات (صرف)","Platforms (spend)"),F.ad)+day(L("خزامى (طلبات وإيراد)","Khzama (orders & revenue)"),F.kz)+day(L("ميكس بانل (الموقع)","Mixpanel (site)"),F.mx)+
       '<div class="rf-s"><span>'+esc(L("مكتبة الكريتيف","Creative library"))+"</span><b>"+(F.md?esc(fdate(String(F.md).slice(0,10))+" "+String(new Date(F.md).toTimeString()).slice(0,5)):"—")+"</b></div></div>"+
-    (pend?'<div class="hint rf-pend">⏳ '+esc(L("فيه طلب سحب من المنصات وخزامى من ","A platform & Khzama pull was requested ")+rfAgo(pr.at)+L(" (ومعاه سناب شوت) — Claude بيسحبه مع السحب الجاي، أو قوله «اسحب دلوقتي».",", with a snapshot. Claude runs it with the next pull, or tell Claude «pull now»."))+"</div>":
+    (pend&&pr.mode==="quick"?'<div class="hint rf-pend">⚡ '+esc(L("فيه طلب تحديث سريع (أرقام النهارده) من ","A quick refresh (today) was requested ")+rfAgo(pr.at)+L(" — قول لـ Claude «تحديث سريع».",". Tell Claude «quick refresh»."))+"</div>":
+     pend?'<div class="hint rf-pend">⏳ '+esc(L("فيه طلب سحب من المنصات وخزامى من ","A platform & Khzama pull was requested ")+rfAgo(pr.at)+L(" (ومعاه سناب شوت) — Claude بيسحبه مع السحب الجاي، أو قوله «اسحب دلوقتي».",", with a snapshot. Claude runs it with the next pull, or tell Claude «pull now»."))+"</div>":
       pr&&pr.done_at?'<div class="hint">✓ '+esc(L("آخر طلب سحب اتنفّذ ","Last pull request done ")+rfAgo(pr.done_at))+"</div>":"")+
     (RF.log.length&&!RF.busy?'<div class="rf-log">'+RF.log.map(x=>'<span class="'+(x[0]==="ok"?"ok":"bad")+'">'+(x[0]==="ok"?"✓ ":"✕ ")+esc(x[1])+"</span>").join("")+"</div>":"")+"</div>"; }
 function rfDays(n){ return L(n===1?"يوم":n===2?"يومين":n<=10?n+" أيام":n+" يوم",n+" day"+(n===1?"":"s")); }
@@ -12922,6 +12954,14 @@ ACT.rfAll=async()=>{ if(RF.busy||!(window.SUPA_DB&&SUPA_DB.client)) return; RF.b
     await schLoad(); SCH.cfg=Object.assign({every:30,start:"09:00"},SCH.cfg||{},{requested:new Date().toISOString()}); await schSave(); });
   RF.fresh=null; RF.busy=false; RF.step=""; NEWM.loaded=false; LB.data=null; MA.data=null; await rfFresh(); render();
   toast(RF.log.every(x=>x[0]==="ok")? L("اتحدّث كل حاجة","Everything refreshed") : L("اتحدّث مع ملاحظات — شوف تحت الزرار","Refreshed with notes — see below the button"),!RF.log.every(x=>x[0]==="ok")); };
+
+/* تحديث سريع: طلب سحب لأرقام النهارده بس (mode:"quick") — Claude بيسحب يوم واحد من المنصات وخزامى بدل كل الأيام، فبيخلص في دقايق.
+   وقت الموسم بتدوسه كل ما تحتاج؛ الأرقام اللي في الداتا بيز بتتعاد من غير Airtable ولا سناب شوت. */
+ACT.rfQuick=async()=>{ if(RF.busy||!(window.SUPA_DB&&SUPA_DB.client)) return; RF.busy=true; RF.log=[]; RF.step=L("بسجّل طلب التحديث السريع…","Requesting quick refresh…"); render();
+  try{ await RT.set("sys/pullreq",{at:Date.now(),by:ME.email||"",status:"pending",mode:"quick",day:todayISO()});
+    EX.cache={}; MX.cache={}; await reload(); RF.log.push(["ok",L("طلب تحديث سريع لأرقام النهارده — قول لـ Claude «تحديث سريع»","Quick refresh requested — tell Claude «quick refresh»")]); }
+  catch(e){ RF.log.push(["bad",(e&&e.message)||String(e)]); }
+  RF.fresh=null; RF.busy=false; RF.step=""; await rfFresh(); render(); };
 
 /* ══════════════════ سجل التغييرات: الأثر على الحملة والمنصة والإجمالي ══════════════════
    الوحدة هي «اليوم» مش التعديل الواحد — في الموسم بيبقى فيه عشرات التعديلات في اليوم، فبنجمّعها:
