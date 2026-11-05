@@ -7339,12 +7339,22 @@ ACT.acRefresh=async()=>{ if(AC_BUSY) return; AC_BUSY=true; render();
   try{ S.loadedFrom=null; S.loadedTo=null; await reload(); toast(L("الإجراءات اتحدثت على آخر أرقام","Actions refreshed with the latest data")); }
   catch(e){ toast(L("مقدرتش أحدّث: ","Couldn't refresh: ")+(e.message||e),true); }
   AC_BUSY=false; render(); };
+/* اقتراحات النهارده: كل بند ينفع يتحوّل لمهمة (بتتفتح جاهزة وانت تحفظها) أو يتجاهل لحد آخر النهار — التنفيذ نفسه بإيدك في المنصة */
+function acSig(a){ return [a.kind,a.title,a.scopeName||"",a.clientId||"",a.platformId||""].join("|"); }
+function acHidden(){ try{ return JSON.parse(localStorage.getItem("gad.acHide."+todayISO())||"[]"); }catch(e){ return []; } }
+ACT.actHide=t=>{ const a=(AC_CACHE||[])[+t.dataset.i]; if(!a) return; const h=acHidden(); h.push(acSig(a));
+  try{ localStorage.setItem("gad.acHide."+todayISO(),JSON.stringify(h)); }catch(e){} toast(L("اتشالت لحد بكره","Hidden until tomorrow")); render(); };
+ACT.actTask=t=>{ const a=(AC_CACHE||[])[+t.dataset.i]; if(!a) return; taskModal(null,"todo");
+  const txt=x=>{ const d=document.createElement("div"); d.innerHTML=x||""; return d.textContent.trim(); };
+  const set=(id,v)=>{ const e=$(id); if(e&&v!=null) e.value=v; };
+  set("#tkTitle",a.title); set("#tkDesc",[txt(a.body),txt(a.rec)].filter(Boolean).join("\n")); set("#tkClient",a.clientId||""); set("#tkDue",todayISO());
+  set("#tkPri",!a.pri?"normal":a.pri.band==="critical"?"urgent":a.pri.band==="high"?"high":"normal"); };
 function renderActions(){
   const [from,to]=resolveRange();
   if(!S.cfg.clients.length) return emptyBox(L("ابدأ بإضافة أول عميل.","Start by adding your first client."),
     '<button class="btn btn-p" data-a="go" data-v="admin" data-tab="clients">'+esc(L("إضافة عميل","Add client"))+"</button>");
   const bands=["critical","high","medium","low"], stake=a=>Math.max(+a.spend||0,+a.revenue||0);
-  const acts=buildActions(from,to).slice().sort((x,y)=>bands.indexOf(x.pri.band)-bands.indexOf(y.pri.band)||stake(y)-stake(x));
+  const hid=acHidden(), acts=buildActions(from,to).filter(a=>hid.indexOf(acSig(a))<0).slice().sort((x,y)=>bands.indexOf(x.pri.band)-bands.indexOf(y.pri.band)||stake(y)-stake(x));
   AC_CACHE=acts;
   const C=CURR[S.cfg.settings.currency]||"";
   const per='<select class="sel lc-s" data-c="preset">'+PRESETS.filter(p=>p[0]!=="custom").map(p=>'<option value="'+p[0]+'"'+(S.f.preset===p[0]?" selected":"")+">"+
@@ -7359,6 +7369,8 @@ function renderActions(){
           (stake(a)?"<span>"+esc(L("على المحك ","At stake "))+"<b>"+fnum(stake(a),0)+" "+esc(C)+"</b></span>":"")+
           "<span>"+esc(L("ثقة ","Confidence "))+esc(a.conf||L("متوسطة","medium"))+"</span></div></div>"+
       '<div class="acr-x"><button class="btn btn-s btn-p" data-a="actGo" data-i="'+i+'">'+esc(a.kind==="opportunity"?L("افتح ووسّع","Open & scale"):L("افتح التفاصيل","Open details"))+"</button>"+
+        '<button class="btn btn-s" data-a="actTask" data-i="'+i+'">'+esc(L("✓ حوّلها لمهمة","✓ Make it a task"))+"</button>"+
+        '<button class="btn btn-s" data-a="actHide" data-i="'+i+'" title="'+esc(L("تختفي النهارده بس","Hidden for today only"))+'">'+esc(L("تجاهل","Dismiss"))+"</button>"+
         '<button class="btn btn-s" data-a="go" data-v="changes">'+esc(L("سجّل تغيير","Log a change"))+"</button></div></div>";
   }).join("");
   const counts=bands.map(b=>[b,acts.filter(a=>a.pri.band===b).length]).filter(x=>x[1]);
@@ -11176,9 +11188,9 @@ const LB_AT=["Creative ID","تاريخ الإدخال","المعلن","الأس�
 const LB_CALC=[["_hook","الهوك","Hook"],["_spend","الصرف","Spend"],["_sp_meta","صرف Meta","Meta spend"],["_sp_tiktok","صرف TikTok","TikTok spend"],["_sp_snap","صرف Snap","Snap spend"],
   ["_orders","الطلبات (خزامى)","Orders (Khzama)"],["_revenue","الإيراد (خزامى)","Revenue (Khzama)"],["_roas","ROAS (خزامى)","ROAS (Khzama)"],["_cpa","تكلفة الطلب","CPA"],["_first","أول صرف","First spend"],["_last","آخر صرف","Last spend"],["_camps","الحملات","Campaigns"],["_plats","المنصات","Platforms"],
   ["_hookr","Hook Rate (المنصات)","Hook rate (platforms)"],["_holdr","Hold Rate (المنصات)","Hold rate (platforms)"],["_ctr","CTR","CTR"],["_cpm","CPM","CPM"],
-  ["_local","على الجهاز","On this Mac"],["_rate","التقييم","Rating"],["_fatigue","التشبّع","Fatigue"],["_tags","التاجز","Tags"],["_note","ملاحظات","Notes"],["_mgmt","في إدارة الميديا","In media management"]];
+  ["_local","على الجهاز","On this Mac"],["_score","الدرجة /100","Score /100"],["_views","المشاهدات","Views"],["_freq","التكرار","Frequency"],["_htype","نوع الهوك","Hook type"],["_angle","الزاوية","Angle"],["_emo","المشاعر","Emotion"],["_rate","التقييم","Rating"],["_fatigue","التشبّع","Fatigue"],["_tags","التاجز","Tags"],["_note","ملاحظات","Notes"],["_mgmt","في إدارة الميديا","In media management"]];
 const LB_PCT={_hookr:1,_holdr:1,_ctr:1};
-const LB_NUM={_hookr:1,_holdr:1,_ctr:1,_cpm:1,_spend:1,_sp_meta:1,_sp_tiktok:1,_sp_snap:1,_orders:1,_revenue:1,_roas:1,_cpa:1,"Hook Rate":1,"Hold Rate":1,"ROAS":1};
+const LB_NUM={_score:1,_views:1,_freq:1,_hookr:1,_holdr:1,_ctr:1,_cpm:1,_spend:1,_sp_meta:1,_sp_tiktok:1,_sp_snap:1,_orders:1,_revenue:1,_roas:1,_cpa:1,"Hook Rate":1,"Hold Rate":1,"ROAS":1};
 const LB_DEF=["Creative ID","المعلن","الأسلوب","المشروع","الموسم","حالة الإعلان","_hook","_spend","_orders","_revenue","_roas","_camps","URL"];
 const LB={data:null,busy:false,err:"",cols:null,sorts:[{k:"تاريخ الإدخال",dir:-1}],filters:[],conj:"and",groups:[{k:"المشروع",dir:"sp"}],q:"",per:"all",from:"",to:"",open:{},allClosed:false,panel:null,fOpen:null,syncing:false,msg:""};
 function lbColsGet(){ try{ const v=JSON.parse(localStorage.getItem("gad.lbCols")||"null"); if(Array.isArray(v)&&v.length) return v; }catch(e){} return LB_DEF.slice(); }
@@ -11187,7 +11199,7 @@ function lbLabel(k){ const c=LB_CALC.find(x=>x[0]===k); return c? L(c[1],c[2]) :
 async function lbLoad(force){ if(LB.busy||(LB.data&&!force)) return; LB.busy=true; LB.err=""; render();
   try{ const sb=SUPA_DB.client, cl=(S.ws&&clientById(S.ws))||S.cfg.clients[0]||{}, cname=cl.name||"ملبي";
     const all=async q=>{ const out=[]; for(let i=0;;i+=1000){ const r=await q().range(i,i+999); if(r.error) throw r.error; out.push(...r.data); if(r.data.length<1000) break; } return out; };
-    const media=await all(()=>sb.from("media").select("creative_id,fields,hook,hook_auto,created_at,synced_at,style,kind,url,thumb,thumb_at,asset_note,thumb_hook,local_file").eq("client",cname).eq("kind","Video").in("style",LB_STYLES).order("creative_id"));
+    const media=await all(()=>sb.from("media").select("creative_id,fields,hook,hook_auto,created_at,synced_at,style,kind,url,thumb,thumb_at,asset_note,thumb_hook,local_file,ai_tags").eq("client",cname).eq("kind","Video").in("style",LB_STYLES).order("creative_id"));
     thumbVer(media); await thumbUrls(media.map(m=>m.thumb));
     const perf=await all(()=>sb.from("v_media_perf").select("*").order("creative_id"));
     const notes=await all(()=>sb.from("docs").select("path,data").eq("coll","media_notes").order("path")); await ftLoad();
@@ -11195,7 +11207,7 @@ async function lbLoad(force){ if(LB.busy||(LB.data&&!force)) return; LB.busy=tru
     const V={}; vstat.forEach(v=>{ (V[v.creative_id]=V[v.creative_id]||[]).push(v); });
     const P={}; perf.forEach(p=>{ (P[p.creative_id]=P[p.creative_id]||[]).push(p); });
     const N={}; notes.forEach(n=>{ N[n.path.split("/")[1]]=n.data||{}; });
-    LB.data={media:media,P:P,N:N,V:V,synced:media.reduce((m,x)=>x.synced_at>m?x.synced_at:m,"")};
+    LB.vsAvg=null; LB.data={media:media,P:P,N:N,V:V,synced:media.reduce((m,x)=>x.synced_at>m?x.synced_at:m,"")};
     if(!EX.md){ try{ await exFetch(todayISO(),todayISO()); }catch(e){} }   // قاموس توحيد الأسماء (منصور السالمي = Mnswr-Alsalmy)
   }catch(e){ LB.err=e.message||String(e); }
   LB.busy=false; render(); }
@@ -11218,7 +11230,14 @@ function lbRows(){ const D=LB.data, pf=lbPerf()||{};
     f._hookr=p&&p.im? (p.v2||p.pv)/p.im*100 : null; f._holdr=p&&p.pv? p.p100/p.pv*100 : null; f._ctr=p&&p.im? p.ck/p.im*100 : null; f._cpm=p&&p.im? p.sp/p.im*1000 : null;
     f._tags=(n.tags||[]).join("، "); f._note=n.note||""; f._mgmt=(p&&p.sp>0)||n.inMgmt? L("أيوه","Yes") : L("لأ","No");
     f._first=p&&p.first||""; f._last=p&&p.last||""; f._camps=p? [...p.camps].sort().join("، ") : ""; f._plats=p? Object.keys(p.pl).map(x=>(platById(x)||{}).name||x).join("، ") : "";
-    f._fatigue=ftLabel(m.creative_id); f.__id=m.creative_id; f.__thumb=THUMB[m.thumb]||""; f.__note=m.asset_note||""; f.__burned=!!m.thumb_hook; f._local=m.local_file? L("على الجهاز","On this Mac") : ""; f.__lf=m.local_file||""; return f; });
+    f._fatigue=ftLabel(m.creative_id); f.__id=m.creative_id; f.__thumb=THUMB[m.thumb]||""; f.__note=m.asset_note||""; f.__burned=!!m.thumb_hook; f._local=m.local_file? L("على الجهاز","On this Mac") : ""; f.__lf=m.local_file||"";
+    const tg=m.ai_tags||{}; f._htype=tg.hook_type||""; f._angle=tg.angle||""; f._emo=tg.emotion||"";
+    const vs=vsSum(m.creative_id); f._views=vs&&vs.plays||null; f._freq=vs&&vs.freq||null; return f; });
+  /* الدرجة /100 = ترتيب الفيديو بين فيديوهات حسابك (percentile): ROAS خزامى 50% + الهوك ريت 25% + CTR 25% — بشرط صرف ٣٠٠ ريال */
+  { const el=rows.filter(r=>r._spend>=300), pr=(k)=>{ const v=el.map(r=>r[k]).filter(x=>x!=null).sort((a,b)=>a-b); return x=>x==null||!v.length?null:v.filter(y=>y<=x).length/v.length; };
+    const R=pr("_roas"),H=pr("_hookr"),C=pr("_ctr");
+    rows.forEach(r=>{ if(r._spend<300){ r._score=null; return; } const parts=[[R(r._roas),.5],[H(r._hookr),.25],[C(r._ctr),.25]].filter(x=>x[0]!=null);
+      const w=parts.reduce((s,x)=>s+x[1],0); r._score=w? Math.round(100*parts.reduce((s,x)=>s+x[0]*x[1],0)/w) : null; }); }
   /* التقييم = ROAS الفيديو مقارنة بمتوسط مشروعه (وبشرط صرف ٣٠٠ ريال على الأقل) */
   const pa={}; rows.forEach(r=>{ const k=r["المشروع"]||"—", o=pa[k]||(pa[k]={s:0,a:0}); o.s+=r._spend; o.a+=r._revenue; });
   rows.forEach(r=>{ const o=pa[r["المشروع"]||"—"], avg=o&&o.s? o.a/o.s : null;
@@ -11229,6 +11248,8 @@ function lbFmt(k,v){ if(v==null||v==="") return '<span class="muted">—</span>'
   if(LB_PCT[k]) return fnum(v,v<1?2:1)+"%";
   if(k==="_rate"){ const c=/قوي|Strong/.test(v)?"#1D9E75":/ضعيف|Weak/.test(v)?"#E24B4A":/متوسط|Average/.test(v)?"#BA7517":"#888780"; return '<span class="md-rate" style="color:'+c+'">'+esc(v)+"</span>"; }
   if(k==="_fatigue"){ const c=/يتحرق|Burning/.test(v)?"#E24B4A":/علامات|Early/.test(v)?"#BA7517":/سليم|Healthy/.test(v)?"#1D9E75":"#888780"; return '<span class="md-rate" style="color:'+c+'">'+(/يتحرق|Burning/.test(v)?"🔥 ":"")+esc(v)+"</span>"; }
+  if(k==="_score"){ const c=v>=70?"#1D9E75":v>=40?"#BA7517":"#E24B4A"; return '<span class="md-rate" style="color:'+c+'">'+fnum(v,0)+"</span>"; }
+  if(k==="_views") return esc(fcompact(v,0)); if(k==="_freq") return fnum(v,2);
   if(k==="_tags") return String(v).split("، ").map(t=>'<span class="lb-tag">'+esc(t)+"</span>").join(" ");
   if(LB_NUM[k]) return fnum(v,0);
   if(k==="URL") return '<a href="'+esc(v)+'" target="_blank" rel="noopener">▶ '+esc(L("الفيديو","Video"))+"</a>";
@@ -11305,15 +11326,27 @@ function vsCurve(id){ const rows=((LB.data&&LB.data.V)||{})[id]||[]; if(!rows.le
   const W=520,H=170,pl=34,pr=10,pt=10,pb=24, X=i=>pl+i*(W-pl-pr)/4, Y=v=>pt+(1-v)*(H-pt-pb);
   let svg='<svg viewBox="0 0 '+W+" "+H+'" class="vs-svg" role="img">'+[0,.25,.5,.75,1].map(v=>'<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="var(--line)" stroke-width="1"/><text x="'+(pl-6)+'" y="'+(Y(v)+4)+'" font-size="10" text-anchor="end" fill="var(--ink-3)">'+Math.round(v*100)+"%</text>").join("")+
     labs.map((t,i)=>'<text x="'+X(i)+'" y="'+(H-6)+'" font-size="10" text-anchor="middle" fill="var(--ink-3)">'+esc(t)+"</text>").join("");
-  let worst=null; const leg=[];
+  let worst=null; const leg=[], AV=vsAvg();
   rows.forEach(v=>{ const st=+v.plays||0; if(!st) return; const pts=[st,+v.p25||0,+v.p50||0,+v.p75||0,+v.p100||0].map(x=>Math.min(1,x/st));
     const c=col[v.platform]||"var(--ink-2)";
     svg+='<polyline fill="none" stroke="'+c+'" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" points="'+pts.map((y,i)=>X(i)+","+Y(y)).join(" ")+'"/>'+pts.map((y,i)=>'<circle cx="'+X(i)+'" cy="'+Y(y)+'" r="3" fill="'+c+'"><title>'+esc(labs[i]+": "+fnum(y*100,1)+"%")+"</title></circle>").join("");
-    for(let i=1;i<pts.length;i++){ const d=pts[i-1]>0?1-pts[i]/pts[i-1]:0; if(!worst||d>worst.d) worst={d:d,i:i,p:v.platform}; }
+    const av=AV[v.platform]; if(av&&rows.length===1) svg+='<polyline fill="none" stroke="'+c+'" stroke-opacity=".45" stroke-width="1.5" stroke-dasharray="4 4" points="'+av.map((y,i)=>X(i)+","+Y(y)).join(" ")+'"/>';
+    if(av&&(!worst||st>worst.st)) worst={st:st,p:v.platform,me:pts,av:av};
     leg.push('<span><i style="background:'+c+'"></i>'+esc((platById(v.platform)||{}).name||v.platform)+"</span>"); });
   svg+="</svg>";
   return '<div class="vs-box"><div class="vs-leg">'+leg.join("")+"</div>"+svg+
-    (worst&&worst.d>0?'<div class="hint">'+esc(L("أكبر نزول: من ","Biggest drop: ")+labs[worst.i-1]+L(" لـ "," → ")+labs[worst.i]+" (−"+fnum(worst.d*100,0)+"%) "+L("على ","on ")+((platById(worst.p)||{}).name||worst.p)+(worst.i===1?L(" — الهوك مش ماسك الناس"," — the hook isn't holding people"):""))+"</div>":"")+"</div>"; }
+    (worst?vsVerdict(worst,labs):"")+"</div>"; }
+/** متوسط الحساب لكل منصة (موزون بالمشاهدات) — المنصات بتعدّ أي تشغيل تلقائي مشاهدة، فالنزول من البداية لـ 25% كبير عند كل الفيديوهات؛
+    المقارنة بالمتوسط هي اللي بتقول الفيديو ده أحسن ولا أوحش من المعتاد. */
+function vsAvg(){ if(LB.vsAvg) return LB.vsAvg; const T={};
+  Object.values((LB.data&&LB.data.V)||{}).forEach(rs=>rs.forEach(v=>{ const t=T[v.platform]||(T[v.platform]=[0,0,0,0,0]); t[0]+=+v.plays||0; t[1]+=+v.p25||0; t[2]+=+v.p50||0; t[3]+=+v.p75||0; t[4]+=+v.p100||0; }));
+  const A={}; Object.keys(T).forEach(k=>{ const t=T[k]; if(t[0]) A[k]=t.map(x=>x/t[0]); }); return (LB.vsAvg=A); }
+function vsVerdict(w,labs){ const pn=(platById(w.p)||{}).name||w.p; let best=null;
+  for(let i=1;i<5;i++){ if(!w.av[i]) continue; const r=w.me[i]/w.av[i]; if(!best||Math.abs(Math.log(r||1e-6))>Math.abs(Math.log(best.r||1e-6))) best={i:i,r:r}; }
+  if(!best) return ""; const pc=Math.round((best.r-1)*100), good=best.r>=1;
+  const where=best.i===1?L("في أول ربع (الهوك)","in the first quarter (the hook)"):best.i===4?L("في الإكمال للآخر","in finishing the video"):L("لحد ","up to ")+labs[best.i];
+  return '<div class="hint" style="color:'+(good?"#1D9E75":"#D85A5A")+'">'+esc(pn+": "+where+" "+(good?L("أحسن من متوسط حسابك بـ ","better than your account average by "):L("أوحش من متوسط حسابك بـ ","worse than your account average by "))+Math.abs(pc)+"%")+
+    '</div><div class="hint">'+esc(L("الخط المتقطع = متوسط حسابك على نفس المنصة.","Dashed line = your account average on the same platform."))+"</div>"; }
 function vsTable(id){ const rows=((LB.data&&LB.data.V)||{})[id]||[]; if(!rows.length) return '<div class="hint">'+esc(L("مفيش أرقام مشاهدة للفيديو ده لسه.","No view data for this video yet."))+"</div>";
   const n=x=>x==null||x===""?"—":fcompact(+x,0), pc=(x,st)=>st&&x!=null?fnum(100*x/st,1)+"%":"—";
   return '<div class="tw"><table class="an-tbl"><tr><th>'+esc(L("المنصة","Platform"))+'</th><th class="num">'+esc(L("مشاهدات","Views"))+'</th><th class="num">2s</th><th class="num">6s</th><th class="num">ThruPlay</th><th class="num">25%</th><th class="num">50%</th><th class="num">75%</th><th class="num">100%</th><th class="num" title="'+esc(L("متوسط التكرار اليومي","Average daily frequency"))+'">'+esc(L("التكرار","Freq."))+"</th><th class=\"num\">"+esc(L("حملات","Campaigns"))+"</th></tr>"+
@@ -11325,7 +11358,8 @@ function lbCard(r){ const id=r.__id, st=r["حالة الإعلان"]||"", fat=St
       '<label class="lbc-ck" title="'+esc(L("حدّد","Select"))+'"><input type="checkbox" data-a="lbSel" data-id="'+esc(id)+'"'+(LB.sel.has(id)?" checked":"")+"></label>"+
       (/يتحرق|Burning/.test(fat)?'<span class="pm-tag r lbc-bd">'+esc(L("تعبان","Fatigued"))+"</span>":/علامات|Early/.test(fat)?'<span class="pm-tag y lbc-bd">'+esc(L("بدأ يتعب","Tiring"))+"</span>":"")+
       (r.__thumb?'<button class="lbc-zm" data-a="thZoom" data-id="'+esc(id)+'" title="'+esc(L("كبّر الصورة","Enlarge"))+'">⤢</button>':"")+"</div>"+
-    '<div class="lbc-b"><div class="lbc-t"><b class="num">'+esc(id)+"</b>"+(r._rate?'<span class="lbc-r">'+lbFmt("_rate",r._rate)+"</span>":"")+"</div>"+
+    '<div class="lbc-b"><div class="lbc-t"><b class="num">'+esc(id)+"</b>"+(r._score!=null?'<span class="lbc-r" title="'+esc(L("الدرجة من 100 مقارنة بفيديوهات حسابك","Score out of 100 vs your other videos"))+'">'+lbFmt("_score",r._score)+"</span>":"")+(r._rate?'<span class="lbc-r">'+lbFmt("_rate",r._rate)+"</span>":"")+"</div>"+
+      (r._htype||r._angle?'<div class="lbc-s">'+esc([r._htype,r._angle,r._emo].filter(Boolean).join(" · "))+"</div>":"")+
       '<div class="lbc-s">'+esc([r["المعلن"],r["الأسلوب"],st].filter(Boolean).join(" · ")||"—")+"</div>"+upBadges((LB.data.N||{})[id])+
       (r.__lf?'<span class="lf-b" title="'+esc(r.__lf)+'">💾 '+esc(L("على الجهاز","On this Mac"))+"</span>":"")+
       (hk||r.__thumb?"":'<div class="lbc-hk no">'+esc(r.__note==="no_video"?L("مفيش فيديو على الدرايف","No video on Drive"):L("لسه مفيش هوك","No hook yet"))+"</div>")+
@@ -11453,10 +11487,34 @@ function renderCreativeLibrary(){
   const tb=(id,icon,label,n)=>'<button class="lb-tb'+(LB.panel===id?" open":"")+(n?" on":"")+'" data-a="lbPanel" data-p="'+id+'">'+icon+" "+esc(label)+(n?' <b>'+n+"</b>":"")+"</button>";
   let h='<div class="card lb-ctl"><div class="lb-bar">'+
     '<input class="inp lb-q" data-c="lbQ" placeholder="'+esc(L("🔍 دوّر في كل الأعمدة…","🔍 Search all columns…"))+'" value="'+esc(LB.q)+'">'+
-    tb("cols","☰",L("الأعمدة","Fields"),0)+tb("filter","⧩",L("فلتر","Filter"),nF)+tb("group","▤",L("تجميع","Group"),nG)+tb("sort","⇅",L("ترتيب","Sort"),nS)+
+    tb("cols","☰",L("الأعمدة","Fields"),0)+tb("ins","✦",L("الأنماط","Patterns"),0)+tb("launch","🚀",L("الإطلاقات","Launches"),0)+tb("filter","⧩",L("فلتر","Filter"),nF)+tb("group","▤",L("تجميع","Group"),nG)+tb("sort","⇅",L("ترتيب","Sort"),nS)+
     '<select class="sel lb-per" data-c="lbPer">'+selOpts([["all","الأرقام: كل الوقت","Numbers: all time"],["range","الأرقام: فترة","Numbers: date range"]],LB.per)+"</select>"+
     (LB.per==="range"?'<input class="inp" type="date" data-c="clbFrom" value="'+esc(LB.from)+'"><input class="inp" type="date" data-c="lbT" value="'+esc(LB.to)+'">':"")+
     lbLocalBtn(all)+lbViewBar()+'<button class="btn btn-p btn-s" data-a="lbSync" style="margin-inline-start:auto">'+esc(LB.syncing?L("بيحدّث…","Syncing…"):L("↻ تحديث من Airtable","↻ Sync Airtable"))+"</button></div>";
+  /* لوحة الإطلاقات الجديدة: أي فيديو أول صرف عليه في آخر ٢١ يوم، وحكمه حسب قاعدتك (حد أدنى للصرف + CPA مستهدف) — CPA من طلبات خزامى */
+  if(LB.panel==="launch"){ const R=lnRule(all), since=addDays(todayISO(),-21);
+    const ls=all.filter(r=>r._first&&r._first>=since).map(r=>Object.assign(r,{_ln:lnVerdict(r,R)})).sort((a,b)=>a._first<b._first?1:-1);
+    const cnt=k=>ls.filter(r=>r._ln.k===k).length;
+    h+='<div class="lb-pnl"><div class="lb-ph"><b>'+esc(L("الإطلاقات الجديدة (آخر ٢١ يوم)","New launches (last 21 days)"))+'</b><span class="hint">'+esc(L("الحكم بيتحدث مع كل سحب · الأرقام من خزامى","Updates with every pull · orders from Khzama"))+"</span></div>"+
+      '<div class="frow" style="align-items:flex-end;margin-bottom:10px"><div class="fld"><label>'+esc(L("نحكم بعد صرف (ر.س)","Judge after spend"))+'</label><input class="inp" type="number" min="0" data-c="lnMin" value="'+R.min+'" style="width:110px"></div>'+
+        '<div class="fld"><label>'+esc(L("CPA المستهدف","Target CPA"))+'</label><input class="inp" type="number" min="0" step="0.5" data-c="lnCpa" value="'+(+R.cpa).toFixed(1)+'" style="width:110px"></div>'+
+        '<div class="hint" style="flex:1">'+esc(R.auto?L("الـ CPA المستهدف = متوسط حسابك لحد ما تكتب رقم.","Target CPA = your account average until you set one."):"")+"</div></div>"+
+      '<div class="ac-hero" style="margin-bottom:8px">'+[["win","ناجح","Winning","#1D9E75"],["edge","على الحافة","Borderline","#BA7517"],["fail","فاشل","Failing","#D85A5A"],["wait","بيتجمع","Gathering","#888780"]].map(x=>'<span class="acr-pill" style="color:'+x[3]+';border-color:'+x[3]+'">'+cnt(x[0])+" "+esc(L(x[1],x[2]))+"</span>").join("")+"</div>"+
+      (ls.length?'<div class="tw"><table class="an-tbl"><tr><th>'+esc(L("الفيديو","Video"))+'</th><th>'+esc(L("الحكم","Verdict"))+'</th><th>'+esc(L("أول صرف","First spend"))+'</th><th class="num">'+esc(L("الصرف","Spend"))+'</th><th class="num">'+esc(L("الطلبات","Orders"))+'</th><th class="num">CPA</th><th class="num">ROAS</th><th>'+esc(L("المنصات","Platforms"))+"</th></tr>"+
+        ls.map(r=>'<tr><td><button class="btn btn-s" data-a="clbOpen" data-id="'+esc(r.__id)+'">'+esc(r.__id)+"</button> "+esc(r["المعلن"]||"")+'</td><td><span class="md-rate" style="color:'+r._ln.c+'">'+esc(r._ln.t)+'</span></td><td>'+esc(fdate(r._first))+'</td><td class="num">'+fnum(r._spend,0)+'</td><td class="num">'+fnum(r._orders,0)+'</td><td class="num">'+(r._cpa!=null?fnum(r._cpa,1):"—")+'</td><td class="num">'+(r._roas!=null?(+r._roas).toFixed(2)+"x":"—")+"</td><td>"+esc(r._plats||"")+"</td></tr>").join("")+"</table></div>"
+        :'<div class="hint">'+esc(L("مفيش فيديوهات اتطلقت في آخر ٢١ يوم.","No videos launched in the last 21 days."))+"</div>")+"</div>"; }
+  /* لوحة الأنماط: أداء كل نوع هوك / زاوية / مشاعر / مشروع / معلن — على الفيديوهات اللي في الفلتر الحالي وعليها صرف */
+  if(LB.panel==="ins"){ const dims=[["_htype","نوع الهوك","Hook type"],["_angle","الزاوية","Angle"],["_emo","المشاعر","Emotion"],["المشروع","المشروع","Project"],["المعلن","المعلن","Talent"],["الأسلوب","الأسلوب","Style"]], dk=LB.insDim||"_htype", dd=dims.find(d=>d[0]===dk)||dims[0];
+    const G={}; rows.filter(r=>r._spend>0).forEach(r=>{ const k=r[dk]||L("مش متصنف","Untagged"), o=G[k]||(G[k]={n:0,sp:0,a:0,hk:0,hkw:0,sc:0,scn:0}); o.n++; o.sp+=r._spend; o.a+=r._revenue;
+      if(r._hookr!=null){ o.hk+=r._hookr*r._spend; o.hkw+=r._spend; } if(r._score!=null){ o.sc+=r._score; o.scn++; } });
+    const tot=lbSum(rows.filter(r=>r._spend>0)), list=Object.entries(G).sort((a,b)=>b[1].sp-a[1].sp);
+    h+='<div class="lb-pnl"><div class="lb-ph"><b>'+esc(L("الأنماط — أداء كل نوع","Patterns — performance by type"))+'</b><span class="hint">'+esc(L("على الفيديوهات اللي في الفلتر الحالي وعليها صرف · ROAS من خزامى · دوسة على الاسم بتفلتر بيه","Videos in the current filter with spend · ROAS from Khzama · click a name to filter"))+"</span></div>"+
+      '<div class="pm-seg" style="margin-bottom:10px">'+dims.map(d=>'<button class="'+(dk===d[0]?"on":"")+'" data-a="lbInsDim" data-k="'+esc(d[0])+'">'+esc(L(d[1],d[2]))+"</button>").join("")+"</div>"+
+      '<div class="tw"><table class="an-tbl"><tr><th>'+esc(L(dd[1],dd[2]))+'</th><th class="num">'+esc(L("فيديوهات","Videos"))+'</th><th class="num">'+esc(L("الصرف","Spend"))+'</th><th class="num">'+esc(L("الإيراد","Revenue"))+'</th><th class="num">ROAS</th><th class="num">'+esc(L("مقابل المتوسط","vs average"))+'</th><th class="num">Hook %</th><th class="num">'+esc(L("متوسط الدرجة","Avg score"))+"</th></tr>"+
+      list.map(([k,o])=>{ const ro=o.sp?o.a/o.sp:null, d=ro!=null&&tot.roas?(ro/tot.roas-1)*100:null;
+        return '<tr><td><button class="btn btn-s" data-a="lbInsPick" data-k="'+esc(dk)+'" data-v="'+esc(k)+'">'+esc(k)+'</button></td><td class="num">'+o.n+'</td><td class="num">'+fcompact(o.sp,0)+'</td><td class="num">'+fcompact(o.a,0)+'</td><td class="num">'+(ro!=null?ro.toFixed(2)+"x":"—")+
+          '</td><td class="num" style="color:'+(d==null?"inherit":d>=10?"#1D9E75":d<=-10?"#D85A5A":"inherit")+'">'+(d==null?"—":(d>0?"+":"")+fnum(d,0)+"%")+'</td><td class="num">'+(o.hkw?fnum(o.hk/o.hkw,1)+"%":"—")+'</td><td class="num">'+(o.scn?fnum(o.sc/o.scn,0):"—")+"</td></tr>"; }).join("")+"</table></div>"+
+      (rows.some(r=>r._htype)?"":'<div class="hint">'+esc(L("لسه مفيش فيديوهات متصنفة — التصنيف بيتعمل مع السحب.","No videos tagged yet — tagging runs with the pull."))+"</div>")+"</div>"; }
   /* لوحة الأعمدة */
   if(LB.panel==="cols"){ const on=LB.cols.filter(k=>colsAll.indexOf(k)>=0), off=colsAll.filter(k=>on.indexOf(k)<0);
     h+='<div class="lb-pnl"><div class="lb-ph"><b>'+esc(L("الأعمدة","Fields"))+'</b><span class="hint">'+esc(L("اسحب الظاهر يمين وشمال عشان ترتّبه · دوسة بتخفي · دوسة على المخفي بتظهره","Drag to reorder · click to hide/show"))+"</span>"+
@@ -11579,6 +11637,15 @@ ACT.lbNoteSave=async t=>{ const id=t.dataset.id, tags=[...new Set((($("#lbTags")
   const n=Object.assign({},LB.data.N[id]||{},{tags:tags,note:note});
   try{ await DB.doc("media_notes/"+id).set(n); LB.data.N[id]=n; if(MA.data) MA.data.N[id]=n; closeModal(); render(); toast(L("اتحفظ","Saved")); }
   catch(e){ toast(L("مقدرتش أحفظ: ","Couldn't save: ")+(e.message||e),true); } };
+function lnRule(rows){ const st=S.cfg.settings.launch||{}, sm=lbSum(rows.filter(r=>r._spend>0)), avg=sm.n? sm.sp/sm.n : 0;
+  return {min:st.min!=null?+st.min:300, cpa:st.cpa?+st.cpa:avg, auto:!st.cpa}; }
+function lnVerdict(r,R){ if(r._spend<R.min) return {k:"wait",t:L("بيتجمع","Gathering"),c:"#888780"};
+  if(!r._orders) return {k:"fail",t:L("فاشل — مفيش طلبات","Failing — no orders"),c:"#D85A5A"};
+  return r._cpa<=R.cpa? {k:"win",t:L("ناجح","Winning"),c:"#1D9E75"} : r._cpa<=R.cpa*1.3? {k:"edge",t:L("على الحافة","Borderline"),c:"#BA7517"} : {k:"fail",t:L("فاشل","Failing"),c:"#D85A5A"}; }
+CHG.lnMin=v=>{ S.cfg.settings.launch=Object.assign({},S.cfg.settings.launch,{min:Math.max(0,+v||0)}); saveCfg(); render(); };
+CHG.lnCpa=v=>{ S.cfg.settings.launch=Object.assign({},S.cfg.settings.launch,{cpa:+v>0?+v:null}); saveCfg(); render(); };
+ACT.lbInsDim=t=>{ LB.insDim=t.dataset.k; render(); };
+ACT.lbInsPick=t=>{ LB.filters=(LB.filters||[]).filter(f=>f.f!==t.dataset.k).concat([{f:t.dataset.k,op:"is",v:[t.dataset.v]}]); LB.panel=null; render(); };
 ACT.clbOpen=t=>{ const id=t.dataset.id, r=lbRows().find(x=>x.__id===id); if(!r) return;
   const pf=(LB.data.P[id]||[]);
   const fields=LB_AT.filter(k=>r[k]!=null&&r[k]!=="").map(k=>"<tr><th>"+esc(k)+"</th><td>"+lbFmt(k,r[k])+"</td></tr>").join("");
