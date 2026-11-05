@@ -967,3 +967,41 @@ Yes. They are stored separately in `media_notes`, and the sync never overwrites 
 - **Tasks** open on the board: four soft columns with white cards (title, priority, client, assignee, due date in red when late) and a joined KPI strip on top.
 - **Today live** starts with live KPIs vs the same hour yesterday, spend hour by hour (today vs yesterday) and spend pace per platform against where it should be by now.
 - **Interface style:** Settings → Display → «شكل الواجهة» has three buttons — Classic / Clay / Clay + Glass (`SKINS`, `ACT.skinSet`, `applySkin`). Saved per browser in `localStorage gad.skin`. The URL still works too: add `?skin=clay` (Claymorphism: soft raised cards, pressed inputs, rounded pill buttons) or `?skin=clayglass` (Clay + frosted-glass cards, translucent sidebar and top bar, plain background — no coloured blobs) to the site URL. Both have light and dark versions. The choice is remembered in the browser (`localStorage gad.skin`); `?skin=off` goes back to the normal look. The default look is unchanged.
+
+## 20) Media-buyer tools (November 2026)
+
+All of these are free: they run on data the site already has (Supabase free tier, GitHub Pages, the existing platform connectors, Khzama, Mixpanel, and the in-app Claude assistant). The system never edits campaigns: it designs, measures and suggests, and you act in the ad platform.
+
+- **Quick refresh** (لوحتي → «⚡ تحديث سريع»): writes `sys/pullreq` with `mode:"quick"`. Claude then pulls **today only** (platform spend + Khzama), rebuilds and closes the request. This takes minutes instead of a full pull. «حدّث كل حاجة» is unchanged.
+- **Video views, frequency, retention** (creative library):
+  - Each card shows total views and frequency across every campaign and platform, including TikTok Smart+ at material level.
+  - The video window has a per-platform table (views, 2s, 6s, ThruPlay, 25/50/75/100%, frequency, campaigns).
+  - It also has a retention curve with a dashed line for the account average, plus a verdict ("first quarter is X% better/worse than your average").
+  - Source: view `v_video_stats`, built from `ad_daily`.
+  - Frequency is the *average daily* frequency (impressions ÷ summed daily reach), not unique reach over the whole period.
+- **AI hook tags + score**:
+  - `media.ai_tags` holds `{hook_type, angle, emotion}`. Claude classifies every spoken hook (runbook step 3e).
+  - These appear as library fields: «نوع الهوك», «الزاوية», «المشاعر».
+  - «الدرجة /100» is a percentile against your own videos: Khzama ROAS 50% + hook rate 25% + CTR 25%, for videos with at least 300 SAR spend.
+- **Patterns panel** (library → «✦ الأنماط»):
+  - ROAS, change vs average, hook % and average score for each hook type, angle, emotion, project, talent or style.
+  - Click a value to filter by it.
+  - «✍ اكتب Brief» asks the in-app assistant to write the next video brief from the winning patterns and hooks.
+- **Launches panel** (library → «🚀 الإطلاقات»):
+  - Lists every video whose first spend was in the last 21 days, with a verdict: winning / borderline / failing / gathering.
+  - The rule is minimum spend + target CPA. Target CPA defaults to the account average, and both are editable in the panel (`settings.launch`).
+- **Action center** («مركز الإجراءات»):
+  - Each item can become a task («حوّلها لمهمة» opens the task form pre-filled).
+  - «تجاهل» hides an item for today (`localStorage gad.acHide.<date>`).
+- **Test lab** (التجارب → «مختبر الاختبارات», docs `labtests/*`):
+  - **Groups with separate codes** (gender, age, placement, device, anything):
+    - Each group is its own ad set or campaign, with a tag in its name and in its Khzama link name.
+    - The designer computes the orders needed per group (80% power, 95% confidence, chosen minimum difference), the days and the total budget, and writes the exact setup steps.
+    - The readout shows spend (ad_daily), real orders and ROAS (Khzama) next to platform ROAS, with a two-sided test on orders relative to spend.
+  - **City holdout**:
+    - Switch Meta off in chosen cities.
+    - The readout is difference-in-differences on Mixpanel purchases by city (`mx_daily dim=city`, runbook step 3 «GAD mx city»), giving Meta's approximate true share.
+- **Month & seasons** (التقارير → «الشهر والمواسم»):
+  - Month-end forecast for spend and Khzama revenue, with needed daily spend and revenue. Budget and target are editable (`settings.month`).
+  - Every Hijri month (Umm al-Qura) with spend, revenue, ROAS and per-day averages. Ramadan and Dhul Hijjah are highlighted.
+  - Weekdays over the last 90 days.

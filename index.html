@@ -321,6 +321,7 @@ textarea.inp{resize:vertical;min-height:96px;font-family:var(--f-num);font-size:
 .cl-e{display:flex;gap:12px;align-items:baseline;padding:5px 0;border-bottom:1px dashed var(--line);font-size:13px}.cl-e:last-child{border-bottom:0}.cl-e .num{width:44px;color:var(--ink-3)}.cl-e span:nth-child(3){flex:1}
 .rf-card{margin-bottom:14px}.rf-top>div:first-child{flex:1}.rf-top{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px}
 .lbc-v{font-size:11.5px;color:var(--ink-2);margin-top:6px}.vs-box{margin:8px 0 4px}.vs-svg{width:100%;height:auto;display:block}.vs-leg{display:flex;gap:14px;font-size:12px;color:var(--ink-2);margin-bottom:4px}.vs-leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-inline-end:5px;vertical-align:-1px}
+.lab-st{margin:8px 0;font-size:12.5px}.lab-st summary{cursor:pointer;color:var(--ink-2)}.lab-st ol{margin:6px 0 0;padding-inline-start:20px;line-height:1.7}
 .rf-btn{font-size:15px;padding:10px 22px}.rf-spin{display:inline-block;animation:rfs 1s linear infinite}@keyframes rfs{to{transform:rotate(360deg)}}
 .rf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
 .rf-s{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:rgba(127,127,127,.04);display:flex;flex-direction:column;gap:2px}
@@ -2270,10 +2271,108 @@ function renderChanges(){
   return h;
 }
 
+/* ══════════════════ مختبر الاختبارات ══════════════════
+   نوعين:
+   • split — مجموعات (جنس/عمر/بليسمنت/جهاز/أي بريك داون): كل مجموعة Ad Set أو حملة لوحدها، وعلامتها (رقم الحملة أو اسم مخصص) موجودة
+     في اسم الحملة/الـ Ad Set وفي اسم لينك خزامى. الصرف من ad_daily، والطلبات والإيراد الحقيقيين من خزامى، وجنبهم اللي المنصة بتقوله.
+     الدلالة: اختبار ذو حدين على الطلبات بالنسبة للصرف (لو المجموعتين زي بعض، نصيب كل واحدة من الطلبات = نصيبها من الصرف).
+   • geo — إيقاف مدن (Holdout): تقفل ميتا في مدن معينة فترة، وتقارن تبرعات المدن دي بباقي المدن قبل وأثناء (فرق في الفرق)،
+     من ميكس بانل بالمدينة (mx_daily dim=city). السيستم بيصمم ويقرا بس — الإيقاف والـ Ad Sets بإيدك في المنصة. */
+const LAB={list:null,res:{},busy:{}};
+async function labLoad(){ if(LAB.list) return; LAB.list=[]; try{ LAB.list=await Store.getColl("labtests"); }catch(e){} render(); }
+const LAB_BD=[["gender","الجنس","Gender"],["age","العمر","Age"],["placement","البليسمنت","Placement"],["device","الجهاز","Device"],["city","المدينة","City"],["other","حاجة تانية","Other"]];
+function labNeed(mde){ const z=1.96+0.84, l=Math.log(1+mde); return Math.ceil(2*z*z/(l*l)); }   // طلبات لكل مجموعة عشان نلقط فرق mde (قوة 80%، ثقة 95%)
+function labPlan(o){ const n=labNeed(o.mde||0.3), arms=Math.max(2,(o.arms||[]).length||2), cpa=+o.cpa||0, b=+o.budget||0;
+  const days=cpa&&b? Math.ceil(n*cpa/b) : null; return {n:n,days:days,total:days? days*b*arms : null}; }
+function labArmsParse(t){ return String(t||"").split(/\n+/).map(x=>x.trim()).filter(Boolean).map(x=>{ const m=x.split(/\s*[=:]\s*/); return {name:m[0],tag:(m[1]||m[0]).trim()}; }); }
+function labSteps(o){ const P=labPlan(o), arms=o.arms||[];
+  if(o.type==="geo") return [L("اختار المدن اللي هتقفل فيها ميتا (حوالي ٢٠٪ من التبرعات): ","Pick the cities to switch Meta off in (~20% of donations): ")+(o.cities||[]).join("، "),
+    L("في كل حملات ميتا: Locations ← Exclude المدن دي، من يوم ","In every Meta campaign: Locations → exclude these cities, from ")+fdate(o.start)+L(" لمدة "," for ")+(o.days||14)+L(" يوم"," days"),
+    L("متغيّرش الميزانيات ولا الإعلانات في الفترة دي على قد ما تقدر — أي تغيير كبير بيبوّظ المقارنة.","Avoid big budget/creative changes during the test — they blur the comparison."),
+    L("بعد ما يخلص: رجّع المدن، والسيستم بيقارن تبرعات المدن دي بباقي المدن قبل وأثناء.","When it ends: add the cities back; the system compares them to the rest, before vs during.")];
+  return [L("اعمل ","Create ")+arms.length+L(" Ad Set (أو حملة) — واحدة لكل مجموعة: ",' ad sets (or campaigns), one per group: ')+arms.map(a=>a.name).join(" / "),
+    L("نفس الإعلانات ونفس الهدف ونفس الميزانية اليومية (","Same ads, same objective, same daily budget (")+fnum(+o.budget||0,0)+L(" ر.س لكل واحدة) — الفرق الوحيد هو الـ "," SAR each) — the only difference is the ")+L(((LAB_BD.find(x=>x[0]===o.bd)||[])[1])||"البريك داون",((LAB_BD.find(x=>x[0]===o.bd)||[])[2])||"breakdown"),
+    L("حط علامة كل مجموعة في اسم الـ Ad Set وفي اسم لينك خزامى بتاعها: ","Put each group's tag in the ad set name and in its Khzama link name: ")+arms.map(a=>a.name+" ← "+a.tag).join("، "),
+    L("سيبه شغال لحد ما كل مجموعة تجيب حوالي ","Let it run until each group has about ")+P.n+L(" طلب"," orders")+(P.days?L(" (≈ "," (≈ ")+P.days+L(" يوم)"," days)"):"")+L(" — متحكمش بدري.",". Don't call it early.")]; }
+function labDesign(o){ o=o||{}; const bdOpts=LAB_BD.map(x=>'<option value="'+x[0]+'"'+(o.bd===x[0]?" selected":"")+">"+esc(L(x[1],x[2]))+"</option>").join("");
+  modal(o.id?L("تعديل الاختبار","Edit test"):L("صمّم اختبار","Design a test"),
+    '<div class="frow"><div class="fld" style="flex:2"><label>'+esc(L("اسم الاختبار","Test name"))+'</label><input class="inp" id="lbN" value="'+esc(o.name||"")+'" placeholder="'+esc(L("مثلاً: رجالة ولا ستات في سقيا","e.g. men vs women on water"))+'"></div>'+
+      '<div class="fld"><label>'+esc(L("النوع","Type"))+'</label><select class="sel" id="lbTy" onchange="document.getElementById(\'lbGeo\').style.display=this.value===\'geo\'?\'\':\'none\';document.getElementById(\'lbSp\').style.display=this.value===\'geo\'?\'none\':\'\'">'+
+        '<option value="split"'+(o.type!=="geo"?" selected":"")+">"+esc(L("مجموعات بأكواد منفصلة","Groups with separate codes"))+'</option><option value="geo"'+(o.type==="geo"?" selected":"")+">"+esc(L("إيقاف مدن (Holdout)","City holdout"))+"</option></select></div></div>"+
+    '<div id="lbSp" style="'+(o.type==="geo"?"display:none":"")+'"><div class="frow"><div class="fld"><label>'+esc(L("بنختبر إيه","Breakdown"))+'</label><select class="sel" id="lbBd">'+bdOpts+"</select></div></div>"+
+      '<div class="fld"><label>'+esc(L("المجموعات — سطر لكل مجموعة: الاسم = العلامة اللي في اسم الـ Ad Set ولينك خزامى","Groups — one per line: name = tag used in the ad set and Khzama link names"))+'</label><textarea class="inp" id="lbArms" style="min-height:74px;direction:rtl;text-align:right" placeholder="رجالة = TST-M&#10;ستات = TST-F">'+esc((o.arms||[]).map(a=>a.name+" = "+a.tag).join("\n"))+"</textarea></div></div>"+
+    '<div id="lbGeo" style="'+(o.type==="geo"?"":"display:none")+'"><div class="fld"><label>'+esc(L("المدن اللي هتقفل فيها ميتا (افصل بفاصلة)","Cities where Meta is switched off (comma separated)"))+'</label><input class="inp" id="lbCities" value="'+esc((o.cities||[]).join("، "))+'" placeholder="'+esc(L("مثلاً: الدمام، أبها، تبوك","e.g. Dammam, Abha, Tabuk"))+'"></div></div>'+
+    '<div class="frow"><div class="fld"><label>'+esc(L("يبدأ","Starts"))+'</label><input class="inp" type="date" id="lbSt" value="'+esc(o.start||todayISO())+'"></div>'+
+      '<div class="fld"><label>'+esc(L("المدة (يوم)","Days"))+'</label><input class="inp" type="number" min="3" id="lbDays" value="'+(o.days||14)+'"></div>'+
+      '<div class="fld"><label>'+esc(L("ميزانية يومية لكل مجموعة","Daily budget per group"))+'</label><input class="inp" type="number" min="0" id="lbBud" value="'+(o.budget||300)+'"></div>'+
+      '<div class="fld"><label>'+esc(L("CPA المتوقع","Expected CPA"))+'</label><input class="inp" type="number" min="0" step="0.5" id="lbCpa" value="'+(o.cpa||((S.cfg.settings.launch||{}).cpa)||40)+'"></div>'+
+      '<div class="fld"><label>'+esc(L("أقل فرق عايز تلقطه","Smallest difference to detect"))+'</label><select class="sel" id="lbMde">'+[[0.2,"20%"],[0.3,"30%"],[0.5,"50%"]].map(x=>'<option value="'+x[0]+'"'+((o.mde||0.3)==x[0]?" selected":"")+">"+x[1]+"</option>").join("")+"</select></div></div>"+
+    '<div class="hint">'+esc(L("هحسبلك قبل الحفظ: محتاج كام طلب لكل مجموعة، وكام يوم، والميزانية الكلية، وخطوات الإعداد بالظبط.","On save you get: orders needed per group, days, total budget and exact setup steps."))+"</div>",
+    '<button class="btn btn-p" data-a="labSave" data-id="'+esc(o.id||"")+'">'+esc(L("احسب واحفظ","Calculate & save"))+"</button>"); }
+ACT.labNew=()=>labDesign(null);
+ACT.labEdit=t=>labDesign((LAB.list||[]).find(x=>x.id===t.dataset.id));
+ACT.labSave=async t=>{ const v=id=>($(id)||{}).value||"";
+  const o={id:t.dataset.id||"lt_"+uid(), name:v("#lbN").trim()||L("اختبار","Test"), type:v("#lbTy")||"split", bd:v("#lbBd")||"other",
+    arms:labArmsParse(v("#lbArms")), cities:v("#lbCities").split(/[،,]/).map(x=>x.trim()).filter(Boolean),
+    start:v("#lbSt")||todayISO(), days:Math.max(3,+v("#lbDays")||14), budget:+v("#lbBud")||0, cpa:+v("#lbCpa")||0, mde:+v("#lbMde")||0.3, createdAt:Date.now()};
+  if(o.type==="split"&&o.arms.length<2) return toast(L("اكتب مجموعتين على الأقل","Add at least two groups"),true);
+  if(o.type==="geo"&&!o.cities.length) return toast(L("اكتب المدن","Add the cities"),true);
+  o.end=addDays(o.start,o.days-1);
+  try{ await Store.setDoc("labtests",o.id,o); LAB.list=(LAB.list||[]).filter(x=>x.id!==o.id).concat([o]); delete LAB.res[o.id]; closeModal(); toast(L("اتحفظ","Saved")); render(); }
+  catch(e){ toast(L("مش اتحفظ","Not saved"),true); } };
+ACT.labDel=async t=>{ if(!confirm(L("تمسح الاختبار ده؟","Delete this test?"))) return; try{ await Store.delDoc("labtests",t.dataset.id); }catch(e){} LAB.list=(LAB.list||[]).filter(x=>x.id!==t.dataset.id); render(); };
+function labZ(o1,s1,o2,s2){ const N=o1+o2, p=s1/(s1+s2); if(!N||!s1||!s2) return null; const z=(o1-N*p)/Math.sqrt(N*p*(1-p));
+  const pv=2*(1-0.5*(1+Math.tanh(Math.abs(z)*0.7978845608*(1+0.044715*z*z)))); return {z:z,p:Math.max(0,Math.min(1,pv))}; }
+ACT.labRun=async t=>{ const o=(LAB.list||[]).find(x=>x.id===t.dataset.id); if(!o||LAB.busy[o.id]) return; LAB.busy[o.id]=1; render();
+  const sb=SUPA_DB.client, end=o.end<todayISO()?o.end:todayISO(); let R={at:Date.now()};
+  try{
+    if(o.type==="geo"){ const pre=addDays(o.start,-o.days);
+      const r=await sb.from("mx_daily").select("date,val,event,cnt").eq("dim","city").in("event",["purchase","revenue"]).gte("date",pre).lte("date",end);
+      if(r.error) throw r.error; const rows=r.data||[]; if(!rows.length) throw new Error(L("لسه مفيش تبرعات بالمدينة من ميكس بانل — قول لـ Claude «اسحب ميكس بانل بالمدينة».","No donations by city from Mixpanel yet — ask Claude to pull Mixpanel by city."));
+      const H=new Set(o.cities.map(c=>c.toLowerCase())), agg={hp:0,hd:0,rp:0,rd:0};
+      rows.filter(x=>x.event==="purchase").forEach(x=>{ const inH=H.has(String(x.val||"").toLowerCase()), during=x.date>=o.start; agg[(inH?"h":"r")+(during?"d":"p")]+=+x.cnt||0; });
+      const preDays=o.days, durDays=diffDays(o.start,end)+1, k=agg.hp&&agg.rp&&agg.rd? (agg.hd/agg.hp)/(agg.rd/agg.rp)*(1) : null;
+      R.geo=Object.assign(agg,{durDays:durDays,preDays:preDays,ratio:k,lift:k!=null?1-k:null});
+    } else {
+      const ad=await sb.from("ad_daily").select("date,spend,purchases,revenue,campaign_name,adset_name,ad_name").eq("level","ad").gte("date",o.start).lte("date",end);
+      const kz=await sb.from("khzama_link_daily").select("date,title,donations,amount").gte("date",o.start).lte("date",end);
+      if(ad.error) throw ad.error; if(kz.error) throw kz.error;
+      R.arms=o.arms.map(a=>{ const tg=a.tag.toLowerCase(), hit=x=>[x.campaign_name,x.adset_name,x.ad_name].some(n=>String(n||"").toLowerCase().indexOf(tg)>=0);
+        const A={name:a.name,tag:a.tag,sp:0,pp:0,pr:0,o:0,rev:0}; (ad.data||[]).filter(hit).forEach(x=>{ A.sp+=+x.spend||0; A.pp+=+x.purchases||0; A.pr+=+x.revenue||0; });
+        (kz.data||[]).filter(x=>String(x.title||"").toLowerCase().indexOf(tg)>=0).forEach(x=>{ A.o+=+x.donations||0; A.rev+=+x.amount||0; }); return A; });
+      const best=R.arms.slice().sort((a,b)=>(b.sp?b.o/b.sp:0)-(a.sp?a.o/a.sp:0))[0];
+      R.arms.forEach(a=>{ if(a!==best) a.sig=labZ(best.o,best.sp,a.o,a.sp); }); R.best=best.name; }
+  }catch(e){ R.err=(e&&e.message)||String(e); }
+  LAB.res[o.id]=R; delete LAB.busy[o.id]; render(); };
+function labCard(o){ const P=labPlan(o), R=LAB.res[o.id], today=todayISO(), st=today<o.start?"soon":today>o.end?"done":"run";
+  const prog=st==="run"? Math.round(100*(diffDays(o.start,today)+1)/o.days) : st==="done"?100:0;
+  let b='<div class="act-b">'+esc((o.type==="geo"?L("إيقاف مدن: ","City holdout: ")+o.cities.join("، "):L((LAB_BD.find(x=>x[0]===o.bd)||[,"",""])[1],(LAB_BD.find(x=>x[0]===o.bd)||[,"",""])[2])+": "+o.arms.map(a=>a.name).join(" / ")))+"</div>";
+  b+='<div class="act-nums"><div class="act-n">'+esc(L("المدة","Window"))+"<b>"+esc(fdate(o.start)+" — "+fdate(o.end))+'</b></div><div class="act-n">'+esc(L("التقدّم","Progress"))+"<b>"+prog+"%</b></div>"+
+    (o.type!=="geo"?'<div class="act-n">'+esc(L("محتاج لكل مجموعة","Needed per group"))+"<b>"+P.n+L(" طلب"," orders")+'</b></div><div class="act-n">'+esc(L("المدة المطلوبة","Days needed"))+"<b>"+(P.days?P.days+L(" يوم"," days"):"—")+'</b></div><div class="act-n">'+esc(L("الميزانية الكلية","Total budget"))+"<b>"+(P.total?fcompact(P.total,0):"—")+"</b></div>":"")+"</div>";
+  b+='<details class="lab-st"><summary>'+esc(L("خطوات الإعداد في المنصة","Setup steps in the platform"))+"</summary><ol>"+labSteps(o).map(x=>"<li>"+esc(x)+"</li>").join("")+"</ol></details>";
+  if(R&&R.err) b+='<div class="hint" style="color:var(--bad)">'+esc(R.err)+"</div>";
+  else if(R&&R.arms){ b+='<div class="tw"><table class="an-tbl"><tr><th>'+esc(L("المجموعة","Group"))+'</th><th class="num">'+esc(L("الصرف","Spend"))+'</th><th class="num">'+esc(L("طلبات خزامى","Khzama orders"))+'</th><th class="num">'+esc(L("CPA حقيقي","Real CPA"))+'</th><th class="num">'+esc(L("ROAS حقيقي","Real ROAS"))+'</th><th class="num">'+esc(L("ROAS المنصة","Platform ROAS"))+'</th><th>'+esc(L("الحكم","Verdict"))+"</th></tr>"+
+      R.arms.map(a=>{ const enough=a.o>=P.n, sig=a.sig; const v=a.name===R.best? L("الأحسن لحد دلوقتي","Best so far") : !sig? "—" : sig.p<0.05? L("أوحش بشكل مؤكد","Clearly worse")+" (p="+fnum(sig.p,3)+")" : L("الفرق لسه مش مؤكد","Not significant yet")+" (p="+fnum(sig.p,2)+")";
+        return "<tr><td>"+esc(a.name)+' <span class="muted">'+esc(a.tag)+'</span></td><td class="num">'+fnum(a.sp,0)+'</td><td class="num">'+fnum(a.o,0)+(enough?"":' <span class="muted">/ '+P.n+"</span>")+'</td><td class="num">'+(a.o?fnum(a.sp/a.o,1):"—")+'</td><td class="num">'+(a.sp?(a.rev/a.sp).toFixed(2)+"x":"—")+'</td><td class="num">'+(a.sp&&a.pr?(a.pr/a.sp).toFixed(2)+"x":"—")+"</td><td>"+esc(v)+"</td></tr>"; }).join("")+"</table></div>"+
+      '<div class="hint">'+esc(L("«حقيقي» = من خزامى. «المنصة» = اللي المنصة بتقوله. الحكم مؤكد لما p أقل من 0.05 وكل مجموعة وصلت للطلبات المطلوبة.","«Real» = Khzama. «Platform» = what the platform reports. A verdict is solid when p < 0.05 and every group reached the needed orders."))+"</div>"; }
+  else if(R&&R.geo){ const g=R.geo; b+='<div class="act-nums"><div class="act-n">'+esc(L("المدن الموقوفة قبل → أثناء","Holdout before → during"))+"<b>"+fnum(g.hp,0)+" → "+fnum(g.hd,0)+'</b></div><div class="act-n">'+esc(L("باقي المدن قبل → أثناء","Rest before → during"))+"<b>"+fnum(g.rp,0)+" → "+fnum(g.rd,0)+"</b></div>"+
+      '<div class="act-n">'+esc(L("نصيب ميتا الحقيقي (تقريباً)","Meta's true share (approx.)"))+"<b>"+(g.lift!=null?fnum(g.lift*100,0)+"%":"—")+"</b></div></div>"+
+      '<div class="hint">'+esc(L("لو التبرعات في المدن الموقوفة نزلت أكتر من باقي المدن بـ X%، يبقى تقريباً X% من التبرعات هناك كانت جاية من ميتا. الأيام لسه ماكملتش = النتيجة مبدئية.","If donations in the holdout cities fell X% more than elsewhere, roughly X% of donations there came from Meta. Before the window ends the result is preliminary."))+"</div>"; }
+  const col=st==="done"?"#1D9E75":st==="run"?"#6F7FF2":"#888780";
+  return '<div class="act"><div class="act-bar" style="background:'+col+'"></div><div class="act-in"><div class="act-top"><span class="act-pri" style="color:'+col+'">'+esc(st==="done"?L("خلص","Done"):st==="run"?L("شغال","Running"):L("لسه هيبدأ","Not started"))+"</span>"+
+    '<span class="act-t">'+esc(o.name)+"</span>"+
+    '<button class="btn btn-s btn-p" style="margin-inline-start:auto" data-a="labRun" data-id="'+esc(o.id)+'"'+(LAB.busy[o.id]?" disabled":"")+">"+esc(LAB.busy[o.id]?L("بحسب…","Calculating…"):R?L("↻ حدّث النتيجة","↻ Update result"):L("احسب النتيجة","Calculate result"))+"</button>"+
+    '<button class="btn btn-s" data-a="labEdit" data-id="'+esc(o.id)+'">'+esc(L("تعديل","Edit"))+'</button><button class="btn btn-s btn-d" data-a="labDel" data-id="'+esc(o.id)+'">'+esc(L("حذف","Delete"))+"</button></div>"+b+"</div></div>"; }
+function renderLab(){ if(!(window.SUPA_DB&&SUPA_DB.client)) return ""; if(!LAB.list){ setTimeout(labLoad,0); }
+  const ls=(LAB.list||[]).slice().sort((a,b)=>a.start<b.start?1:-1);
+  return '<div class="card" style="margin-bottom:16px"><div class="card-h"><div><div class="card-t">'+esc(L("مختبر الاختبارات","Test lab"))+'</div><div class="hint">'+esc(L("جنس، عمر، بليسمنت، جهاز، مدن… السيستم يصمم الاختبار ويقرا نتيجته من خزامى — والإعداد بإيدك في المنصة.","Gender, age, placement, device, cities… The system designs the test and reads the result from Khzama — you set it up in the platform."))+'</div></div>'+
+    '<button class="btn btn-p" data-a="labNew">'+esc(L("+ صمّم اختبار","+ Design a test"))+"</button></div>"+
+    (ls.length?'<div class="grid">'+ls.map(labCard).join("")+"</div>":'<div class="hint">'+esc(LAB.list?L("مفيش اختبارات لسه.","No tests yet."):L("بحمّل…","Loading…"))+"</div>")+"</div>"; }
+
 /* ══════════════════ شاشة التجارب ══════════════════ */
 function renderExperiments(){
   const list=(S.experiments||[]).slice().sort((a,b)=> a.start<b.start?1:-1);
-  let h='<div style="display:flex;gap:9px;flex-wrap:wrap;margin-bottom:16px">'+
+  let h=renderLab()+'<div style="display:flex;gap:9px;flex-wrap:wrap;margin-bottom:16px">'+
     '<button class="btn btn-p" data-a="xAdd">+ تجربة جديدة</button></div>';
   if(!list.length) return h+emptyBox(
     L("سجّل فرضية، حدد المجموعة الضابطة ومجموعة الاختبار، والنظام يحسب النتيجة من بياناتك.","Log a hypothesis, define the control and test groups, and the system computes the result from your data."),
@@ -11514,7 +11613,8 @@ function renderCreativeLibrary(){
       list.map(([k,o])=>{ const ro=o.sp?o.a/o.sp:null, d=ro!=null&&tot.roas?(ro/tot.roas-1)*100:null;
         return '<tr><td><button class="btn btn-s" data-a="lbInsPick" data-k="'+esc(dk)+'" data-v="'+esc(k)+'">'+esc(k)+'</button></td><td class="num">'+o.n+'</td><td class="num">'+fcompact(o.sp,0)+'</td><td class="num">'+fcompact(o.a,0)+'</td><td class="num">'+(ro!=null?ro.toFixed(2)+"x":"—")+
           '</td><td class="num" style="color:'+(d==null?"inherit":d>=10?"#1D9E75":d<=-10?"#D85A5A":"inherit")+'">'+(d==null?"—":(d>0?"+":"")+fnum(d,0)+"%")+'</td><td class="num">'+(o.hkw?fnum(o.hk/o.hkw,1)+"%":"—")+'</td><td class="num">'+(o.scn?fnum(o.sc/o.scn,0):"—")+"</td></tr>"; }).join("")+"</table></div>"+
-      (rows.some(r=>r._htype)?"":'<div class="hint">'+esc(L("لسه مفيش فيديوهات متصنفة — التصنيف بيتعمل مع السحب.","No videos tagged yet — tagging runs with the pull."))+"</div>")+"</div>"; }
+      (rows.some(r=>r._htype)?"":'<div class="hint">'+esc(L("لسه مفيش فيديوهات متصنفة — التصنيف بيتعمل مع السحب.","No videos tagged yet — tagging runs with the pull."))+"</div>")+
+      '<div style="margin-top:10px"><button class="btn btn-p btn-s" data-a="lbBrief">✍ '+esc(L("اكتب Brief للفيديو الجاي","Write the next video brief"))+'</button> <span class="hint">'+esc(L("المساعد بيكتبه من أنجح الأنماط والهوكات في الفلتر الحالي","The assistant writes it from the best patterns and hooks in the current filter"))+"</span></div></div>"; }
   /* لوحة الأعمدة */
   if(LB.panel==="cols"){ const on=LB.cols.filter(k=>colsAll.indexOf(k)>=0), off=colsAll.filter(k=>on.indexOf(k)<0);
     h+='<div class="lb-pnl"><div class="lb-ph"><b>'+esc(L("الأعمدة","Fields"))+'</b><span class="hint">'+esc(L("اسحب الظاهر يمين وشمال عشان ترتّبه · دوسة بتخفي · دوسة على المخفي بتظهره","Drag to reorder · click to hide/show"))+"</span>"+
@@ -11644,6 +11744,14 @@ function lnVerdict(r,R){ if(r._spend<R.min) return {k:"wait",t:L("بيتجمع",
   return r._cpa<=R.cpa? {k:"win",t:L("ناجح","Winning"),c:"#1D9E75"} : r._cpa<=R.cpa*1.3? {k:"edge",t:L("على الحافة","Borderline"),c:"#BA7517"} : {k:"fail",t:L("فاشل","Failing"),c:"#D85A5A"}; }
 CHG.lnMin=v=>{ S.cfg.settings.launch=Object.assign({},S.cfg.settings.launch,{min:Math.max(0,+v||0)}); saveCfg(); render(); };
 CHG.lnCpa=v=>{ S.cfg.settings.launch=Object.assign({},S.cfg.settings.launch,{cpa:+v>0?+v:null}); saveCfg(); render(); };
+ACT.lbBrief=()=>{ const all=lbRows().filter(lbPass).filter(r=>r._spend>0), tot=lbSum(all);
+  const grp=k=>{ const G={}; all.forEach(r=>{ const v=r[k]; if(!v) return; const o=G[v]||(G[v]={sp:0,a:0,n:0}); o.sp+=r._spend; o.a+=r._revenue; o.n++; });
+    return Object.entries(G).filter(([,o])=>o.sp>=500).map(([v,o])=>v+": ROAS "+(o.a/o.sp).toFixed(2)+" ("+o.n+" فيديو)").sort((a,b)=>parseFloat(b.split("ROAS ")[1])-parseFloat(a.split("ROAS ")[1])).slice(0,5).join(" | "); };
+  const top=all.filter(r=>r._score!=null&&r._hook).sort((a,b)=>b._score-a._score).slice(0,6).map(r=>"- ["+r._score+"/100، ROAS "+(r._roas||0).toFixed(2)+"، "+(r["المشروع"]||"")+"] "+String(r._hook).slice(0,160)).join("\n");
+  const q="اكتب Brief لفيديو إعلاني جديد لملبي (تبرعات) بالعربي، مبني على اللي ناجح فعلاً في الأرقام دي (ROAS من خزامى، متوسط الحساب "+(tot.roas||0).toFixed(2)+"):\n"+
+    "أنواع الهوك: "+grp("_htype")+"\nالزوايا: "+grp("_angle")+"\nالمشاعر: "+grp("_emo")+"\nالمشاريع: "+grp("المشروع")+"\n\nأنجح الهوكات:\n"+top+
+    "\n\nالمطلوب: المشروع المقترح، الزاوية، 3 هوكات بديلة (أول جملة، أقل من 12 كلمة، لهجة سعودية)، سكريبت 25-30 ثانية مقسم مشاهد، النص اللي على الشاشة، والـ CTA. وقول ليه اخترت ده من الأرقام.";
+  ACT.aiOpen(); setTimeout(()=>aiSend(q),400); };
 ACT.lbInsDim=t=>{ LB.insDim=t.dataset.k; render(); };
 ACT.lbInsPick=t=>{ LB.filters=(LB.filters||[]).filter(f=>f.f!==t.dataset.k).concat([{f:t.dataset.k,op:"is",v:[t.dataset.v]}]); LB.panel=null; render(); };
 ACT.clbOpen=t=>{ const id=t.dataset.id, r=lbRows().find(x=>x.__id===id); if(!r) return;
@@ -11957,9 +12065,52 @@ function rpHTML(D){
   if(sc.notes&&S.rp.notes) h+='<div class="rp-sec"><h3>'+esc(L("ملاحظات وخطوات جاية","Notes and next steps"))+'</h3><div style="white-space:pre-wrap">'+esc(S.rp.notes)+"</div></div>";
   return h+'<div class="rp-ft">'+esc(L("اتعمل من GADLYTICS · ","Generated by GADLYTICS · "))+esc(fdate(todayISO()))+"</div></div>";
 }
+/* ══ الشهر والمواسم (التقارير) ══
+   • توقع آخر الشهر: الصرف والإيراد (خزامى) لحد آخر يوم فيه داتا ÷ عدد الأيام × أيام الشهر، ومحتاج تصرف كام في اليوم عشان توصل للميزانية/هدف الإيراد.
+   • الشهور الهجرية (أم القرى): كل شهر هجري في الداتا بصرفه وإيراده و ROAS ومتوسط اليوم — رمضان وذي الحجة بيبانوا لوحدهم.
+   • أيام الأسبوع: متوسط إيراد اليوم و ROAS لكل يوم — الجمعة غالباً مختلفة. */
+const HIJ_F=(()=>{ try{ return new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn",{year:"numeric",month:"numeric",day:"numeric",timeZone:"UTC"}); }catch(e){ return null; } })();
+const HIJ_M=["محرم","صفر","ربيع الأول","ربيع الآخر","جمادى الأولى","جمادى الآخرة","رجب","شعبان","رمضان","شوال","ذو القعدة","ذو الحجة"];
+const HIJ_EN=["Muharram","Safar","Rabi I","Rabi II","Jumada I","Jumada II","Rajab","Sha'ban","Ramadan","Shawwal","Dhu al-Qadah","Dhu al-Hijjah"];
+function hijri(d){ if(!HIJ_F) return null; const p={}; HIJ_F.formatToParts((q=>new Date(Date.UTC(+q[0],+q[1]-1,+q[2])))(String(d).split("-"))).forEach(x=>{ p[x.type]=x.value; }); return {y:+String(p.year).replace(/\D/g,""),m:+p.month,d:+p.day}; }
+function renderMonth(){ const C=CURR[S.cfg.settings.currency]||"";
+  const days=[...new Set(S.facts.map(f=>f.date))].sort(), last=days[days.length-1];
+  if(!last) return card(L("الشهر والمواسم","Month & seasons"),"",'<div class="hint">'+esc(L("مفيش أرقام لسه.","No numbers yet."))+"</div>");
+  const m0=last.slice(0,8)+"01", dim=new Date(+last.slice(0,4),+last.slice(5,7),0).getDate(), dn=+last.slice(8,10);
+  const V=aggFacts(factsIn(m0,last)), sp=+V.spend||0, rv=+V.revenue||0, od=+V.orders||0;
+  const ms=S.cfg.settings.month||{}, bud=ms.budget!=null? +ms.budget : S.cfg.clients.reduce((a,c)=>a+(+c.monthlyBudget||0),0), tgt=+ms.rev||0;
+  const pS=sp/dn*dim, pR=rv/dn*dim, left=dim-dn;
+  const needS=bud&&left>0? (bud-sp)/left : null, needR=tgt&&left>0? (tgt-rv)/left : null;
+  const box=(lab,val,sub,c)=>'<div class="act-n">'+esc(lab)+'<b style="'+(c?"color:"+c:"")+'">'+val+"</b>"+(sub?'<small class="muted" style="display:block;font-size:11px">'+esc(sub)+"</small>":"")+"</div>";
+  let h=card(L("توقع آخر الشهر","Month-end forecast"),esc(L("لحد ","Through ")+fdate(last)+L(" · يوم "," · day ")+dn+L(" من "," of ")+dim),
+    '<div class="act-nums">'+box(L("الصرف لحد دلوقتي","Spent so far"),fnum(sp,0)+" "+esc(C))+box(L("الإيراد (خزامى)","Revenue (Khzama)"),fnum(rv,0)+" "+esc(C))+box("ROAS",sp?(rv/sp).toFixed(2)+"x":"—")+box(L("الطلبات","Orders"),fnum(od,0))+"</div>"+
+    '<div class="act-nums">'+box(L("الصرف المتوقع آخر الشهر","Projected spend"),fnum(pS,0),bud?L("الميزانية ","Budget ")+fnum(bud,0):"",bud?(pS>bud*1.05?"#D85A5A":pS<bud*0.9?"#BA7517":"#1D9E75"):"")+
+      box(L("الإيراد المتوقع آخر الشهر","Projected revenue"),fnum(pR,0),tgt?L("الهدف ","Target ")+fnum(tgt,0):"",tgt?(pR>=tgt?"#1D9E75":"#D85A5A"):"")+
+      box(L("محتاج تصرف في اليوم","Needed daily spend"),needS!=null?fnum(Math.max(0,needS),0):"—",L("عشان توصل للميزانية","to reach the budget"))+
+      box(L("محتاج إيراد في اليوم","Needed daily revenue"),needR!=null?fnum(Math.max(0,needR),0):"—",L("عشان توصل للهدف","to reach the target"))+"</div>"+
+    '<div class="frow" style="margin-top:8px"><div class="fld"><label>'+esc(L("ميزانية الشهر","Monthly budget"))+'</label><input class="inp" type="number" min="0" data-c="moBud" value="'+(bud||"")+'" style="width:140px"></div>'+
+      '<div class="fld"><label>'+esc(L("هدف الإيراد","Revenue target"))+'</label><input class="inp" type="number" min="0" data-c="moRev" value="'+(tgt||"")+'" style="width:140px"></div></div>');
+  /* الشهور الهجرية */
+  const HM={}; S.facts.filter(f=>matchFilter(f)).forEach(f=>{ const hj=hijri(f.date); if(!hj) return; const k=hj.y+"-"+String(hj.m).padStart(2,"0"); (HM[k]=HM[k]||{k:k,y:hj.y,m:hj.m,f:[],d:new Set()}).f.push(f); HM[k].d.add(f.date); });
+  const hl=Object.values(HM).sort((a,b)=>a.k<b.k?1:-1);
+  h+=card(L("الشهور الهجرية","Hijri months"),L("رمضان وذي الحجة بيبانوا لوحدهم · متوسط اليوم بيخلّي الشهور الناقصة تتقارن","Ramadan and Dhul Hijjah stand out · daily averages make partial months comparable"),
+    '<div class="tw"><table class="an-tbl"><tr><th>'+esc(L("الشهر","Month"))+'</th><th class="num">'+esc(L("أيام","Days"))+'</th><th class="num">'+esc(L("الصرف","Spend"))+'</th><th class="num">'+esc(L("الإيراد","Revenue"))+'</th><th class="num">ROAS</th><th class="num">'+esc(L("إيراد اليوم","Revenue/day"))+'</th><th class="num">'+esc(L("طلبات اليوم","Orders/day"))+"</th></tr>"+
+    hl.map(x=>{ const v=aggFacts(x.f), n=x.d.size, hot=x.m===9||x.m===12; return "<tr"+(hot?' style="background:color-mix(in srgb,var(--accent,#6F7FF2) 8%,transparent)"':"")+"><td>"+esc(L(HIJ_M[x.m-1],HIJ_EN[x.m-1])+" "+x.y)+'</td><td class="num">'+n+'</td><td class="num">'+fcompact(+v.spend||0,0)+'</td><td class="num">'+fcompact(+v.revenue||0,0)+'</td><td class="num">'+(+v.spend?((+v.revenue||0)/(+v.spend)).toFixed(2)+"x":"—")+'</td><td class="num">'+fnum((+v.revenue||0)/n,0)+'</td><td class="num">'+fnum((+v.orders||0)/n,1)+"</td></tr>"; }).join("")+"</table></div>"+
+    (HIJ_F?"":'<div class="hint">'+esc(L("المتصفح ده مش بيدعم التقويم الهجري.","This browser doesn't support the Hijri calendar."))+"</div>"));
+  /* أيام الأسبوع (آخر ٩٠ يوم) */
+  const from=addDays(last,-89), WD=[0,1,2,3,4,5,6].map(()=>({f:[],d:new Set()})), WN=[L("الأحد","Sun"),L("الاتنين","Mon"),L("التلات","Tue"),L("الأربع","Wed"),L("الخميس","Thu"),L("الجمعة","Fri"),L("السبت","Sat")];
+  factsIn(from,last).forEach(f=>{ const w=parseISO(f.date).getDay(); WD[w].f.push(f); WD[w].d.add(f.date); });
+  const wv=WD.map(x=>{ const v=aggFacts(x.f), n=x.d.size||1; return {rpd:(+v.revenue||0)/n, roas:+v.spend?(+v.revenue||0)/(+v.spend):null, spd:(+v.spend||0)/n}; }), avg=wv.reduce((a,x)=>a+x.rpd,0)/7;
+  h+=card(L("أيام الأسبوع (آخر ٩٠ يوم)","Weekdays (last 90 days)"),"",'<div class="tw"><table class="an-tbl"><tr><th>'+esc(L("اليوم","Day"))+'</th><th class="num">'+esc(L("صرف اليوم","Spend/day"))+'</th><th class="num">'+esc(L("إيراد اليوم","Revenue/day"))+'</th><th class="num">'+esc(L("مقابل المتوسط","vs average"))+'</th><th class="num">ROAS</th></tr>'+
+    [5,6,0,1,2,3,4].map(i=>{ const x=wv[i], d=avg?(x.rpd/avg-1)*100:0; return "<tr><td>"+esc(WN[i])+'</td><td class="num">'+fnum(x.spd,0)+'</td><td class="num">'+fnum(x.rpd,0)+'</td><td class="num" style="color:'+(d>=10?"#1D9E75":d<=-10?"#D85A5A":"inherit")+'">'+(d>0?"+":"")+fnum(d,0)+'%</td><td class="num">'+(x.roas!=null?x.roas.toFixed(2)+"x":"—")+"</td></tr>"; }).join("")+"</table></div>");
+  return h; }
+CHG.moBud=v=>{ S.cfg.settings.month=Object.assign({},S.cfg.settings.month,{budget:+v>0?+v:null}); saveCfg(); render(); };
+CHG.moRev=v=>{ S.cfg.settings.month=Object.assign({},S.cfg.settings.month,{rev:+v>0?+v:null}); saveCfg(); render(); };
+
 function renderReports(){
-  const modeBar='<div class="seg" style="margin-bottom:14px">'+[["custom",L("تقرير مخصص","Custom report")],["weekly",L("الملخص الأسبوعي الجاهز","Ready weekly summary")]].map(x=>'<button class="'+((S.rp.mode||"custom")===x[0]?"on":"")+'" data-a="rpMode" data-m="'+x[0]+'">'+esc(x[1])+"</button>").join("")+"</div>";
+  const modeBar='<div class="seg" style="margin-bottom:14px">'+[["custom",L("تقرير مخصص","Custom report")],["weekly",L("الملخص الأسبوعي الجاهز","Ready weekly summary")],["month",L("الشهر والمواسم","Month & seasons")]].map(x=>'<button class="'+((S.rp.mode||"custom")===x[0]?"on":"")+'" data-a="rpMode" data-m="'+x[0]+'">'+esc(x[1])+"</button>").join("")+"</div>";
   if(S.rp.mode==="weekly"&&!isClient()) return modeBar+renderWeekly();
+  if(S.rp.mode==="month"&&!isClient()) return modeBar+renderMonth();
   const [a,b]=rpRange(), sc=S.rp.sec;
   if(isClient()&&!S.rp.client) S.rp.client=(S.cfg.clients[0]||{}).id||"";
   let h=(isClient()?"":modeBar)+'<div class="rp-grid"><div class="card rp-ctl"><div class="dw-st">'+esc(L("إعداد التقرير","Report setup"))+"</div>"+
