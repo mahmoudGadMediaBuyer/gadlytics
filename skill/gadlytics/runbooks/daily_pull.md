@@ -110,3 +110,23 @@ execute_sql بمحتوى ~/.gadlytics/rebuild_entries.sql (بيبني entries ل
 بعد ما السحب يخلص، execute_sql:
 update public.docs set data = data || jsonb_build_object('status','done','done_at',(extract(epoch from now())*1000)::bigint) where path='sys/pullreq' and data->>'status'='pending';
 (الزرار في «لوحتي» بيسجّل الطلب؛ ولو المستخدم قال «اسحب دلوقتي» نفّذ الـ runbook ده كله فوراً.)
+
+---
+# ديمان (client_id dm1n4an) — تطبيق + متجر سلة · مفيش خزامى
+نفس الأيام (آخر 3 أيام منتهية، أو النهارده بس في التحديث السريع). كله قراية بس. مجلد مؤقت DIR.
+الطلبات والإيراد: AppsFlyer للتطبيق (لكل منصة وحملة، بيوم الشراء) + سلة للموقع. ROAS ديمان = (مشتريات التطبيق من المنصات المدفوعة + طلبات سلة) ÷ الصرف — العضوي وQR وواتساب برّه.
+1. المنصات → ad_daily (نتايج الأدوات بتتحول بالسكريبت، متنسخش أرقام بإيدك):
+   - Meta 7804393009576374 (ads_get_ad_entities level ad، time_increment "1"، amount_spent > 0، نفس fields ملبي + omni_app_install, omni_complete_registration).
+   - TikTok 7267941711098494977 (report_integrated_get زي ملبي + metrics purchase, total_purchase_value, app_install, registration). كله Smart+ iOS.
+   - Snap 6a32423a-eeb3-46e3-92f6-e9db866afc4d (breakdown ad، DAY) + أسماء الإعلانات/السكوادز/الحملات.
+   python3 ~/.gadlytics/platform_rows.py meta|tiktok|snap DIR/plat <account_id> "Dimaan [1]" <ملفات النتايج> (للنتايج الصغيرة: log_results.py الأول)
+   python3 ~/.gadlytics/prep_ad_daily.py dm1n4an DIR/plat DIR/ad_daily.json → ingest table ad_daily.
+2. AppsFlyer → conv_daily (analytics_fetch_aggregated_data، app_ids ["id6470202546","sa.dimaan.app"]؛ حد 20 نداء/دقيقة و200/يوم):
+   - groupings [Date, App, Media source, Campaign]، metrics Installs + Cost + Count(period "activity") + Revenue(period "activity")، in_app_event ["af_purchase"]، row_count 300 (≥295 صف = قسّم الفترة).
+   - groupings [Date, App, Media source]، metric Count(period "activity")، in_app_event ["af_complete_registration"].
+   سلة: reports_sales_over_time grain day لنفس الأيام.
+   LOG=$(ls -t ~/.claude/projects/*/*.jsonl | head -1); python3 ~/.gadlytics/log_results.py "$LOG" analytics_fetch_aggregated_data DIR/af; python3 ~/.gadlytics/log_results.py "$LOG" reports_sales_over_time DIR/salla
+   python3 ~/.gadlytics/conv_prep.py dm1n4an DIR DIR/conv.json → ingest table conv_daily.
+   صرف Apple Search Ads وجوجل (مالهمش connector): python3 ~/.gadlytics/conv_spend_to_ad_daily.py DIR/conv.json … → ingest ad_daily (منصة asa/google من تكلفة AppsFlyer).
+3. execute_sql بمحتوى ~/.gadlytics/rebuild_entries_conv.sql (entries لديمان).
+فخاخ: AppsFlyer بالدولار وبتوقيت UTC (السكريبت بيضرب ×3.75)؛ صرف ميتا مش متربط في AppsFlyer (Cost فاضي) — الصرف دايماً من المنصة نفسها؛ تقارير سلة قبل 12 أكتوبر 2026 بترجع صفر.
