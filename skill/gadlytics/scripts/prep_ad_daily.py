@@ -6,7 +6,7 @@ import json, re, sys, os
 CID, IN, OUT = sys.argv[1], sys.argv[2], sys.argv[3]
 MONEY = ["spend", "revenue"]
 NUM = ["impressions","reach","clicks","link_clicks","landing_page_views","video_plays","video_2s","video_6s","thruplays",
-       "video_p25","video_p50","video_p75","video_p100","view_content","add_to_cart","initiate_checkout","add_payment_info","purchases"]
+       "video_p25","video_p50","video_p75","video_p100","view_content","add_to_cart","initiate_checkout","add_payment_info","purchases","app_installs","registrations"]
 def tag(s, k):
     m = re.search(r'(?:^|\|)\s*' + k + r'\s*:\s*([^|]+)', s or "")
     return re.sub(r'\s*-\s*Copy(\s*\d+)?\s*$', '', m.group(1).strip(), flags=re.I) if m else None
