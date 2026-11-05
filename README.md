@@ -973,6 +973,7 @@ Yes. They are stored separately in `media_notes`, and the sync never overwrites 
 All of these are free: they run on data the site already has (Supabase free tier, GitHub Pages, the existing platform connectors, Khzama, Mixpanel, and the in-app Claude assistant). The system never edits campaigns: it designs, measures and suggests, and you act in the ad platform.
 
 - **Quick refresh** (لوحتي → «⚡ تحديث سريع»): writes `sys/pullreq` with `mode:"quick"`. Claude then pulls **today only** (platform spend + Khzama), rebuilds and closes the request. This takes minutes instead of a full pull. «حدّث كل حاجة» is unchanged.
+- **▶ الفيديو opens the video itself** (library, video window, media management): Airtable's URL column points to a Drive folder. `video_links.py` lists each public folder (no download), picks the Snap/story version and saves its file link in `media.video_file`. The Airtable sync runs it every pull, so new videos get their link automatically. The 📁 next to it still opens the folder with all versions.
 - **Video views, frequency, retention** (creative library):
   - Each card shows total views and frequency across every campaign and platform, including TikTok Smart+ at material level.
   - The video window has a per-platform table (views, 2s, 6s, ThruPlay, 25/50/75/100%, frequency, campaigns).

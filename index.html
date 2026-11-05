@@ -8492,7 +8492,7 @@ function renderMediaAuto(mode){ const MG=mode==="manage";
       : (v.hookWanted? '<span class="ma-st">⏳ '+esc(L("الهوك في الطابور","Hook queued"))+'</span> '
           : '<button class="btn btn-s" data-a="maHookReq" data-id="'+esc(v.id)+'" title="'+esc(L("Claude يسمع أول ثواني ويكتب الهوك","Claude listens to the first seconds and writes the hook"))+'">🎙 '+esc(L("هوك أوتوماتيك","Auto hook"))+"</button> ")+
         '<button class="btn btn-s" data-a="maHook" data-id="'+esc(v.id)+'" title="'+esc(L("اكتبه بإيدك","Type it"))+'">✎</button>')+"</td>"],
-    ["id",L("رقم الفيديو","Video ID"),v=>'<td class="md-vid'+(v.launched?"":" ma-idle")+'">'+esc(v.id)+(v.m.url?' <a href="'+esc(v.m.url)+'" target="_blank" rel="noopener" title="'+esc(L("افتح الفيديو","Open video"))+'">▶</a>':"")+
+    ["id",L("رقم الفيديو","Video ID"),v=>'<td class="md-vid'+(v.launched?"":" ma-idle")+'">'+esc(v.id)+(v.m.video_file||v.m.url?' <a href="'+esc(v.m.video_file||v.m.url)+'" target="_blank" rel="noopener" title="'+esc(L("افتح الفيديو","Open video"))+'">▶</a>':"")+
       (v.isNew?' <span class="ma-new">'+esc(L("جديد","New"))+"</span>":"")+(v.m.status?'<div class="ma-st">'+esc(v.m.status)+"</div>":"")+"</td>"],
     ["thumb",L("الغلاف","Cover"),v=>'<td class="ma-th">'+thumbMini(v.id,v.m.project,v.hook,THUMB[v.m.thumb]||"",v.m.asset_note)+"</td>"]].filter(c=>MG||c[0]!=="dec");
   const vis=maColsGet(), cols=COLS.filter(c=>vis.indexOf(c[0])>=0).reverse();   // من اليمين: المشهور ← رقم الفيديو ← … ← القرار
@@ -8551,7 +8551,7 @@ ACT.maDecSet=async t=>{ const id=t.dataset.id, k=t.dataset.k, cur=(MA.data.N[id]
 ACT.maHook=t=>{ const id=t.dataset.id, m=MA.data.media.find(x=>x.creative_id===id)||{}, cur=(MA.data.N[id]||{}).hook||m.hook||"";
   modal(L("هوك الفيديو ","Hook · ")+id+(m.advertiser?" — "+m.advertiser:""),
     '<textarea class="inp" id="maHookT" style="min-height:90px;width:100%;direction:rtl;text-align:right;font-family:var(--f-ui);font-size:14px">'+esc(cur)+"</textarea>"+
-    (m.url?'<div style="margin-top:8px"><a href="'+esc(m.url)+'" target="_blank" rel="noopener">'+esc(L("▶ افتح الفيديو","▶ Open video"))+"</a></div>":""),
+    (m.video_file||m.url?'<div style="margin-top:8px"><a href="'+esc(m.video_file||m.url)+'" target="_blank" rel="noopener">'+esc(L("▶ افتح الفيديو","▶ Open video"))+"</a></div>":""),
     '<button class="btn btn-p" data-a="maHookSave" data-id="'+esc(id)+'">'+esc(L("حفظ","Save"))+"</button>"); };
 ACT.maHookSave=async t=>{ const id=t.dataset.id, v=(($("#maHookT")||{}).value||"").trim(), n=Object.assign({},MA.data.N[id]||{},{hook:v});
   try{ await DB.doc("media_notes/"+id).set(n); MA.data.N[id]=n; closeModal(); render(); toast(L("اتحفظ","Saved")); }
@@ -11298,7 +11298,7 @@ function lbLabel(k){ const c=LB_CALC.find(x=>x[0]===k); return c? L(c[1],c[2]) :
 async function lbLoad(force){ if(LB.busy||(LB.data&&!force)) return; LB.busy=true; LB.err=""; render();
   try{ const sb=SUPA_DB.client, cl=(S.ws&&clientById(S.ws))||S.cfg.clients[0]||{}, cname=cl.name||"ملبي";
     const all=async q=>{ const out=[]; for(let i=0;;i+=1000){ const r=await q().range(i,i+999); if(r.error) throw r.error; out.push(...r.data); if(r.data.length<1000) break; } return out; };
-    const media=await all(()=>sb.from("media").select("creative_id,fields,hook,hook_auto,created_at,synced_at,style,kind,url,thumb,thumb_at,asset_note,thumb_hook,local_file,ai_tags").eq("client",cname).eq("kind","Video").in("style",LB_STYLES).order("creative_id"));
+    const media=await all(()=>sb.from("media").select("creative_id,fields,hook,hook_auto,created_at,synced_at,style,kind,url,video_file,thumb,thumb_at,asset_note,thumb_hook,local_file,ai_tags").eq("client",cname).eq("kind","Video").in("style",LB_STYLES).order("creative_id"));
     thumbVer(media); await thumbUrls(media.map(m=>m.thumb));
     const perf=await all(()=>sb.from("v_media_perf").select("*").order("creative_id"));
     const notes=await all(()=>sb.from("docs").select("path,data").eq("coll","media_notes").order("path")); await ftLoad();
@@ -11319,10 +11319,11 @@ function lbPerf(){ const D=LB.data, out={};
   exScope(cur,"creative").forEach(r=>{ if(r.creative_id) put(r.creative_id,r.platform,+r.spend||0,0,0,+r.spend>0?r.date:null,+r.spend>0?r.date:null,r.camp_no?[r.camp_no]:[],{im:r.impressions,ck:(+r.link_clicks>0?r.link_clicks:r.clicks),pv:r.video_plays,v2:r.video_2s,p100:r.video_p100}); });
   (cur.kz||[]).forEach(k=>{ if(k.creative_id) put(k.creative_id,k.platform,0,+k.donations||0,+k.amount||0,null,null,k.camp_no?[k.camp_no]:[]); });
   return out; }
-function lbRows(){ const D=LB.data, pf=lbPerf()||{};
+function lbRows(){ const D=LB.data, pf=lbPerf()||{}; LB.fold=LB.fold||{};
   const rows=D.media.map(m=>{ const f=Object.assign({},m.fields||{}), p=pf[m.creative_id], n=D.N[m.creative_id]||{};
     if(f["المعلن"]) f["المعلن"]=exInf(f["المعلن"]); if(f["المشروع"]) f["المشروع"]=exNorm(f["المشروع"],null);
-    f["Creative ID"]=m.creative_id; if(f["تاريخ الإدخال"]) f["تاريخ الإدخال"]=String(f["تاريخ الإدخال"]).slice(0,10);
+    f["Creative ID"]=m.creative_id; if(m.video_file){ LB.fold[m.video_file]=f.URL||m.url||""; f.URL=m.video_file; }   // ▶ الفيديو = ملف الفيديو نفسه على درايف
+    if(f["تاريخ الإدخال"]) f["تاريخ الإدخال"]=String(f["تاريخ الإدخال"]).slice(0,10);
     f._hook=n.hook||m.hook_auto||m.hook||f["نص تسويقي"]||"";
     f._spend=p?p.sp:0; f._sp_meta=p&&p.pl.meta||0; f._sp_tiktok=p&&p.pl.tiktok||0; f._sp_snap=p&&p.pl.snap||0;
     f._orders=p?p.n:0; f._revenue=p?p.a:0; f._roas=p&&p.sp? p.a/p.sp : null; f._cpa=p&&p.n? p.sp/p.n : null;
@@ -11351,7 +11352,7 @@ function lbFmt(k,v){ if(v==null||v==="") return '<span class="muted">—</span>'
   if(k==="_views") return esc(fcompact(v,0)); if(k==="_freq") return fnum(v,2);
   if(k==="_tags") return String(v).split("، ").map(t=>'<span class="lb-tag">'+esc(t)+"</span>").join(" ");
   if(LB_NUM[k]) return fnum(v,0);
-  if(k==="URL") return '<a href="'+esc(v)+'" target="_blank" rel="noopener">▶ '+esc(L("الفيديو","Video"))+"</a>";
+  if(k==="URL"){ const fo=LB.fold&&LB.fold[v]; return '<a href="'+esc(v)+'" target="_blank" rel="noopener">▶ '+esc(L("الفيديو","Video"))+"</a>"+(fo?' <a class="muted" href="'+esc(fo)+'" target="_blank" rel="noopener" title="'+esc(L("فولدر الفيديو على درايف (كل النسخ)","Drive folder (all versions)"))+'">· 📁</a>':""); }
   if(k==="Launch") return '<a href="'+esc(v)+'" target="_blank" rel="noopener">'+esc(L("إطلاق","Launch"))+"</a>";
   if(k==="_first"||k==="_last") return esc(fdate(v));
   return esc(String(v)); }
@@ -11515,7 +11516,7 @@ function liveTop(D){
 /* ══════════ تكبير الغلاف: دوسة على الصورة الصغيرة (جدول المكتبة وإدارة الميديا) ══════════ */
 function thumbRow(id){ const a=(LB.data&&LB.data.media||[]).find(m=>m.creative_id===id)||(MA.data&&MA.data.media||[]).find(m=>m.creative_id===id)||{};
   const n=(LB.data&&LB.data.N||{})[id]||(MA.data&&MA.data.N||{})[id]||{}, f=a.fields||{};
-  return {id:id,burned:!!a.thumb_hook,thumb:THUMB[a.thumb]||"",hook:n.hook||a.hook_auto||a.hook||"",proj:a.project||f["المشروع"]||"",adv:a.advertiser||f["المعلن"]||"",url:a.url||f.URL||""}; }
+  return {id:id,burned:!!a.thumb_hook,thumb:THUMB[a.thumb]||"",hook:n.hook||a.hook_auto||a.hook||"",proj:a.project||f["المشروع"]||"",adv:a.advertiser||f["المعلن"]||"",url:a.video_file||a.url||f.URL||""}; }
 function thumbMini(id,proj,hook,thumb,note){ return '<button class="ht-zoom" data-a="thZoom" data-id="'+esc(id)+'" title="'+esc(L("كبّر الصورة","Enlarge"))+'">'+hookThumb({proj:proj,hook:hook,thumb:thumb,note:note,mini:true})+"</button>"; }
 ACT.thZoom=t=>{ const r=thumbRow(t.dataset.id), hk=htHook(r.hook);
   modal(L("الفيديو ","Video ")+r.id+(r.adv?" · "+r.adv:""),
