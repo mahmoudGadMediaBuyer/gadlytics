@@ -7,6 +7,13 @@ Ingest endpoint: https://ibpwudzjwjraqhfdmzet.supabase.co/functions/v1/ingest
   - من صفحة خزامى في Chrome: fetch لـ supabase.co ممنوع → استخدم form POST (حقول key/table/rows) لـ iframe مخفي
 الجداول المسموحة: ad_daily, khzama_link_daily, snapshots, khzama_rev, media, mx_daily
 
+## ⚡ تحديث سريع («تحديث سريع» أو sys/pullreq فيه mode="quick")
+النهارده بس (بتوقيت الرياض)، وبأقل خطوات — الهدف دقايق مش ساعة:
+1. خطوة 1 (المنصات → ad_daily) ليوم النهارده بس.
+2. خطوة 2 (خزامى) ليوم النهارده بس.
+3. خطوة 4 (rebuild_entries.sql) ثم خطوة 6 (اقفل الطلب).
+اتخطّى: ميكس بانل، سجل نشاط Meta، الميزانيات، الكفرات، الـ video stats، والتقرير الطويل — سطر واحد بس: صرف كل منصة النهارده + طلبات وإيراد خزامى.
+
 ## الأيام
 آخر 3 أيام منتهية (امبارح وقبله يومين، بتوقيت الرياض) — علشان التحويلات المتأخرة تتحدث.
 
@@ -50,10 +57,11 @@ Mixpanel project 3769752 (Molabi)، أداة Run-Query (report_type "insights", 
 - "GAD mx dev": unit day، breakdown $device، نفس metrics اللي فوق + $session_start في الأول.
 - "GAD mx src": unit day، breakdown utm_source، metric $session_start.
 - "GAD mx pay": unit day، breakdown payment_method، purchase total + purchase sum value (بالفلتر).
+- "GAD mx city": unit day، breakdown $city، purchase total (بالفلتر) + purchase sum value (بالفلتر) — لمختبر الاختبارات (إيقاف المدن).
 - "GAD mx hour": unit hour، من غير breakdown: $session_start, view_content, begin_checkout, purchase (بالفلتر), purchase sum value (بالفلتر).
 بعدها (من غير ما تنسخ الأرقام بإيدك):
   LOG=$(ls -t ~/.claude/projects/*/*.jsonl | head -1); python3 ~/.gadlytics/mx_from_log.py "$LOG" DIR/mx
-  for d in aff dev src pay hour; do python3 ~/.gadlytics/mx_prep.py $d DIR/mx/$d.json; done
+  for d in aff dev src pay hour city; do python3 ~/.gadlytics/mx_prep.py $d DIR/mx/$d.json; done
 (لو mx_from_log ملقاش تقرير: اكتب نتيجة Run-Query زي ما هي في DIR/mx/<dim>.json وشغّل mx_prep عليه.)
 mx_prep بيحتفظ بلينكات أكوادك بس (ME/TT/SC/bio/com/DM) والباقي بيتجمّع في _other.
 
@@ -81,6 +89,15 @@ ads_account_get_activity_logs للحسابين 312559678073897 و 13558497856793
    where m.client='ملبي' and m.kind='Video' and m.style in ('مشهور','مودل','ابداعي') and m.thumb is null;
 2. اكتب الـ JSON في ~/.gadlytics/thumb_queue.json وشغّل: python3 ~/.gadlytics/media_assets.py   (في الخلفية؛ ~15–60 ث للفيديو؛ اللوج في ~/.gadlytics/media_assets.log)
 3. اتأكد إن مفيش فولدرات مؤقتة فاضلة: find /var/folders -maxdepth 4 -name "gad-media-*" لازم يرجع فاضي.
+
+## 3e) تصنيف هوكات الفيديوهات الجديدة (الأنماط والدرجة في مكتبة الكريتيف)
+execute_sql: select creative_id, coalesce(nullif(hook,''),nullif(hook_full,''),nullif(hook_auto,'')) h from public.media where kind='Video' and ai_tags is null and coalesce(nullif(hook,''),nullif(hook_full,''),nullif(hook_auto,'')) is not null;
+لكل واحد قيمة واحدة من كل قايمة (بالعربي بالظبط، من أول كلام في الهوك):
+- hook_type: سؤال | قصة | رقم أو حقيقة | آية أو حديث أو دعاء | نداء مباشر | وصف مشهد | شهادة | أخرى
+- angle: الأجر والثواب | الحاجة والمعاناة | الأثر والنتيجة | الإلحاح والموسم | سهولة التبرع | الصدقة الجارية | الإهداء عن الغير | أخرى
+- emotion: تعاطف | أمل | إلحاح | روحاني | امتنان وفخر | فضول | محايد
+update public.media m set ai_tags=v.t::jsonb from (values ('<id>','{"hook_type":"…","angle":"…","emotion":"…","v":1}'),…) v(id,t) where m.creative_id=v.id;
+(المشاهدات والتكرار ومنحنى المشاهدة مش محتاجين خطوة: بيتحسبوا من ad_daily في v_video_stats.)
 
 ## 4) إعادة بناء التقارير
 execute_sql بمحتوى ~/.gadlytics/rebuild_entries.sql (بيبني entries لكل الأيام: الصرف من ad_daily والطلبات/الإيراد من خزامى).
