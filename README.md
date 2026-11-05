@@ -1003,5 +1003,5 @@ All of these are free: they run on data the site already has (Supabase free tier
     - The readout is difference-in-differences on Mixpanel purchases by city (`mx_daily dim=city`, runbook step 3 «GAD mx city»), giving Meta's approximate true share.
 - **Month & seasons** (التقارير → «الشهر والمواسم»):
   - Month-end forecast for spend and Khzama revenue, with needed daily spend and revenue. Budget and target are editable (`settings.month`).
-  - Every Hijri month (Umm al-Qura) with spend, revenue, ROAS and per-day averages. Ramadan and Dhul Hijjah are highlighted.
+  - Every Hijri month (Umm al-Qura) with spend, revenue, ROAS and per-day averages. Ramadan and Dhul Hijjah are highlighted. Hijri months and weekdays come from the view `v_daily_totals` (all days in the database: ad_daily spend at ad level + Khzama orders/revenue for ME/TT/SC/bio/com/DM), not only the period loaded in the page.
   - Weekdays over the last 90 days.

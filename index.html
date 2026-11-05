@@ -12073,7 +12073,12 @@ const HIJ_F=(()=>{ try{ return new Intl.DateTimeFormat("en-u-ca-islamic-umalqura
 const HIJ_M=["محرم","صفر","ربيع الأول","ربيع الآخر","جمادى الأولى","جمادى الآخرة","رجب","شعبان","رمضان","شوال","ذو القعدة","ذو الحجة"];
 const HIJ_EN=["Muharram","Safar","Rabi I","Rabi II","Jumada I","Jumada II","Rajab","Sha'ban","Ramadan","Shawwal","Dhu al-Qadah","Dhu al-Hijjah"];
 function hijri(d){ if(!HIJ_F) return null; const p={}; HIJ_F.formatToParts((q=>new Date(Date.UTC(+q[0],+q[1]-1,+q[2])))(String(d).split("-"))).forEach(x=>{ p[x.type]=x.value; }); return {y:+String(p.year).replace(/\D/g,""),m:+p.month,d:+p.day}; }
-function renderMonth(){ const C=CURR[S.cfg.settings.currency]||"";
+const MO={rows:null,busy:false,cid:null};
+async function moLoad(){ if(MO.busy||!(window.SUPA_DB&&SUPA_DB.client)) return; MO.busy=true; const cid=S.ws||(S.cfg.clients[0]||{}).id;
+  try{ const r=await SUPA_DB.client.from("v_daily_totals").select("date,spend,orders,revenue").eq("client_id",cid).order("date").limit(5000); if(r.error) throw r.error; MO.rows=r.data||[]; MO.cid=cid; }catch(e){ MO.rows=[]; }
+  MO.busy=false; render(); }
+function moSum(rs){ const o={spend:0,orders:0,revenue:0}; rs.forEach(f=>{ o.spend+=+f.spend||0; o.orders+=+f.orders||0; o.revenue+=+f.revenue||0; }); return o; }
+function renderMonth(){ const C=CURR[S.cfg.settings.currency]||""; if(MO.rows&&MO.cid!==(S.ws||(S.cfg.clients[0]||{}).id)) MO.rows=null;
   const days=[...new Set(S.facts.map(f=>f.date))].sort(), last=days[days.length-1];
   if(!last) return card(L("الشهر والمواسم","Month & seasons"),"",'<div class="hint">'+esc(L("مفيش أرقام لسه.","No numbers yet."))+"</div>");
   const m0=last.slice(0,8)+"01", dim=new Date(+last.slice(0,4),+last.slice(5,7),0).getDate(), dn=+last.slice(8,10);
@@ -12090,17 +12095,19 @@ function renderMonth(){ const C=CURR[S.cfg.settings.currency]||"";
       box(L("محتاج إيراد في اليوم","Needed daily revenue"),needR!=null?fnum(Math.max(0,needR),0):"—",L("عشان توصل للهدف","to reach the target"))+"</div>"+
     '<div class="frow" style="margin-top:8px"><div class="fld"><label>'+esc(L("ميزانية الشهر","Monthly budget"))+'</label><input class="inp" type="number" min="0" data-c="moBud" value="'+(bud||"")+'" style="width:140px"></div>'+
       '<div class="fld"><label>'+esc(L("هدف الإيراد","Revenue target"))+'</label><input class="inp" type="number" min="0" data-c="moRev" value="'+(tgt||"")+'" style="width:140px"></div></div>');
-  /* الشهور الهجرية */
-  const HM={}; S.facts.filter(f=>matchFilter(f)).forEach(f=>{ const hj=hijri(f.date); if(!hj) return; const k=hj.y+"-"+String(hj.m).padStart(2,"0"); (HM[k]=HM[k]||{k:k,y:hj.y,m:hj.m,f:[],d:new Set()}).f.push(f); HM[k].d.add(f.date); });
+  /* الشهور الهجرية — من v_daily_totals (كل الأيام في الداتا بيز، مش بس الفترة المحمّلة في الصفحة) */
+  if(!MO.rows){ moLoad(); return h+card(L("الشهور الهجرية","Hijri months"),"",'<div class="hint">'+esc(L("بحمّل كل الأيام…","Loading every day…"))+"</div>"); }
+  const HM={}; MO.rows.forEach(f=>{ const hj=hijri(f.date); if(!hj) return; const k=hj.y+"-"+String(hj.m).padStart(2,"0"); (HM[k]=HM[k]||{k:k,y:hj.y,m:hj.m,f:[],d:new Set()}).f.push(f); HM[k].d.add(f.date); });
   const hl=Object.values(HM).sort((a,b)=>a.k<b.k?1:-1);
   h+=card(L("الشهور الهجرية","Hijri months"),L("رمضان وذي الحجة بيبانوا لوحدهم · متوسط اليوم بيخلّي الشهور الناقصة تتقارن","Ramadan and Dhul Hijjah stand out · daily averages make partial months comparable"),
     '<div class="tw"><table class="an-tbl"><tr><th>'+esc(L("الشهر","Month"))+'</th><th class="num">'+esc(L("أيام","Days"))+'</th><th class="num">'+esc(L("الصرف","Spend"))+'</th><th class="num">'+esc(L("الإيراد","Revenue"))+'</th><th class="num">ROAS</th><th class="num">'+esc(L("إيراد اليوم","Revenue/day"))+'</th><th class="num">'+esc(L("طلبات اليوم","Orders/day"))+"</th></tr>"+
-    hl.map(x=>{ const v=aggFacts(x.f), n=x.d.size, hot=x.m===9||x.m===12; return "<tr"+(hot?' style="background:color-mix(in srgb,var(--accent,#6F7FF2) 8%,transparent)"':"")+"><td>"+esc(L(HIJ_M[x.m-1],HIJ_EN[x.m-1])+" "+x.y)+'</td><td class="num">'+n+'</td><td class="num">'+fcompact(+v.spend||0,0)+'</td><td class="num">'+fcompact(+v.revenue||0,0)+'</td><td class="num">'+(+v.spend?((+v.revenue||0)/(+v.spend)).toFixed(2)+"x":"—")+'</td><td class="num">'+fnum((+v.revenue||0)/n,0)+'</td><td class="num">'+fnum((+v.orders||0)/n,1)+"</td></tr>"; }).join("")+"</table></div>"+
+    hl.map(x=>{ const v=moSum(x.f), n=x.d.size, hot=x.m===9||x.m===12; return "<tr"+(hot?' style="background:color-mix(in srgb,var(--accent,#6F7FF2) 8%,transparent)"':"")+"><td>"+esc(L(HIJ_M[x.m-1],HIJ_EN[x.m-1])+" "+x.y)+'</td><td class="num">'+n+'</td><td class="num">'+fcompact(+v.spend||0,0)+'</td><td class="num">'+fcompact(+v.revenue||0,0)+'</td><td class="num">'+(+v.spend?((+v.revenue||0)/(+v.spend)).toFixed(2)+"x":"—")+'</td><td class="num">'+fnum((+v.revenue||0)/n,0)+'</td><td class="num">'+fnum((+v.orders||0)/n,1)+"</td></tr>"; }).join("")+"</table></div>"+
     (HIJ_F?"":'<div class="hint">'+esc(L("المتصفح ده مش بيدعم التقويم الهجري.","This browser doesn't support the Hijri calendar."))+"</div>"));
   /* أيام الأسبوع (آخر ٩٠ يوم) */
   const from=addDays(last,-89), WD=[0,1,2,3,4,5,6].map(()=>({f:[],d:new Set()})), WN=[L("الأحد","Sun"),L("الاتنين","Mon"),L("التلات","Tue"),L("الأربع","Wed"),L("الخميس","Thu"),L("الجمعة","Fri"),L("السبت","Sat")];
-  factsIn(from,last).forEach(f=>{ const w=parseISO(f.date).getDay(); WD[w].f.push(f); WD[w].d.add(f.date); });
-  const wv=WD.map(x=>{ const v=aggFacts(x.f), n=x.d.size||1; return {rpd:(+v.revenue||0)/n, roas:+v.spend?(+v.revenue||0)/(+v.spend):null, spd:(+v.spend||0)/n}; }), avg=wv.reduce((a,x)=>a+x.rpd,0)/7;
+  const mlast=MO.rows.reduce((m,f)=>f.date>m?f.date:m,""), mfrom=addDays(mlast,-89);
+  MO.rows.filter(f=>f.date>=mfrom&&f.date<=mlast).forEach(f=>{ const w=parseISO(f.date).getDay(); WD[w].f.push(f); WD[w].d.add(f.date); });
+  const wv=WD.map(x=>{ const v=moSum(x.f), n=x.d.size||1; return {rpd:(+v.revenue||0)/n, roas:+v.spend?(+v.revenue||0)/(+v.spend):null, spd:(+v.spend||0)/n}; }), avg=wv.reduce((a,x)=>a+x.rpd,0)/7;
   h+=card(L("أيام الأسبوع (آخر ٩٠ يوم)","Weekdays (last 90 days)"),"",'<div class="tw"><table class="an-tbl"><tr><th>'+esc(L("اليوم","Day"))+'</th><th class="num">'+esc(L("صرف اليوم","Spend/day"))+'</th><th class="num">'+esc(L("إيراد اليوم","Revenue/day"))+'</th><th class="num">'+esc(L("مقابل المتوسط","vs average"))+'</th><th class="num">ROAS</th></tr>'+
     [5,6,0,1,2,3,4].map(i=>{ const x=wv[i], d=avg?(x.rpd/avg-1)*100:0; return "<tr><td>"+esc(WN[i])+'</td><td class="num">'+fnum(x.spd,0)+'</td><td class="num">'+fnum(x.rpd,0)+'</td><td class="num" style="color:'+(d>=10?"#1D9E75":d<=-10?"#D85A5A":"inherit")+'">'+(d>0?"+":"")+fnum(d,0)+'%</td><td class="num">'+(x.roas!=null?x.roas.toFixed(2)+"x":"—")+"</td></tr>"; }).join("")+"</table></div>");
   return h; }
