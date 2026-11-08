@@ -210,7 +210,7 @@ a{color:var(--cyan)}
 .cp-tbl td{vertical-align:top;font-size:17px;padding:12px 12px;border-bottom:1px solid var(--line)}.cp-tbl td.num,.cp-tbl th.num{text-align:left;direction:ltr;font-family:var(--f-num)}
 .cp-tbl td:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cp-c td{font-weight:600}.cp-c td:first-child b{font-size:17.5px}
 .cp-s td{font-size:15.5px;color:var(--ink-2);background:color-mix(in srgb,var(--ground-1) 55%,transparent)}.cp-s td:first-child{padding-inline-start:34px}
-.cp-a td{font-size:15px;color:var(--ink-2)}.cp-a td:first-child{padding-inline-start:64px}.cp-x td{color:var(--amber)}
+.cp-a td{font-size:15px;color:var(--ink-2)}.cp-a td:first-child{padding-inline-start:64px}.cp-x td{color:var(--amber)}.cp-sm td{color:var(--ink);font-weight:600}.cp-pf{color:var(--ink-3)!important;font-size:14px!important}
 .cp-tg{display:inline-block;width:26px;cursor:pointer;color:var(--ink-3);font-size:16px}.cp-tag{font-size:12.5px;padding:1px 6px;border-radius:5px;background:var(--ground-2);color:var(--ink-3);margin-inline-start:6px;font-weight:400}
 .cp-v{font-size:13px;padding:2px 8px;border:1px solid var(--line);border-radius:5px;margin-inline-start:6px;font-weight:600}.cp-sub{display:block;font-size:13.5px;color:var(--ink-3);padding-inline-start:26px;font-weight:400}
 .cp-ar{display:block;font-size:13px;margin-top:2px;font-weight:500}.cp-ed{cursor:pointer;border-bottom:1px dashed var(--line-2)}.cp-pen{font-size:14px;color:var(--ink-3)}.cp-pend{color:var(--amber)}
@@ -13286,6 +13286,14 @@ function cpBuild(rows){ const conv=convClient(cpCid()), P={};
       else { const n=cpNorm(cu), exact=sets.filter(s=>cpToks(s.name).indexOf(cu.toLowerCase())>=0), part=sets.filter(s=>cpNorm(s.name).indexOf(n)>=0);
         target= exact.length===1? exact[0] : part.length===1? part[0] : sets.length===1? sets[0] : null; }
       if(!target){ const u=c.unmatched||(c.unmatched={}); const x=u[cu]||(u[cu]={custom:cu,v:cpZero()}); give(x.v,o,rv,false); return; } }
+    const multi=ids.length>1||/SmartAd/i.test(String(k.title||""));
+    /* إعلان Smart+ (لينك فيه كذا فيديو بـ ~): لينك واحد للإعلان كله — خزامى مبتعرفش أنهي فيديو جاب التبرع، فمبيتقسمش على الفيديوهات */
+    const toSmart=(s,w,apx)=>{ const b=s.smart||(s.smart=cpZero()); give(b,o*w,rv*w,apx); };
+    if(multi){ let ss=target? [target] : sets.filter(s=>Object.values(s.ads).some(a=>a.cr&&ids.indexOf(a.cr)>=0));
+      if(!ss.length&&sets.length===1) ss=sets;
+      if(!ss.length){ give(c.loose,o,rv,false); return; }
+      const tot=ss.reduce((t,s)=>t+Object.values(s.ads).reduce((u,a)=>u+a.v.s,0),0);
+      ss.forEach(s=>{ const sp=Object.values(s.ads).reduce((u,a)=>u+a.v.s,0); toSmart(s, tot? sp/tot : 1/ss.length, ss.length>1); }); return; }
     if(target){ const ads=Object.values(target.ads).filter(a=>a.cr&&ids.indexOf(a.cr)>=0);
       if(!ads.length){ give(target.loose,o,rv,false); return; }
       const tot=ads.reduce((t,a)=>t+a.v.s,0)||ads.length; ads.forEach(a=>give(a.v,o*((tot===ads.length?1:a.v.s)/tot),rv*((tot===ads.length?1:a.v.s)/tot),ads.length>1)); return; }
@@ -13295,7 +13303,7 @@ function cpBuild(rows){ const conv=convClient(cpCid()), P={};
     const tot=ads.reduce((t,a)=>t+a.v.s,0); const many=ads.length>1;
     ads.forEach(a=>{ const w=tot? a.v.s/tot : 1/ads.length; give(a.v,o*w,rv*w,many); }); });
   Object.keys(P).forEach(pl=>Object.values(P[pl].camps).forEach(c=>{
-    Object.values(c.sets).forEach(s=>{ Object.values(s.ads).forEach(a=>cpAdd(s.v,a.v)); cpAdd(s.v,s.loose);
+    Object.values(c.sets).forEach(s=>{ Object.values(s.ads).forEach(a=>cpAdd(s.v,a.v)); cpAdd(s.v,s.loose); if(s.smart){ s.v.o+=s.smart.o; s.v.r+=s.smart.r; if(s.smart.approx) s.v.approx=true; }
       if(conv){ c.v.s+=s.v.s; c.v.po+=s.v.po; c.v.pr+=s.v.pr; } else cpAdd(c.v,s.v); });
     /* ديمان: الحملة من AppsFlyer/سلة بس، والـ Ad Set والإعلان من أرقام المنصة — من غير ما يتجمعوا مرتين */
     if(conv){ c.conv=true; c.v.o=c.loose.o; c.v.r=c.loose.r; c.loose=cpZero(); } else cpAdd(c.v,c.loose);
@@ -13384,7 +13392,11 @@ function renderCampPerf(){
         const bid= sst&&sst.bid_type? '<div class="cp-bid">'+cpEd(pl,"adset",s.id,"bid",sst.bid,sst.bid_type,s.name)+"</div>" : sst? '<div class="cp-bid hint">'+esc(L("أقل تكلفة","Lowest cost"))+"</div>" : "";
         h+='<tr class="cp-s"><td><span class="cp-tg" data-a="cpTog" data-k="'+esc(sk)+'">'+(so?"▾":"◂")+"</span>"+esc(s.name)+cpVerdict(s.v,tg,cpaRef)+"</td>"+cpCells(s.v,pvIdx["s|"+s.id])+'<td class="num">'+b+bid+"</td></tr>";
         if(!so) return;
+        if(s.smart&&(s.smart.o||s.smart.r)){ const sv=Object.assign(cpZero(),{s:Object.values(s.ads).reduce((u,a)=>u+a.v.s,0),o:s.smart.o,r:s.smart.r,approx:s.smart.approx});
+          h+='<tr class="cp-a cp-sm"><td title="'+esc(L("لينك خزامى واحد لإعلان Smart+ كله — مش متقسم على الفيديوهات","One Khzama link for the whole Smart+ ad — not split by video"))+'">'+esc(L("إعلان Smart+ — كل الفيديوهات (لينك خزامى واحد)","Smart+ ad — all videos (one Khzama link)"))+cpVerdict(sv,tg,cpaRef)+"</td>"+cpCells(sv,null)+"<td></td></tr>"; }
         Object.values(s.ads).sort((x,y)=>y.v.s-x.v.s).forEach(ad=>{ const nm=ad.cr? ad.cr+(ad.inf?" · "+ad.inf:"") : (ad.name||ad.id);
+          if(s.smart&&!ad.v.o&&!ad.v.r){ const pl2=(platById(pl)||{}).name||pl;
+            h+='<tr class="cp-a cp-vid"><td title="'+esc(ad.name||"")+'">'+esc(nm)+'</td><td class="num">'+fnum(ad.v.s,0)+'</td><td class="num cp-pf" colspan="2" title="'+esc(L("خزامى مبتقسّمش إعلان Smart+ على الفيديوهات — دي مشتريات المنصة نفسها للفيديو ده، للمقارنة بس","Khzama can't split a Smart+ ad by video — these are the platform's own purchases, for comparison only"))+'">'+esc(pl2)+": "+fnum(ad.v.po,0)+(ad.v.pr?" · "+fnum(ad.v.pr,0):"")+'</td><td class="num cp-pf">'+(ad.v.pr&&ad.v.s?(ad.v.pr/ad.v.s).toFixed(2)+"x":"—")+'</td><td class="num cp-pf">'+(ad.v.po?fnum(ad.v.s/ad.v.po,0):"—")+"</td><td></td></tr>"; return; }
           h+='<tr class="cp-a"><td title="'+esc(ad.name||"")+'">'+esc(nm)+cpVerdict(ad.v,tg,cpaRef)+"</td>"+cpCells(ad.v,pvIdx["a|"+ad.id])+"<td></td></tr>"; });
         if(s.loose.o||s.loose.r) h+='<tr class="cp-a cp-x"><td>'+esc(L("لينكات الـ Ad Set من غير إعلان مطابق","Ad-set links with no matching ad"))+"</td>"+cpCells(s.loose,null)+"<td></td></tr>"; });
       Object.values(c.unmatched||{}).forEach(u=>{ const mk=pl+"|"+c.code+"|"+u.custom;
