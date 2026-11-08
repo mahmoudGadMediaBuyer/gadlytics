@@ -36,8 +36,8 @@ data: {client, platform, level ("campaign"|"adset"), objId, name, field ("budget
 1. المنصات → ad_daily للأيام from..to للعميل ده بس (نفس خطوة 1 في daily_pull.md؛ ديمان: قسم ديمان).
 2. ملبي: خزامى → khzama_link_daily لنفس الأيام (خطوة 2 في daily_pull.md). ديمان: AppsFlyer + سلة → conv_daily.
 3. الحالة والميزانيات (camp_struct):
-   - Meta: ads_get_ad_entities level campaign (name, effective_status, daily_budget, lifetime_budget, bid_strategy) و level adset (name, campaign_id, effective_status, daily_budget, lifetime_budget, bid_strategy, bid_amount)، filtering effective_status IN ["ACTIVE"]، لكل حساب.
-   - TikTok: smart_plus_campaign_get + smart_plus_adgroup_get (effective_statuses ["ACTIVE"]) + tool_execute campaign_get/adgroup_get (primary_status STATUS_DELIVERY_OK) للحملات العادية.
+   - Meta: ads_get_ad_entities level campaign (name, effective_status, daily_budget, lifetime_budget, bid_strategy) و level adset (name, campaign_id, effective_status, daily_budget, lifetime_budget, bid_strategy, bid_amount)، filtering effective_status IN [ACTIVE, PAUSED, CAMPAIGN_PAUSED, ADSET_PAUSED, WITH_ISSUES, IN_PROCESS]، date_preset maximum، limit 1000، لكل حساب (الصفحة بتعدّل ميزانيات الموقفة كمان).
+   - TikTok: tool_execute "campaign_get" و "adgroup_get" (page_size 1000، من غير فلتر حالة) — بيرجّعوا Smart+ كمان ومعاهم operation_status (smart_plus_adgroup_get مفيهوش حالة).
    - Snap: snap_ads_ad_account_get_campaigns + snap_ads_ad_account_get_ad_squads (والدولار بالتوكن المحلي).
    LOG=$(ls -t ~/.claude/projects/*/*.jsonl | head -1); log_results.py لكل أداة → python3 ~/.gadlytics/camp_struct_prep.py <client> OUT.json meta:<acc>:campaign=… …
    SQL: update public.camp_struct set status='stale' where client_id='<client>';  ثم ingest table camp_struct.

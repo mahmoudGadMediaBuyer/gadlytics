@@ -10,3 +10,5 @@
 7. Update this skill + README with whatever changed, and upload them in the same pass. Never upload secrets (ingest key, Snap/Meta tokens, Khzama headers) — the repo is public.
 
 Gotcha (Nov 2026): GitHub's upload page often ignores the first click on «Commit changes» (and a typed summary sometimes vanishes). Wait ~15 s after file_upload until every file shows a file icon, set the summary with JS (input[name=message] + input event), click the button by screenshot coordinate, then confirm the URL left /upload and compare blob SHAs via the API (`git hash-object` locally vs contents API `sha`) — raw.githubusercontent is cached for minutes.
+
+Commit gotcha #2 (Nov 2026): when clicks on «Commit changes» keep being ignored, click inside the commit-message box and press Return — that submits the right form. Never call form.requestSubmit() from JS: the first form on the page is GitHub's upload-manifest form, not the commit form.
