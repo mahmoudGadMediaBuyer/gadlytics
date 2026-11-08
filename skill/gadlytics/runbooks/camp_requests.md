@@ -1,6 +1,6 @@
 # «أداء الحملات» — تنفيذ الطلبات اللي جاية من الصفحة
 
-الموقع مبيكلمش المنصات ولا خزامى. الصفحة بتكتب طلبات في docs، والمهمة المجدولة gadlytics-camp-requests (كل دقيقتين، 8ص–12م) بتنفّذها — أو لما Mahmoud يقول «نفّذ طلبات الحملات».
+الصفحة بتكتب الطلب في docs وبعدها بتنده edge function اسمها camp-apply اللي بتنفّذه على المنصة في ثواني (سناب متوصّل؛ ميتا وتيك توك لسه — بيرجعوا not_configured والطلب بيفضل pending). اللي يفضل pending بتنفّذه المهمة المجدولة gadlytics-camp-requests (كل دقيقة، 8ص–12م)، أو لما Mahmoud يقول «نفّذ طلبات الحملات». التحديث (sys/campreq) بتنفّذه gadlytics-camp-refresh.
 Mahmoud وافق صراحة (2026-11-08) على التنفيذ الأوتوماتيك وضاف الصلاحيات في ~/.claude/settings.json (الماك بتاعه بس).
 Supabase ibpwudzjwjraqhfdmzet · العملاء: ملبي 3sa3k1k (خزامى) · ديمان dm1n4an (AppsFlyer + سلة) · المفتاح ~/.gadlytics/ingest.key (متطبعوش).
 
