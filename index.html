@@ -13325,7 +13325,7 @@ function cpEd(pl,lvl,id,field,val,label,name){ const key=id+"|"+field, C=CURR[S.
   return '<span class="cp-ed" data-a="cpEdit" data-k="'+esc(key)+'" title="'+esc(L("عدّل","Edit"))+'">'+(label?esc(label)+" ":"")+(val==null?"—":fnum(val,0))+' <span class="cp-pen">✎</span></span>'+
     (fl?'<small class="cp-err" title="'+esc(fl.error||"")+'">'+esc(L("التعديل لـ ","Edit to "))+fnum(fl.to,0)+esc(L(" فشل",' failed'))+(fl.error?": "+esc(fl.error):"")+"</small>":""); }
 function cpCells(v,pv){ const ro=cpRoas(v), cp=cpCpa(v), apx=v.approx?'<sup class="cp-apx" title="'+esc(L("فيه تبرعات متقسمة حسب الصرف (لينك من غير اسم Ad Set)","Includes donations split by spend (links without an ad-set name)"))+'">~</sup>':"";
-  return '<td class="num">'+fnum(v.s,0)+'</td><td class="num">'+fnum(v.o,v.o%1?1:0)+apx+'</td><td class="num">'+fnum(v.r,0)+'</td>'+
+  return '<td class="num">'+fnum(v.s,0)+'</td><td class="num">'+fnum(Math.round(v.o),0)+apx+'</td><td class="num">'+fnum(v.r,0)+'</td>'+
     '<td class="num">'+(ro==null?"—":ro.toFixed(2)+"x")+cpArrow(ro,pv?cpRoas(pv):null,false)+'</td>'+
     '<td class="num">'+(cp==null?"—":fnum(cp,0))+cpArrow(cp,pv?cpCpa(pv):null,true)+"</td>"; }
 function renderCampPerf(){
