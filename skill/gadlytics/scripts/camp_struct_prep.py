@@ -12,6 +12,8 @@ Meta: ads_get_ad_entities level campaign (name, effective_status, daily_budget, 
       filtering effective_status IN [ACTIVE, PAUSED, CAMPAIGN_PAUSED, ADSET_PAUSED, WITH_ISSUES, IN_PROCESS], date_preset maximum, limit 1000.
 TikTok: tool_execute campaign_get / adgroup_get (page_size 1000) — they return Smart+ too, WITH operation_status (smart_plus_adgroup_get has no status field).
 Snap: snap_ads_ad_account_get_campaigns / get_ad_squads (limit 250, paginate). USD accounts: prefix snapusd (×3.75).
+Ads (for the on/off switch): meta:<acc>:ad=<ads_get_ad_entities level ad, fields name, adset_id, campaign_id, effective_status>,
+  tiktok:<adv>:ad=<tool_execute "ad_get" page_size 1000>, snap:<acc>:ad=<snap_ads_ad_account_get_ads> — only status is kept.
 Before ingesting, mark the client's old rows stale (SQL): update camp_struct set status='stale' where client_id='<id>';"""
 import json, re, sys
 
@@ -44,8 +46,8 @@ def main():
                      "account_id": str(acc), "name": name, "camp_no": code(name), "status": status, "budget_mode": mode,
                      "daily_budget": daily, "lifetime_budget": life, "bid_type": bt, "bid": bid})
     specs = sys.argv[3:]
-    # campaigns first so ad sets can inherit the campaign bid strategy (Meta CBO cost caps)
-    specs.sort(key=lambda a: 0 if ":campaign=" in a else 1)
+    # campaigns first so ad sets can inherit the campaign bid strategy (Meta CBO cost caps); ads last
+    specs.sort(key=lambda a: 0 if ":campaign=" in a else 2 if ":ad=" in a else 1)
     for a in specs:
         head, path = a.split("=", 1); pl, acc, lvl = head.split(":")
         d = load(path); fx = 3.75 if pl == "snapusd" else 1
@@ -60,6 +62,8 @@ def main():
                 if lvl == "campaign":
                     camp_bid[e["id"]] = bt
                     row("meta", "campaign", e["id"], None, acc, e.get("name"), stt, "CBO" if (daily or life) else "ABO", daily, life, bt, None)
+                elif lvl == "ad":
+                    row("meta", "ad", e["id"], e.get("adset_id"), acc, e.get("name"), stt, None, None, None, None, None)
                 else:
                     bt = bt or camp_bid.get(e.get("campaign_id"))
                     row("meta", "adset", e["id"], e.get("campaign_id"), acc, e.get("name"), stt, None, daily, life, bt, v(e.get("bid_amount")) if bt else None)
@@ -72,6 +76,10 @@ def main():
                     cbo = bool(e.get("budget_optimize_on")) or (e.get("budget_mode") not in (None, "BUDGET_MODE_INFINITE") and (e.get("budget") or 0) > 0)
                     row("tiktok", "campaign", e["campaign_id"], None, acc, e.get("campaign_name"), stt, "CBO" if cbo else "ABO",
                         float(e["budget"]) if cbo and e.get("budget") else None, None, None, None)
+                elif lvl == "ad":
+                    if "DELETE" in str(e.get("secondary_status") or "").upper(): continue
+                    stt = "active" if e.get("operation_status") in (None, "ENABLE") else "paused"
+                    row("tiktok", "ad", e.get("ad_id") or e.get("smart_plus_ad_id"), e.get("adgroup_id"), acc, e.get("ad_name"), stt, None, None, None, None, None)
                 else:
                     if "DELETE" in str(e.get("secondary_status") or "").upper(): continue
                     stt = "active" if e.get("operation_status") in (None, "ENABLE") else "paused"
@@ -83,13 +91,15 @@ def main():
                     row("tiktok", "adset", e["adgroup_id"], e.get("campaign_id"), acc, e.get("adgroup_name"), stt, None,
                         float(b) if b else None, None, bt, bid)
         elif pl in ("snap", "snapusd"):
-            key = "campaigns" if lvl == "campaign" else "adsquads"
+            key = "campaigns" if lvl == "campaign" else "ads" if lvl == "ad" else "adsquads"
             for x in d.get(key) or []:
                 e = x.get(key[:-1]) or x.get("adsquad") or x
                 st0 = str(s(e.get("status"))).upper()
                 if st0 in ("DELETED", "ARCHIVED"): continue
                 stt = "active" if st0 == "ACTIVE" else "paused"
                 daily = (e.get("daily_budget_micro") or 0) / 1e6 * fx or None
+                if lvl == "ad":
+                    row("snap", "ad", e["id"], e.get("ad_squad_id"), acc, s(e.get("name")), stt, None, None, None, None, None); continue
                 if lvl == "campaign":
                     cbo = str(s(e.get("pacing_level"))).upper() == "CAMPAIGN" and daily
                     row("snap", "campaign", e["id"], None, acc, s(e.get("name")), stt, "CBO" if cbo else "ABO", daily if cbo else None, None, None, None)
@@ -102,6 +112,9 @@ def main():
     off = {(r["platform"], r["id"]) for r in rows if r["level"] == "campaign" and r["status"] != "active"}
     for r in rows:
         if r["level"] == "adset" and (r["platform"], r["parent_id"]) in off: r["status"] = "paused"
+    offs = {(r["platform"], r["id"]) for r in rows if r["level"] == "adset" and r["status"] != "active"}
+    for r in rows:
+        if r["level"] == "ad" and (r["platform"], r["parent_id"]) in offs: r["status"] = "paused"
     json.dump(rows, open(out, "w", encoding="utf-8"), ensure_ascii=False)
     from collections import Counter
     print(Counter((r["platform"], r["level"]) for r in rows), "rows", len(rows))

@@ -4,12 +4,25 @@
   python3 ~/.gadlytics/snap_update.py campaign <campaign_id> budget <SAR per day>
   python3 ~/.gadlytics/snap_update.py adsquad  <ad_squad_id> budget <SAR per day>
   python3 ~/.gadlytics/snap_update.py adsquad  <ad_squad_id> bid    <SAR>
+  python3 ~/.gadlytics/snap_update.py campaign|adsquad|ad <id> status ACTIVE|PAUSED
 Add --usd for the USD account (amount is converted ÷3.75). Prints the value read back after the update."""
 import json, os, sys
 sys.path.insert(0, os.path.expanduser("~/Desktop/claude/adlytics-connectors/snap"))
 from common import api
 
-lvl, oid, field, amount = sys.argv[1], sys.argv[2], sys.argv[3], float(sys.argv[4])
+lvl, oid, field, val = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+if field == "status":
+    if val not in ("ACTIVE", "PAUSED"): raise SystemExit("status must be ACTIVE or PAUSED")
+    path = {"campaign": ("/campaigns/%s", "campaigns", "campaign", lambda o: "/adaccounts/%s/campaigns" % o["ad_account_id"]),
+            "adsquad": ("/adsquads/%s", "adsquads", "adsquad", lambda o: "/campaigns/%s/adsquads" % o["campaign_id"]),
+            "ad": ("/ads/%s", "ads", "ad", lambda o: "/adsquads/%s/ads" % o["ad_squad_id"])}[lvl]
+    obj = api("GET", path[0] % oid)[path[1]][0][path[2]]
+    obj["status"] = val
+    r = api("PUT", path[3](obj), body={path[1]: [obj]})
+    back = api("GET", path[0] % oid)[path[1]][0][path[2]].get("status")
+    print(json.dumps({"request_status": (r.get("request_status") or "").upper(), "read_back_status": back}))
+    raise SystemExit(0 if back == val else 1)
+amount = float(val)
 fx = 3.75 if "--usd" in sys.argv else 1.0
 micro = int(round(amount / fx * 1_000_000))
 if lvl == "campaign":
