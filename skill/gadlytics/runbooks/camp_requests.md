@@ -1,7 +1,7 @@
 # «أداء الحملات» — تنفيذ الطلبات اللي جاية من الصفحة
 
-الموقع مبيكلمش المنصات ولا خزامى. الصفحة بتكتب طلبات في docs، وClaude بينفّذها لما Mahmoud يقول «نفّذ طلبات الحملات».
-(مهمة مجدولة تنفّذ تعديلات الميزانية لوحدها اترفضت من صلاحيات الأوتو مود في 2026-11-08 — متعملهاش من غير ما Mahmoud يوافق صراحة.)
+الموقع مبيكلمش المنصات ولا خزامى. الصفحة بتكتب طلبات في docs، والمهمة المجدولة gadlytics-camp-requests (كل دقيقتين، 8ص–12م) بتنفّذها — أو لما Mahmoud يقول «نفّذ طلبات الحملات».
+Mahmoud وافق صراحة (2026-11-08) على التنفيذ الأوتوماتيك وضاف الصلاحيات في ~/.claude/settings.json (الماك بتاعه بس).
 Supabase ibpwudzjwjraqhfdmzet · العملاء: ملبي 3sa3k1k (خزامى) · ديمان dm1n4an (AppsFlyer + سلة) · المفتاح ~/.gadlytics/ingest.key (متطبعوش).
 
 ## 0) فيه طلبات؟ (لو لأ: اقفل فوراً من غير أي نداء تاني)
@@ -9,7 +9,12 @@ execute_sql:
 select path, data from public.docs where (path='sys/campreq' and data->>'status'='pending') or (coll='campchg' and data->>'status'='pending') order by updated_at;
 
 ## 1) تعديل ميزانية / مزايدة — docs campchg/<id>
-data: {client, platform, level ("campaign"|"adset"), objId, name, field ("budget"|"bid"), bidType, from, to, status, at, by}
+data: {client, platform, level ("campaign"|"adset"|"ad"), objId, name, field ("budget"|"bid"|"status"), bidType, from, to, status, at, by}
+field "status": to = "ACTIVE" (تشغيل) أو "PAUSED" (إيقاف):
+- Meta: PAUSED → ads_update_entity fields {"status":"PAUSED"} بس (بيتطبق live حتى في الـ draft mode، ومتندهش ads_activate_entity بعده). ACTIVE → ads_activate_entity على نفس الكيان بس. entity_type: campaign / ad_set / ad.
+- TikTok: Smart+ → smart_plus_campaign_status_update / smart_plus_adgroup_status_update / smart_plus_ad_status_update (operation_status ENABLE أو DISABLE). العادية → tool_execute "campaign_status_update" / "adgroup_status_update" / "ad_status_update". اقرا الـ schema بـ tool_get أول مرة.
+- Snap: python3 ~/.gadlytics/snap_update.py campaign|adsquad|ad <id> status ACTIVE|PAUSED (المستوى adset = adsquad).
+- اتأكد من الحالة بعد التنفيذ، وحدّث camp_struct.status ('active' أو 'paused').
 قبل التنفيذ: تأكد إن الكيان ده موجود في camp_struct لنفس العميل والمنصة (select * from camp_struct where id='<objId>' and client_id='<client>') ومنها خد account_id.
 عدّل الحقل ده بس — ممنوع تلمس أي إعداد تاني (استهداف، حالة، إعلانات). ميزانية = يومية بالريال.
 - Meta (ads_update_entity، entity_type campaign أو ad_set، ad_account_id = account_id):
@@ -40,6 +45,7 @@ data: {client, platform, level ("campaign"|"adset"), objId, name, field ("budget
    - TikTok: tool_execute "campaign_get" و "adgroup_get" (page_size 1000، من غير فلتر حالة) — بيرجّعوا Smart+ كمان ومعاهم operation_status (smart_plus_adgroup_get مفيهوش حالة).
    - Snap: snap_ads_ad_account_get_campaigns + snap_ads_ad_account_get_ad_squads (والدولار بالتوكن المحلي).
    LOG=$(ls -t ~/.claude/projects/*/*.jsonl | head -1); log_results.py لكل أداة → python3 ~/.gadlytics/camp_struct_prep.py <client> OUT.json meta:<acc>:campaign=… …
+   - الإعلانات (عشان زرار التشغيل/الإيقاف): Meta level ad (name, adset_id, campaign_id, effective_status) للحملات اللي صرفت في الفترة · TikTok tool_execute "ad_get" (page_size 1000) · Snap snap_ads_ad_account_get_ads — المستوى :ad= في camp_struct_prep.
    SQL: update public.camp_struct set status='stale' where client_id='<client>';  ثم ingest table camp_struct.
 4. rebuild_entries.sql (ملبي) أو rebuild_entries_conv.sql (ديمان).
 5. update public.docs set data=data||jsonb_build_object('status','done','done_at',(extract(epoch from now())*1000)::bigint) where path='sys/campreq';
