@@ -13370,7 +13370,7 @@ function renderCampPerf(){
   let h='<div class="cp"><div class="cp-head"><div class="hint">'+
     esc(L("الصرف من المنصة · التبرعات والإيراد من خزامى · ROAS = إيراد خزامى ÷ صرف المنصة","Spend from the platform · donations and revenue from Khzama"))+"</div>";
   const rq=CP.req, pend=rq&&rq.status==="pending";
-  h+='<div class="cp-rf"><button class="btn'+(pend?"":" btn-p")+'" data-a="cpRefresh"'+(pend?" disabled":"")+'>⟳ '+esc(pend?L("بيتحدث…","Updating…"):L("تحديث الأرقام","Refresh numbers"))+'</button><small class="hint">'+
+  h+='<div class="cp-rf"><button class="btn'+(pend?"":" btn-p")+'" data-a="cpRefresh"'+(pend?" disabled":"")+'>⟳ '+esc(pend?L("بيتحدث…","Updating…"):L("تحديث أرقام امبارح والنهارده","Refresh yesterday + today"))+'</button><small class="hint">'+
     esc(pend? L("اتطلب ","Requested ")+ftime(rq.at)+L(" — المنصات + خزامى بس، خلال دقايق"," — platforms + Khzama only, within minutes")
        : (rq&&rq.done_at? L("آخر تحديث: ","Updated: ")+fdate(new Date(rq.done_at).toISOString().slice(0,10))+" "+ftime(rq.done_at) : L("المنصات + خزامى بس","Platforms + Khzama only")))+"</small></div></div>";
   h+='<div class="cp-bar"><span class="flab">'+esc(L("التاريخ","Date"))+'</span><select class="sel" data-c="cpPer">'+
@@ -13464,7 +13464,7 @@ ACT.cpSave=async t=>{ const i=$("#cpIn"), v=Math.round(+(i&&i.value)), f=t.datas
     toast(L("اتبعت — هيتطبق على المنصة خلال دقيقتين تقريباً","Sent — applied on the platform within ~2 minutes")); cpPoll(); }
   catch(e){ if(er) er.textContent=(e&&e.message)||String(e); return; }
   render(); };
-ACT.cpRefresh=async()=>{ const [a,b]=cpRange();
+ACT.cpRefresh=async()=>{ const b=todayISO(), a=addDays(b,-1);   // الأيام القديمة مبتتغيرش — التحديث دايماً امبارح + النهارده
   try{ await RT.set("sys/campreq",{at:Date.now(),by:ME.email||"",status:"pending",client:cpCid(),from:a,to:b});
     CP.req={at:Date.now(),status:"pending",from:a,to:b}; toast(L("اتطلب التحديث — المنصات + خزامى بس، خلال دقايق","Refresh requested — platforms + Khzama only, within minutes")); cpPoll(); }
   catch(e){ toast((e&&e.message)||String(e),true); } render(); };
