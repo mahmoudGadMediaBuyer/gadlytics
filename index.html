@@ -13290,8 +13290,16 @@ function cpBuild(rows){ const conv=convClient(cpCid()), P={};
     const tot=ads.reduce((t,a)=>t+a.v.s,0); const many=ads.length>1;
     ads.forEach(a=>{ const w=tot? a.v.s/tot : 1/ads.length; give(a.v,o*w,rv*w,many); }); });
   Object.keys(P).forEach(pl=>Object.values(P[pl].camps).forEach(c=>{
-    Object.values(c.sets).forEach(s=>{ Object.values(s.ads).forEach(a=>cpAdd(s.v,a.v)); cpAdd(s.v,s.loose); cpAdd(c.v,s.v); });
-    cpAdd(c.v,c.loose); Object.values(c.unmatched||{}).forEach(u=>cpAdd(c.v,u.v)); }));
+    Object.values(c.sets).forEach(s=>{ Object.values(s.ads).forEach(a=>cpAdd(s.v,a.v)); cpAdd(s.v,s.loose);
+      if(conv){ c.v.s+=s.v.s; c.v.po+=s.v.po; c.v.pr+=s.v.pr; } else cpAdd(c.v,s.v); });
+    /* ديمان: الحملة من AppsFlyer/سلة بس، والـ Ad Set والإعلان من أرقام المنصة — من غير ما يتجمعوا مرتين */
+    if(conv){ c.conv=true; c.v.o=c.loose.o; c.v.r=c.loose.r; c.loose=cpZero(); } else cpAdd(c.v,c.loose);
+    Object.values(c.unmatched||{}).forEach(u=>cpAdd(c.v,u.v)); }));
+  /* الحملات الشغالة اللي مصرفتش في الفترة بتظهر برضه (بأصفار) */
+  (CP.struct||[]).filter(x=>x.level==="campaign"&&cpActive(x)&&PAIDP().indexOf(x.platform)>=0).forEach(x=>{
+    const p=P[x.platform]||(P[x.platform]={camps:{}}); if(p.camps[x.id]) return;
+    p.camps[x.id]={id:x.id,code:x.camp_no||x.name,name:x.name,proj:exProd((String(x.name||"").match(/PR:\s*([^|]+)/)||[])[1])||"",v:cpZero(),sets:{},loose:cpZero(),conv:conv};
+    (CP.struct||[]).filter(y=>y.level==="adset"&&y.parent_id===x.id&&cpActive(y)).forEach(y=>{ p.camps[x.id].sets[y.id]={id:y.id,name:y.name||"—",v:cpZero(),ads:{},loose:cpZero()}; }); });
   return P; }
 const cpRoas=v=>v.s? v.r/v.s : null, cpCpa=v=>v.o? v.s/v.o : null;
 function cpArrow(cur,old,low){ if(cur==null||old==null||!isFinite(old)||!old) return ""; const d=(cur-old)/old*100;
@@ -13340,6 +13348,7 @@ function renderCampPerf(){
   h+='<div class="cp-bar"><span class="flab">'+esc(L("المنصة","Platform"))+"</span>"+PAIDP().filter(pl=>M[pl]).map(pl=>'<button class="chip'+(CP.plats.indexOf(pl)>=0?" on":"")+'" data-a="cpPlat" data-id="'+pl+'"><i class="sw" style="background:'+((platById(pl)||{}).color||"#888")+'"></i>'+esc((platById(pl)||{}).name||pl)+"</button>").join("")+
     '<span class="flab">'+esc(L("المشروع","Project"))+'</span><select class="sel" data-c="cpProj"><option value="">'+esc(L("كل المشاريع","All projects"))+"</option>"+Object.keys(projs).sort().map(x=>'<option'+(CP.proj===x?" selected":"")+">"+esc(x)+"</option>").join("")+"</select>"+
     (tg?'<span class="hint">'+esc(L("هدف الـ ROAS ","ROAS target "))+tg.toFixed(2)+"x ("+esc(T.src)+")</span>":'<span class="hint">'+esc(L("حط هدف ROAS في الإعدادات عشان يظهر حكم زوّد/راقب/وقّف","Set a ROAS target in settings to get verdicts"))+"</span>")+"</div>";
+  if(convClient(cid)) h+='<div class="hint cp-note" style="color:var(--ink-3)">'+esc(L("الطلبات والإيراد على مستوى الحملة من AppsFlyer وسلة. الـ Ad Set والإعلان من أرقام المنصة نفسها، لأن AppsFlyer مبيقسّمش أقل من الحملة.","Campaign orders come from AppsFlyer and Salla; ad sets and ads use the platform's own numbers."))+"</div>";
   if(CP.act==="active"&&!haveStruct) h+='<div class="hint cp-note">'+esc(L("لسه مفيش لقطة لحالة الحملات وميزانياتها — دوس «تحديث الأرقام». لحد ما تيجي، ظاهر كل اللي صرف في الفترة.","No status/budget snapshot yet — press «Refresh numbers». Until then, everything that spent is shown."))+"</div>";
   const camps=[]; Object.keys(M).forEach(pl=>{ if(CP.plats.length&&CP.plats.indexOf(pl)<0) return;
     Object.values(M[pl].camps).forEach(c=>{ c.pl=pl; c.st=cpStatus("campaign",c.id,pl);
