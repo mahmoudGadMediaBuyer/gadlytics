@@ -42,6 +42,9 @@ Default = calm palette + soft charts. Skin picker: Settings → Display → «ش
 
 **▶ الفيديو opens the video file, not the folder:** Airtable's URL is a Drive *folder* per creative. `video_links.py` (run by `media_sync.py` after every sync; cache `~/.gadlytics/video_links.json`) lists each public folder, picks the Snap/story version, and stores `https://drive.google.com/file/d/<id>/view` in `media.video_file`. The site uses `video_file || url` everywhere, with a small 📁 link to the folder. Backfill/recheck: `python3 ~/.gadlytics/video_links.py --all <pairs.json>`.
 
+
+**أداء الحملات (Nov 2026)** — view `campperf`: platform → campaign (code only, e.g. MGG-03120) → ad set → ad («video ID · influencer»). Spend from the platform (ad_daily), donations/revenue from Khzama. Khzama links are matched by campaign code → the link's Custom part = the ad-set name (case-insensitive word/contains match; `campmap/*` docs hold manual links; single-ad-set campaigns match automatically) → video ID = the ad. Links without Custom are split across ad sets by spend (marked ~). Verdict زوّد/راقب/وقّف vs `roasTarget` (+ «لسه بدري»), arrows vs previous period or same days last week. Status/CBO-ABO/budgets/bids come from table `camp_struct` (`camp_struct_prep.py`). Budget/bid edits and «تحديث الأرقام» write `campchg/*` and `sys/campreq`; they run when Mahmoud says «نفّذ طلبات الحملات» → runbook `camp_requests.md` (Snap writes via `snap_update.py`; Meta MCP is in draft mode — publish only that entity). Khzama Custom may contain digits (CPA35, Mansour_1) — the parse regex is `(?:([A-Za-z0-9_]+)-)?`.
+
 ## Runbooks (in `runbooks/`)
 | Ask | Runbook |
 |---|---|
@@ -50,6 +53,7 @@ Default = calm palette + soft charts. Skin picker: Settings → Display → «ش
 | «ارفع الميديا» | `upload_media.md` |
 | Deploy / «ارفع» / update README | `deploy.md` |
 | «على الجهاز» filter (videos already in ~/Downloads) | `python3 ~/.gadlytics/local_videos.py` → run the SQL it prints with execute_sql (clears old marks, marks existing videos only; never touches the files) |
+| «نفّذ طلبات الحملات» (budget/bid edits + refresh from أداء الحملات) | `camp_requests.md` |
 | Mixpanel, snapshots, hooks queue | `snapshot.md`, `hooks.md` |
 
 ## New machine / new account
