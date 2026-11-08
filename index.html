@@ -214,7 +214,7 @@ a{color:var(--cyan)}
 .cp-tg{display:inline-block;width:26px;cursor:pointer;color:var(--ink-3);font-size:16px}.cp-tag{font-size:12.5px;padding:1px 6px;border-radius:5px;background:var(--ground-2);color:var(--ink-3);margin-inline-start:6px;font-weight:400}
 .cp-v{font-size:13px;padding:2px 8px;border:1px solid var(--line);border-radius:5px;margin-inline-start:6px;font-weight:600}.cp-sub{display:block;font-size:13.5px;color:var(--ink-3);padding-inline-start:26px;font-weight:400}
 .cp-ar{display:block;font-size:13px;margin-top:2px;font-weight:500}.cp-ed{cursor:pointer;border-bottom:1px dashed var(--line-2)}.cp-pen{font-size:14px;color:var(--ink-3)}.cp-pend{color:var(--amber)}
-.cp-bid{font-size:14px;color:var(--ink-3);margin-top:4px}.cp-edit{display:inline-flex;gap:4px;align-items:center}.cp-edit input{width:90px;height:34px;font-size:16px}.cp-err{display:block;color:var(--bad);font-size:13.5px}.cp-apx{color:var(--amber)}
+.cp-bid{font-size:14px;color:var(--ink-3);margin-top:4px}.cp-edit{display:inline-flex;gap:4px;align-items:center}.cp-edit input{width:96px;height:36px;font-size:17px;color:var(--ink)!important;background:var(--ground-2)!important;border:1px solid var(--cyan)!important;border-radius:8px;padding:0 8px;-webkit-text-fill-color:var(--ink)}.cp-off{background:color-mix(in srgb,var(--amber) 18%,transparent);color:var(--amber)}.cp-err{display:block;color:var(--bad);font-size:13.5px}.cp-apx{color:var(--amber)}
 @media (max-width:900px){.cp-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .btn-p{background:linear-gradient(135deg,var(--cyan),var(--teal));color:#fff;border:none;font-weight:600;
   box-shadow:0 4px 16px color-mix(in srgb,var(--cyan) 30%,transparent)}
@@ -13291,17 +13291,16 @@ function cpBuild(rows){ const conv=convClient(cpCid()), P={};
     const toSmart=(s,w,apx)=>{ const b=s.smart||(s.smart=cpZero()); give(b,o*w,rv*w,apx); };
     if(multi){ let ss=target? [target] : sets.filter(s=>Object.values(s.ads).some(a=>a.cr&&ids.indexOf(a.cr)>=0));
       if(!ss.length&&sets.length===1) ss=sets;
-      if(!ss.length){ give(c.loose,o,rv,false); return; }
-      const tot=ss.reduce((t,s)=>t+Object.values(s.ads).reduce((u,a)=>u+a.v.s,0),0);
-      ss.forEach(s=>{ const sp=Object.values(s.ads).reduce((u,a)=>u+a.v.s,0); toSmart(s, tot? sp/tot : 1/ss.length, ss.length>1); }); return; }
+      if(ss.length!==1){ give(c.loose,o,rv,false); return; }   // مش معروف أنهي Ad Set → على الحملة، من غير تقسيم
+      toSmart(ss[0],1,false); return; }
     if(target){ const ads=Object.values(target.ads).filter(a=>a.cr&&ids.indexOf(a.cr)>=0);
-      if(!ads.length){ give(target.loose,o,rv,false); return; }
-      const tot=ads.reduce((t,a)=>t+a.v.s,0)||ads.length; ads.forEach(a=>give(a.v,o*((tot===ads.length?1:a.v.s)/tot),rv*((tot===ads.length?1:a.v.s)/tot),ads.length>1)); return; }
-    /* لينك من غير Custom: على الإعلانات اللي فيها نفس الفيديو في كل الـ Ad Sets، حسب الصرف */
-    const ads=[]; sets.forEach(s=>Object.values(s.ads).forEach(a=>{ if(a.cr&&ids.indexOf(a.cr)>=0) ads.push(a); }));
-    if(!ads.length){ give(c.loose,o,rv,false); return; }
-    const tot=ads.reduce((t,a)=>t+a.v.s,0); const many=ads.length>1;
-    ads.forEach(a=>{ const w=tot? a.v.s/tot : 1/ads.length; give(a.v,o*w,rv*w,many); }); });
+      if(ads.length!==1){ give(target.loose,o,rv,false); return; }   // الفيديو في أكتر من إعلان (أو مش موجود) → على الـ Ad Set
+      give(ads[0].v,o,rv,false); return; }
+    /* لينك من غير Custom = مفيش Ad Set مخصص: لو الفيديو في Ad Set واحد بس (أو الحملة فيها Ad Set واحد) يروح له، غير كده يفضل على الحملة. ممنوع التقسيم. */
+    let hold=sets.filter(s=>Object.values(s.ads).some(a=>a.cr&&ids.indexOf(a.cr)>=0)); if(!hold.length&&sets.length===1) hold=sets;
+    if(hold.length!==1){ give(c.loose,o,rv,false); return; }
+    const ads2=Object.values(hold[0].ads).filter(a=>a.cr&&ids.indexOf(a.cr)>=0);
+    if(ads2.length===1) give(ads2[0].v,o,rv,false); else give(hold[0].loose,o,rv,false); });
   Object.keys(P).forEach(pl=>Object.values(P[pl].camps).forEach(c=>{
     Object.values(c.sets).forEach(s=>{ Object.values(s.ads).forEach(a=>cpAdd(s.v,a.v)); cpAdd(s.v,s.loose); if(s.smart){ s.v.o+=s.smart.o; s.v.r+=s.smart.r; if(s.smart.approx) s.v.approx=true; }
       if(conv){ c.v.s+=s.v.s; c.v.po+=s.v.po; c.v.pr+=s.v.pr; } else cpAdd(c.v,s.v); });
@@ -13322,7 +13321,7 @@ function cpVerdict(v,tg,cpaRef){ if(!tg) return "";
   if(v.o<2&&v.s<Math.max(150,2*(cpaRef||0))) return '<span class="cp-v" style="color:var(--ink-3)">'+esc(L("لسه بدري","Too early"))+"</span>";
   const ro=cpRoas(v)||0, k= ro>=tg*1.1? ["زوّد","Scale","var(--good)"] : ro>=tg*0.85? ["راقب","Watch","var(--amber)"] : ["وقّف","Pause","var(--bad)"];
   return '<span class="cp-v" style="color:'+k[2]+';border-color:color-mix(in srgb,'+k[2]+' 45%,transparent)">'+esc(L(k[0],k[1]))+"</span>"; }
-const cpStatus=(lvl,id,pl)=>(CP.struct||[]).find(x=>x.level===lvl&&x.id===String(id)&&x.platform===pl);
+const cpStatus=(lvl,id,pl)=>(CP.struct||[]).find(x=>x.level===lvl&&x.id===String(id)&&x.platform===pl&&x.status!=="stale");
 const cpActive=x=>!!x&&/^(active|enable|enabled|delivering)$/i.test(String(x.status||""));
 const cpPend=(id,field)=>CP.chg.filter(x=>x.objId===String(id)&&x.field===field&&x.status==="pending").sort((a,b)=>(b.at||0)-(a.at||0))[0];
 function cpEd(pl,lvl,id,field,val,label,name){ const key=id+"|"+field, C=CURR[S.cfg.settings.currency]||"";
@@ -13333,7 +13332,7 @@ function cpEd(pl,lvl,id,field,val,label,name){ const key=id+"|"+field, C=CURR[S.
   return '<span class="cp-ed" data-a="cpEdit" data-k="'+esc(key)+'" title="'+esc(L("عدّل","Edit"))+'">'+(label?esc(label)+" ":"")+(val==null?"—":fnum(val,0))+' <span class="cp-pen">✎</span></span>'+
     (fl?'<small class="cp-err" title="'+esc(fl.error||"")+'">'+esc(L("التعديل لـ ","Edit to "))+fnum(fl.to,0)+esc(L(" فشل",' failed'))+(fl.error?": "+esc(fl.error):"")+"</small>":""); }
 function cpSpendOnly(v){ return '<td class="num">'+fnum(v.s,0)+'</td><td class="num cp-na">—</td><td class="num cp-na">—</td><td class="num cp-na">—</td><td class="num cp-na">—</td>'; }
-function cpCells(v,pv){ const ro=cpRoas(v), cp=cpCpa(v), apx=v.approx?'<sup class="cp-apx" title="'+esc(L("فيه تبرعات متقسمة حسب الصرف (لينك من غير اسم Ad Set)","Includes donations split by spend (links without an ad-set name)"))+'">~</sup>':"";
+function cpCells(v,pv){ const ro=cpRoas(v), cp=cpCpa(v), apx="";
   return '<td class="num">'+fnum(v.s,0)+'</td><td class="num">'+fnum(Math.round(v.o),0)+apx+'</td><td class="num">'+fnum(v.r,0)+'</td>'+
     '<td class="num">'+(ro==null?"—":ro.toFixed(2)+"x")+cpArrow(ro,pv?cpRoas(pv):null,false)+'</td>'+
     '<td class="num">'+(cp==null?"—":fnum(cp,0))+cpArrow(cp,pv?cpCpa(pv):null,true)+"</td>"; }
@@ -13372,8 +13371,8 @@ function renderCampPerf(){
       if(!useActive&&!c.v.s&&!c.v.o) return; camps.push(c); }); });
   const tot=cpZero(), ptot=cpZero(); let bud=0;
   const campBudget=c=>{ const st=c.st; if(!st) return null; if(st.budget_mode==="CBO"||st.daily_budget!=null&&st.budget_mode!=="ABO") return st.daily_budget;
-    let sum=0, any=false; (CP.struct||[]).filter(x=>x.level==="adset"&&x.parent_id===String(c.id)&&cpActive(x)).forEach(x=>{ if(x.daily_budget!=null){ sum+=+x.daily_budget; any=true; } }); return any?sum:null; };
-  camps.forEach(c=>{ cpAdd(tot,c.v); const pv=pvIdx["c|"+c.pl+"|"+c.code]; if(pv) cpAdd(ptot,pv); const bb=campBudget(c); if(bb) bud+=+bb; });
+    const on=cpActive(st); let sum=0, any=false; (CP.struct||[]).filter(x=>x.level==="adset"&&x.parent_id===String(c.id)&&x.status!=="stale"&&(!on||cpActive(x))).forEach(x=>{ if(x.daily_budget!=null){ sum+=+x.daily_budget; any=true; } }); return any?sum:null; };
+  camps.forEach(c=>{ cpAdd(tot,c.v); const pv=pvIdx["c|"+c.pl+"|"+c.code]; if(pv) cpAdd(ptot,pv); const bb=cpActive(c.st)? campBudget(c) : null; if(bb) bud+=+bb; });
   const tile=(lb,val,ar)=>'<div class="cp-tile"><small>'+esc(lb)+"</small><b>"+val+"</b>"+(ar||"")+"</div>";
   const tr=cpRoas(tot), tc=cpCpa(tot), cpaRef=tc;
   h+='<div class="cp-tiles">'+tile(L("الصرف","Spend"),fnum(tot.s,0)+" <small>"+esc(C)+"</small>")+tile(L("التبرعات","Donations"),fnum(tot.o,0))+tile(L("الإيراد","Revenue"),fnum(tot.r,0)+" <small>"+esc(C)+"</small>")+
@@ -13386,7 +13385,7 @@ function renderCampPerf(){
     cs.forEach(c=>{ const st=c.st, ck="c:"+pl+":"+c.id, open=CP.open[ck], mode=st&&st.budget_mode||"";
       const sets=Object.values(c.sets).map(s=>{ s.st=cpStatus("adset",s.id,pl); return s; }).filter(s=>!useActive||cpActive(s.st)||!s.st).sort((x,y)=>y.v.s-x.v.s);
       const bcell= !st? "—" : mode==="ABO"? fnum(campBudget(c)||0,0)+' <small class="hint">'+esc(L("مجموع","sum"))+"</small>" : cpEd(pl,"campaign",c.id,"budget",st.daily_budget,"",c.code);
-      h+='<tr class="cp-c"><td><span class="cp-tg" data-a="cpTog" data-k="'+esc(ck)+'">'+(open?"▾":"◂")+'</span><b>'+esc(c.code)+"</b>"+(mode?'<span class="cp-tag">'+esc(mode)+"</span>":"")+cpVerdict(c.v,tg,cpaRef)+(c.proj?'<small class="cp-sub">'+esc(c.proj)+"</small>":"")+"</td>"+cpCells(c.v,pvIdx["c|"+pl+"|"+c.code])+'<td class="num">'+bcell+"</td></tr>";
+      h+='<tr class="cp-c"><td><span class="cp-tg" data-a="cpTog" data-k="'+esc(ck)+'">'+(open?"▾":"◂")+'</span><b>'+esc(c.code)+"</b>"+(mode?'<span class="cp-tag">'+esc(mode)+"</span>":"")+(st&&!cpActive(st)?'<span class="cp-tag cp-off">'+esc(L("موقفة","Paused"))+"</span>":"")+cpVerdict(c.v,tg,cpaRef)+(c.proj?'<small class="cp-sub">'+esc(c.proj)+"</small>":"")+"</td>"+cpCells(c.v,pvIdx["c|"+pl+"|"+c.code])+'<td class="num">'+bcell+"</td></tr>";
       if(!open) return;
       sets.forEach(s=>{ const sk="s:"+s.id, so=CP.open[sk], sst=s.st;
         const b= mode==="ABO"&&sst? cpEd(pl,"adset",s.id,"budget",sst.daily_budget,"",s.name) : mode==="CBO"? '<small class="hint">'+esc(L("ميزانية الحملة","Campaign budget"))+"</small>" : (sst&&sst.daily_budget!=null? cpEd(pl,"adset",s.id,"budget",sst.daily_budget,"",s.name):"");
@@ -13401,12 +13400,12 @@ function renderCampPerf(){
             h+='<tr class="cp-a"><td title="'+esc(ad.name||"")+'">'+esc(nm)+cpVerdict(ad.v,tg,cpaRef)+"</td>"+cpCells(ad.v,pvIdx["a|"+ad.id])+"<td></td></tr>"; }); }
         else all.forEach(ad=>{ const nm=ad.cr? ad.cr+(ad.inf?" · "+ad.inf:"") : (ad.name||ad.id);
           h+='<tr class="cp-a"><td title="'+esc(ad.name||"")+'">'+esc(nm)+(conv?"":cpVerdict(ad.v,tg,cpaRef))+"</td>"+(conv?cpSpendOnly(ad.v):cpCells(ad.v,pvIdx["a|"+ad.id]))+"<td></td></tr>"; });
-        if(s.loose.o||s.loose.r) h+='<tr class="cp-a cp-x"><td>'+esc(L("لينكات الـ Ad Set من غير إعلان مطابق","Ad-set links with no matching ad"))+"</td>"+cpCells(s.loose,null)+"<td></td></tr>"; });
+        if(s.loose.o||s.loose.r) h+='<tr class="cp-a cp-x"><td>'+esc(L("لينكات على الـ Ad Set كله (الفيديو في أكتر من إعلان أو مش لاقيه)","Links for the whole ad set (video in several ads or not found)"))+"</td>"+cpCells(s.loose,null)+"<td></td></tr>"; });
       Object.values(c.unmatched||{}).forEach(u=>{ const mk=pl+"|"+c.code+"|"+u.custom;
         h+='<tr class="cp-s cp-x"><td>⚠ '+esc(L("لينكات «","Links «"))+esc(u.custom)+esc(L("» مش مربوطة بـ Ad Set","» not linked to an ad set"))+
           (CP.mapOpen===mk? ' <select class="sel" data-c="cpMap" data-pl="'+pl+'" data-camp="'+esc(c.code)+'" data-cu="'+esc(u.custom)+'"><option value="">'+esc(L("اختار الـ Ad Set…","Pick the ad set…"))+"</option>"+Object.values(c.sets).map(s=>'<option value="'+esc(s.id)+'">'+esc(s.name)+"</option>").join("")+"</select>"
             : ' <button class="btn btn-s" data-a="cpMapOpen" data-k="'+esc(mk)+'">'+esc(L("اربط","Link"))+"</button>")+"</td>"+cpCells(u.v,null)+"<td></td></tr>"; });
-      if(c.loose.o||c.loose.r) h+='<tr class="cp-s cp-x"><td>'+esc(L("تبرعات على الحملة من غير Ad Set أو فيديو مطابق","Campaign donations with no matching ad set or video"))+"</td>"+cpCells(c.loose,null)+"<td></td></tr>"; });
+      if(c.loose.o||c.loose.r) h+='<tr class="cp-s cp-x"><td>'+esc(L("لينكات على الحملة كلها (من غير Custom والفيديو في أكتر من Ad Set)","Links for the whole campaign (no Custom, video in several ad sets)"))+"</td>"+cpCells(c.loose,null)+"<td></td></tr>"; });
     h+="</table></div>"; });
   if(!camps.length) h+='<div class="hint" style="padding:30px 0">'+esc(L("مفيش حملات بالفلتر ده في الفترة دي.","No campaigns match these filters in this period."))+"</div>";
   return h+"</div>"; }
