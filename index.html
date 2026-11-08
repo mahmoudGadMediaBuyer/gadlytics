@@ -200,17 +200,21 @@ a{color:var(--cyan)}
   font-size:13px;font-weight:500;color:var(--ink);transition:.15s;display:inline-flex;align-items:center;gap:7px}
 .btn:hover{background:var(--glass-2);border-color:var(--line-2)}
 .btn svg{width:15px;height:15px}
-.cp .cp-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:12px}.cp-t{font-size:20px;margin:0 0 2px}
-.cp-rf{display:flex;flex-direction:column;align-items:flex-end;gap:4px}.cp-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px}.cp-note{margin:0 0 10px;color:var(--amber)}
-.cp-tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin:6px 0 4px}.cp-tile{background:var(--ground-1);border:1px solid var(--line);border-radius:var(--r-s);padding:9px 12px}
-.cp-tile small{display:block;color:var(--ink-3);font-size:11.5px}.cp-tile b{font-family:var(--f-num);font-size:19px}.cp-tile b small{display:inline;font-size:11px;font-weight:400}
-.cp-ph{display:flex;align-items:center;gap:8px;font-weight:700;margin:18px 0 6px}.cp-tbl{width:100%;table-layout:fixed}.cp-tbl td{vertical-align:top}
-.cp-tbl td:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cp-s td{font-size:12.5px;color:var(--ink-2)}.cp-s td:first-child{padding-inline-start:22px}
-.cp-a td{font-size:12px;color:var(--ink-3)}.cp-a td:first-child{padding-inline-start:44px}.cp-x td{color:var(--amber)}
-.cp-tg{display:inline-block;width:16px;cursor:pointer;color:var(--ink-3)}.cp-tag{font-size:10.5px;padding:1px 6px;border-radius:5px;background:var(--ground-2);color:var(--ink-3);margin-inline-start:6px}
-.cp-v{font-size:10.5px;padding:0 6px;border:1px solid var(--line);border-radius:5px;margin-inline-start:6px}.cp-sub{display:block;font-size:11px;color:var(--ink-3);padding-inline-start:16px}
-.cp-ar{display:block;font-size:10.5px;margin-top:1px}.cp-ed{cursor:pointer;border-bottom:1px dashed var(--line-2)}.cp-pen{font-size:11px;color:var(--ink-3)}.cp-pend{color:var(--amber)}
-.cp-bid{font-size:11px;color:var(--ink-3);margin-top:2px}.cp-edit{display:inline-flex;gap:4px;align-items:center}.cp-edit input{width:70px;height:26px;font-size:12px}.cp-err{display:block;color:var(--bad);font-size:11px}.cp-apx{color:var(--amber)}
+.cp{max-width:1440px;font-size:16px}.cp .cp-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:12px}.cp .hint{font-size:14px}
+.cp-rf{display:flex;flex-direction:column;align-items:flex-end;gap:4px}.cp-bar{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;margin:0 0 10px}.cp-bar .flab{font-size:14.5px}.cp-bar .sel,.cp-bar .chip{font-size:15px;min-height:36px}.cp-rf .btn{font-size:15px;padding:9px 18px}
+.cp-note{margin:0 0 10px;color:var(--amber)}
+.cp-tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin:8px 0 6px}.cp-tile{background:var(--ground-1);border:1px solid var(--line);border-radius:var(--r-s);padding:16px 18px}
+.cp-tile small{display:block;color:var(--ink-3);font-size:15px;margin-bottom:4px}.cp-tile b{font-family:var(--f-num);font-size:32px;line-height:1.2}.cp-tile b small{display:inline;font-size:14px;font-weight:400}.cp-tile .cp-ar{font-size:13.5px}
+.cp-ph{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px;margin:26px 0 8px}.cp-ph .hint{font-size:14px;font-weight:400}
+.cp-tbl{width:100%;table-layout:fixed;border-collapse:collapse}.cp-tbl th{font-size:14px;color:var(--ink-3);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line)}
+.cp-tbl td{vertical-align:top;font-size:17px;padding:12px 12px;border-bottom:1px solid var(--line)}.cp-tbl td.num,.cp-tbl th.num{text-align:left;direction:ltr;font-family:var(--f-num)}
+.cp-tbl td:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cp-c td{font-weight:600}.cp-c td:first-child b{font-size:17.5px}
+.cp-s td{font-size:15.5px;color:var(--ink-2);background:color-mix(in srgb,var(--ground-1) 55%,transparent)}.cp-s td:first-child{padding-inline-start:34px}
+.cp-a td{font-size:15px;color:var(--ink-2)}.cp-a td:first-child{padding-inline-start:64px}.cp-x td{color:var(--amber)}
+.cp-tg{display:inline-block;width:26px;cursor:pointer;color:var(--ink-3);font-size:16px}.cp-tag{font-size:12.5px;padding:1px 6px;border-radius:5px;background:var(--ground-2);color:var(--ink-3);margin-inline-start:6px;font-weight:400}
+.cp-v{font-size:13px;padding:2px 8px;border:1px solid var(--line);border-radius:5px;margin-inline-start:6px;font-weight:600}.cp-sub{display:block;font-size:13.5px;color:var(--ink-3);padding-inline-start:26px;font-weight:400}
+.cp-ar{display:block;font-size:13px;margin-top:2px;font-weight:500}.cp-ed{cursor:pointer;border-bottom:1px dashed var(--line-2)}.cp-pen{font-size:14px;color:var(--ink-3)}.cp-pend{color:var(--amber)}
+.cp-bid{font-size:14px;color:var(--ink-3);margin-top:4px}.cp-edit{display:inline-flex;gap:4px;align-items:center}.cp-edit input{width:90px;height:34px;font-size:16px}.cp-err{display:block;color:var(--bad);font-size:13.5px}.cp-apx{color:var(--amber)}
 @media (max-width:900px){.cp-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .btn-p{background:linear-gradient(135deg,var(--cyan),var(--teal));color:#fff;border:none;font-weight:600;
   box-shadow:0 4px 16px color-mix(in srgb,var(--cyan) 30%,transparent)}
@@ -13237,6 +13241,7 @@ const CP={per:"y",day:"",cmp:"prev",plats:[],proj:"",open:{},edit:null,act:"acti
 const cpCid=()=>S.ws||(S.cfg.clients[0]||{}).id;
 function cpRange(){ const T=todayISO(), y=addDays(T,-1);
   if(CP.per==="t") return [T,T]; if(CP.per==="y") return [y,y]; if(CP.per==="7") return [addDays(T,-7),y]; if(CP.per==="30") return [addDays(T,-30),y];
+  if(CP.per==="r"){ const f=CP.from||addDays(T,-30), t=CP.to||y; return f<=t? [f,t] : [t,f]; }
   const d=CP.day||y; return [d,d]; }
 function cpPrevRange(a,b){ const n=Math.round((parseISO(b)-parseISO(a))/864e5)+1;
   return CP.cmp==="week"? [addDays(a,-7),addDays(b,-7)] : [addDays(a,-n),addDays(a,-1)]; }
@@ -13336,8 +13341,9 @@ function renderCampPerf(){
     esc(pend? L("اتطلب ","Requested ")+ftime(rq.at)+L(" — قول لـ Claude «نفّذ طلبات الحملات»"," — tell Claude «apply campaign requests»")
        : (rq&&rq.done_at? L("آخر تحديث: ","Updated: ")+fdate(new Date(rq.done_at).toISOString().slice(0,10))+" "+ftime(rq.done_at) : L("المنصات + خزامى بس","Platforms + Khzama only")))+"</small></div></div>";
   h+='<div class="cp-bar"><span class="flab">'+esc(L("التاريخ","Date"))+'</span><select class="sel" data-c="cpPer">'+
-    [["t","النهارده","Today"],["y","امبارح","Yesterday"],["7","آخر 7 أيام","Last 7 days"],["30","آخر 30 يوم","Last 30 days"],["d","يوم معين…","Pick a day…"]].map(x=>'<option value="'+x[0]+'"'+(CP.per===x[0]?" selected":"")+">"+esc(L(x[1],x[2]))+"</option>").join("")+"</select>"+
+    [["t","النهارده","Today"],["y","امبارح","Yesterday"],["7","آخر 7 أيام","Last 7 days"],["30","آخر 30 يوم","Last 30 days"],["d","يوم معين…","Pick a day…"],["r","فترة من… لـ…","Date range…"]].map(x=>'<option value="'+x[0]+'"'+(CP.per===x[0]?" selected":"")+">"+esc(L(x[1],x[2]))+"</option>").join("")+"</select>"+
     (CP.per==="d"?'<input class="sel" type="date" data-c="cpDay" value="'+esc(CP.day||addDays(todayISO(),-1))+'" max="'+todayISO()+'">':"")+
+    (CP.per==="r"?'<input class="sel" type="date" data-c="cpFrom" value="'+esc(a)+'" max="'+todayISO()+'"><span class="flab">'+esc(L("لـ","to"))+'</span><input class="sel" type="date" data-c="cpTo" value="'+esc(b)+'" max="'+todayISO()+'">':"")+
     '<span class="flab">'+esc(L("مقارنة بـ","Compare with"))+'</span><select class="sel" data-c="cpCmp"><option value="prev"'+(CP.cmp==="prev"?" selected":"")+">"+esc(L("الفترة اللي قبلها","Previous period"))+'</option><option value="week"'+(CP.cmp==="week"?" selected":"")+">"+esc(L("نفس الأيام الأسبوع اللي فات","Same days last week"))+"</option></select>"+
     '<span class="flab">'+esc(L("الحملات","Campaigns"))+'</span><select class="sel" data-c="cpAct"><option value="active"'+(CP.act==="active"?" selected":"")+">"+esc(L("الشغالة بس","Active only"))+'</option><option value="all"'+(CP.act==="all"?" selected":"")+">"+esc(L("كل اللي صرفت في الفترة","All that spent in the period"))+"</option></select></div>";
   if(!cur||!prv) return h+'<div class="hint" style="padding:30px 0">'+esc(CP.err||L("بيحمّل…","Loading…"))+"</div></div>";
@@ -13391,6 +13397,8 @@ function renderCampPerf(){
   return h+"</div>"; }
 CHG.cpPer=v=>{ CP.per=v; if(v==="d"&&!CP.day) CP.day=addDays(todayISO(),-1); render(); };
 CHG.cpDay=v=>{ CP.day=v; render(); };
+CHG.cpFrom=v=>{ CP.from=v; render(); };
+CHG.cpTo=v=>{ CP.to=v; render(); };
 CHG.cpCmp=v=>{ CP.cmp=v; render(); };
 CHG.cpAct=v=>{ CP.act=v; render(); };
 CHG.cpProj=v=>{ CP.proj=v; render(); };
@@ -13748,6 +13756,11 @@ document.addEventListener("keydown",e=>{ const t=e.target;
   if(e.key==="/"&&!/INPUT|TEXTAREA|SELECT/.test((t&&t.tagName)||"")&&!(t&&t.isContentEditable)){ const q=document.getElementById("navQ"); if(q){ e.preventDefault(); q.focus(); } } });
 (function(){ try{ const q=new URLSearchParams(location.search).get("skin"); if(q) localStorage.setItem("gad.skin",q==="off"?"":q); const v=localStorage.getItem("gad.skin"); if(v){ document.documentElement.setAttribute("data-skin",v==="clayglass"?"clay":v); if(v==="clayglass") document.documentElement.setAttribute("data-glass","1"); } }catch(e){} })();
 function render(){
+  /* لينك مباشر: ?p=campperf&ws=<client>&from=YYYY-MM-DD&to=YYYY-MM-DD&act=all — بيتطبق مرة واحدة أول ما الإعدادات تتحمّل */
+  if(!S.urlInit&&S.cfg.clients.length){ S.urlInit=1; try{ const q=new URLSearchParams(location.search);
+    const ws=q.get("ws"); if(ws&&clientById(ws)){ S.ws=ws; S.wsInit=1; lsSet("gad.ws",ws); }
+    if(q.get("p")==="campperf"){ S.view="campperf"; const f=q.get("from"), t=q.get("to"), d=q.get("day");
+      if(f&&t){ CP.per="r"; CP.from=f; CP.to=t; } else if(d){ CP.per="d"; CP.day=d; } if(q.get("act")==="all") CP.act="all"; } }catch(e){} }
   /* أكتر من عميل: السيستم بيفتح على آخر عميل اخترته (أو أول عميل) بدل ما يجمع أرقام العملا مع بعض. «كل العملاء» بتتحفظ برضه. */
   if(!S.wsInit&&S.cfg.clients.length>1){ S.wsInit=1; const r=lsGet("gad.ws",""); if(r!=="*"&&!S.ws) S.ws=(r&&clientById(r))? r : S.cfg.clients[0].id; }
   CONV_WS=!!(S.ws&&convClient(S.ws));
