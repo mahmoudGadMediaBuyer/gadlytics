@@ -2521,7 +2521,7 @@ const CMPS=[["prev","الفترة السابقة","Previous period"],["prevmonth
 function renderFBar(){
   const host=$("#fbar");
   if(isWelcome()){ host.innerHTML=""; return; }
-  if(["entry","admin","actions","roster","creatives","changes","experiments","brief","me","chat","team","pending","tasks","plans","approvals","perf","reports","portal","library","site"].indexOf(S.view)>=0||isPending()||isClient()){ host.innerHTML=""; return; }
+  if(["campperf","entry","admin","actions","roster","creatives","changes","experiments","brief","me","chat","team","pending","tasks","plans","approvals","perf","reports","portal","library","site"].indexOf(S.view)>=0||isPending()||isClient()){ host.innerHTML=""; return; }
   if(S.view==="live"){
     host.innerHTML='<div class="fbar"><div class="fgrp"><span class="flab">'+esc(L("اليوم","Day"))+'</span>'+
       '<input class="inp" type="date" data-c="liveDate" value="'+S.liveDate+'" max="'+todayISO()+'"></div>'+
@@ -13306,9 +13306,11 @@ const cpActive=x=>!!x&&/^(active|enable|enabled|delivering)$/i.test(String(x.sta
 const cpPend=(id,field)=>CP.chg.filter(x=>x.objId===String(id)&&x.field===field&&x.status==="pending").sort((a,b)=>(b.at||0)-(a.at||0))[0];
 function cpEd(pl,lvl,id,field,val,label,name){ const key=id+"|"+field, C=CURR[S.cfg.settings.currency]||"";
   if(CP.edit===key) return '<span class="cp-edit"><input id="cpIn" type="number" min="1" step="1" value="'+(val!=null?Math.round(val):"")+'"><button class="btn btn-s" data-a="cpSave" data-pl="'+pl+'" data-lvl="'+lvl+'" data-id="'+esc(id)+'" data-f="'+field+'" data-old="'+(val==null?"":val)+'" data-n="'+esc(name||"")+'" data-lb="'+esc(label||"")+'">'+esc(L("تطبيق على المنصة","Apply"))+'</button><button class="btn btn-s" data-a="cpCancel">✕</button></span><small id="cpErr" class="cp-err"></small>';
+  const fl=CP.chg.filter(x=>x.objId===String(id)&&x.field===field&&x.status==="failed"&&Date.now()-(x.at||0)<864e5).sort((a,b)=>(b.at||0)-(a.at||0))[0];
   const p=cpPend(id,field);
-  if(p) return '<span class="cp-pend" title="'+esc(L("اتبعت للمنصة — مستني Claude ينفّذه","Sent — waiting for Claude to apply it"))+'">'+(label?esc(label)+" ":"")+fnum(p.to,0)+" ⏳</span>";
-  return '<span class="cp-ed" data-a="cpEdit" data-k="'+esc(key)+'" title="'+esc(L("عدّل","Edit"))+'">'+(label?esc(label)+" ":"")+(val==null?"—":fnum(val,0))+' <span class="cp-pen">✎</span></span>'; }
+  if(p) return '<span class="cp-pend" title="'+esc(L("مستني التنفيذ على المنصة — قول لـ Claude «نفّذ طلبات الحملات»","Waiting — tell Claude «apply campaign requests»"))+'">'+(label?esc(label)+" ":"")+fnum(p.to,0)+" ⏳</span>";
+  return '<span class="cp-ed" data-a="cpEdit" data-k="'+esc(key)+'" title="'+esc(L("عدّل","Edit"))+'">'+(label?esc(label)+" ":"")+(val==null?"—":fnum(val,0))+' <span class="cp-pen">✎</span></span>'+
+    (fl?'<small class="cp-err" title="'+esc(fl.error||"")+'">'+esc(L("التعديل لـ ","Edit to "))+fnum(fl.to,0)+esc(L(" فشل",' failed'))+(fl.error?": "+esc(fl.error):"")+"</small>":""); }
 function cpCells(v,pv){ const ro=cpRoas(v), cp=cpCpa(v), apx=v.approx?'<sup class="cp-apx" title="'+esc(L("فيه تبرعات متقسمة حسب الصرف (لينك من غير اسم Ad Set)","Includes donations split by spend (links without an ad-set name)"))+'">~</sup>':"";
   return '<td class="num">'+fnum(v.s,0)+'</td><td class="num">'+fnum(v.o,v.o%1?1:0)+apx+'</td><td class="num">'+fnum(v.r,0)+'</td>'+
     '<td class="num">'+(ro==null?"—":ro.toFixed(2)+"x")+cpArrow(ro,pv?cpRoas(pv):null,false)+'</td>'+
@@ -13319,11 +13321,11 @@ function renderCampPerf(){
   if(CP.key!==k&&!CP.busy) setTimeout(()=>cpLoad(false),0);
   const cur=exC(a,b), prv=exC(c,d), C=CURR[S.cfg.settings.currency]||"";
   const T=roasTarget(cid), tg=T?T.v:null;
-  let h='<div class="cp"><div class="cp-head"><div><h2 class="cp-t">'+esc(L("أداء الحملات","Campaign performance"))+'</h2><div class="hint">'+
-    esc(L("الصرف من المنصة · التبرعات والإيراد من خزامى · ROAS = إيراد خزامى ÷ صرف المنصة","Spend from the platform · donations and revenue from Khzama"))+"</div></div>";
+  let h='<div class="cp"><div class="cp-head"><div class="hint">'+
+    esc(L("الصرف من المنصة · التبرعات والإيراد من خزامى · ROAS = إيراد خزامى ÷ صرف المنصة","Spend from the platform · donations and revenue from Khzama"))+"</div>";
   const rq=CP.req, pend=rq&&rq.status==="pending";
   h+='<div class="cp-rf"><button class="btn'+(pend?"":" btn-p")+'" data-a="cpRefresh"'+(pend?" disabled":"")+'>⟳ '+esc(pend?L("بيتحدث…","Updating…"):L("تحديث الأرقام","Refresh numbers"))+'</button><small class="hint">'+
-    esc(pend? L("اتطلب ","Requested ")+ftime(rq.at)+L(" — المنصات + خزامى بس، خلال دقايق"," — platforms + Khzama only, within minutes")
+    esc(pend? L("اتطلب ","Requested ")+ftime(rq.at)+L(" — قول لـ Claude «نفّذ طلبات الحملات»"," — tell Claude «apply campaign requests»")
        : (rq&&rq.done_at? L("آخر تحديث: ","Updated: ")+fdate(new Date(rq.done_at).toISOString().slice(0,10))+" "+ftime(rq.done_at) : L("المنصات + خزامى بس","Platforms + Khzama only")))+"</small></div></div>";
   h+='<div class="cp-bar"><span class="flab">'+esc(L("التاريخ","Date"))+'</span><select class="sel" data-c="cpPer">'+
     [["t","النهارده","Today"],["y","امبارح","Yesterday"],["7","آخر 7 أيام","Last 7 days"],["30","آخر 30 يوم","Last 30 days"],["d","يوم معين…","Pick a day…"]].map(x=>'<option value="'+x[0]+'"'+(CP.per===x[0]?" selected":"")+">"+esc(L(x[1],x[2]))+"</option>").join("")+"</select>"+
@@ -13392,12 +13394,12 @@ ACT.cpSave=async t=>{ const i=$("#cpIn"), v=Math.round(+(i&&i.value)), f=t.datas
   const old=t.dataset.old===""?null:+t.dataset.old; if(old!=null&&Math.round(old)===v){ CP.edit=null; render(); return; }
   const id=sid(), doc={client:cpCid(),platform:t.dataset.pl,level:t.dataset.lvl,objId:String(t.dataset.id),name:t.dataset.n||"",field:f,bidType:t.dataset.lb||null,from:old,to:v,status:"pending",at:Date.now(),by:ME.email||""};
   try{ await RT.set("campchg/"+id,doc); CP.chg.push(Object.assign({_id:id},doc)); CP.edit=null;
-    toast(L("اتبعت للمنصة — Claude بينفّذه خلال دقايق","Sent — Claude applies it within minutes")); }
+    toast(L("اتسجل — قول لـ Claude «نفّذ طلبات الحملات» يطبّقه على المنصة","Saved — tell Claude «apply campaign requests» to push it to the platform")); }
   catch(e){ if(er) er.textContent=(e&&e.message)||String(e); return; }
   render(); };
 ACT.cpRefresh=async()=>{ const [a,b]=cpRange();
   try{ await RT.set("sys/campreq",{at:Date.now(),by:ME.email||"",status:"pending",client:cpCid(),from:a,to:b});
-    CP.req={at:Date.now(),status:"pending",from:a,to:b}; toast(L("اتطلب التحديث — المنصات + خزامى بس","Refresh requested — platforms + Khzama only")); cpPoll(); }
+    CP.req={at:Date.now(),status:"pending",from:a,to:b}; toast(L("اتطلب التحديث — قول لـ Claude «نفّذ طلبات الحملات» (المنصات + خزامى بس)","Refresh requested — tell Claude «apply campaign requests»")); cpPoll(); }
   catch(e){ toast((e&&e.message)||String(e),true); } render(); };
 function cpPoll(){ setTimeout(async()=>{ if(S.view!=="campperf") return; const r=await RT.get("sys/campreq").catch(()=>null); CP.req=r;
   if(r&&r.status==="pending") return cpPoll(); cpLoad(true); },30000); }
