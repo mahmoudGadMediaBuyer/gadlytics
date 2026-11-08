@@ -13283,7 +13283,8 @@ function cpBuild(rows){ const conv=convClient(cpCid()), P={};
     const hasSet=x=>{ if(!k.custom) return false; const cu=String(k.custom).toLowerCase(), nn=cpNorm(cu); return Object.values(x.sets).some(st=>cpToks(st.name).indexOf(cu)>=0||cpNorm(st.name).indexOf(nn)>=0); };
     const hasVid=x=>Object.values(x.sets).some(st=>Object.values(st.ads).some(a=>a.cr&&ids.indexOf(a.cr)>=0));
     const spend=x=>Object.values(x.sets).reduce((t,st)=>t+Object.values(st.ads).reduce((u,a)=>u+a.v.s,0),0);
-    const c= cs.length===1? cs[0] : (cs.find(x=>hasSet(x)&&hasVid(x))||cs.find(hasSet)||cs.find(hasVid)||cs.slice().sort((x,y)=>spend(y)-spend(x))[0]);
+    const top=a=>a.slice().sort((x,y)=>spend(y)-spend(x))[0];
+    const c= cs.length===1? cs[0] : top([cs.filter(x=>hasSet(x)&&hasVid(x)),cs.filter(hasSet),cs.filter(hasVid),cs].find(a=>a.length));
     if(conv){ give(c.loose,o,rv,false); return; }
     const sets=Object.values(c.sets);
     let target=null;
