@@ -13449,19 +13449,30 @@ ACT.cpPlat=t=>{ const k=t.dataset.id; CP.plats=CP.plats.indexOf(k)>=0? CP.plats.
 ACT.cpTog=t=>{ const k=t.dataset.k; CP.open[k]=!CP.open[k]; render(); };
 ACT.cpEdit=t=>{ CP.edit=t.dataset.k; render(); setTimeout(()=>{ const i=$("#cpIn"); if(i) i.focus(); },0); };
 ACT.cpCancel=()=>{ CP.edit=null; render(); };
+// السكة السريعة: السيرفر (camp-apply) بيطبّق التعديل على المنصة على طول. لو المنصة لسه مش متوصّلة (not_configured/missing) الطلب بيفضل في الطابور للمهمة المجدولة.
+async function cpApply(id,doc,slowMsg){ const pn={meta:"ميتا",tiktok:"تيك توك",snap:"سناب"}[doc.platform]||doc.platform; let r=null;
+  try{ const q=await SUPA_DB.client.functions.invoke("camp-apply",{body:{client:doc.client,platform:doc.platform,level:doc.level,objId:doc.objId,field:doc.field,to:doc.to,docId:id}}); r=q.data||null; if(!r&&q.error) r={ok:false,error:q.error.message}; }
+  catch(e){ r={ok:false,code:"net",error:(e&&e.message)||String(e)}; }
+  const c=CP.chg.find(x=>x._id===id);
+  if(r&&r.ok){ if(c){ c.status="done"; c.applied=doc.to; }
+    const row=(CP.struct||[]).find(x=>x.platform===doc.platform&&String(x.id)===String(doc.objId));
+    if(row){ if(doc.field==="status") row.status=doc.to==="ACTIVE"?"active":"paused"; else if(doc.field==="bid") row.bid=doc.to; else row.daily_budget=doc.to; }
+    toast(L("اتطبق على "+pn+" ✓ ("+Math.max(1,Math.round((r.ms||0)/1000))+" ث)","Applied on "+pn+" ✓")); render(); return; }
+  if(r&&(r.code==="not_configured"||r.code==="missing"||r.code==="net")){ toast(slowMsg); cpPoll(); return; }
+  if(c){ c.status="failed"; c.error=(r&&r.error)||"فشل"; } toast(L("مااتطبقش: ","Not applied: ")+((r&&r.error)||""),true); render(); }
 ACT.cpSwArm=t=>{ CP.arm=t.dataset.k||null; render(); };
 ACT.cpSwitch=async t=>{ const id=sid(), lvl=t.dataset.lvl, oid=String(t.dataset.id), st=cpStatus(lvl,oid,t.dataset.pl);
   const doc={client:cpCid(),platform:t.dataset.pl,level:lvl,objId:oid,name:t.dataset.n||"",field:"status",from:st&&cpActive(st)?"ACTIVE":"PAUSED",to:t.dataset.to,status:"pending",at:Date.now(),by:ME.email||""};
-  try{ await RT.set("campchg/"+id,doc); CP.chg.push(Object.assign({_id:id},doc)); CP.arm=null;
-    toast(t.dataset.to==="PAUSED"?L("اتبعت طلب الإيقاف — خلال دقيقتين تقريباً","Pause sent — within ~2 minutes"):L("اتبعت طلب التشغيل — خلال دقيقتين تقريباً","Turn-on sent — within ~2 minutes")); cpPoll(); }
+  try{ await RT.set("campchg/"+id,doc); CP.chg.push(Object.assign({_id:id},doc)); CP.arm=null; render();
+    cpApply(id,doc,t.dataset.to==="PAUSED"?L("اتبعت طلب الإيقاف — خلال دقيقتين تقريباً","Pause sent — within ~2 minutes"):L("اتبعت طلب التشغيل — خلال دقيقتين تقريباً","Turn-on sent — within ~2 minutes")); }
   catch(e){ toast((e&&e.message)||String(e),true); } render(); };
 CHG.cpStf=v=>{ CP.stf=v; render(); };
 ACT.cpSave=async t=>{ const i=$("#cpIn"), v=Math.round(+(i&&i.value)), f=t.dataset.f, er=$("#cpErr");
   if(!(v>0)||(f==="budget"&&v<20)){ if(er) er.textContent=f==="budget"?L("اكتب ميزانية 20 أو أكتر","Enter a budget of 20 or more"):L("اكتب رقم أكبر من صفر","Enter a number above zero"); return; }
   const old=t.dataset.old===""?null:+t.dataset.old; if(old!=null&&Math.round(old)===v){ CP.edit=null; render(); return; }
   const id=sid(), doc={client:cpCid(),platform:t.dataset.pl,level:t.dataset.lvl,objId:String(t.dataset.id),name:t.dataset.n||"",field:f,bidType:t.dataset.lb||null,from:old,to:v,status:"pending",at:Date.now(),by:ME.email||""};
-  try{ await RT.set("campchg/"+id,doc); CP.chg.push(Object.assign({_id:id},doc)); CP.edit=null;
-    toast(L("اتبعت — هيتطبق على المنصة خلال دقيقتين تقريباً","Sent — applied on the platform within ~2 minutes")); cpPoll(); }
+  try{ await RT.set("campchg/"+id,doc); CP.chg.push(Object.assign({_id:id},doc)); CP.edit=null; render();
+    cpApply(id,doc,L("اتبعت — هيتطبق على المنصة خلال دقيقتين تقريباً","Sent — applied on the platform within ~2 minutes")); }
   catch(e){ if(er) er.textContent=(e&&e.message)||String(e); return; }
   render(); };
 ACT.cpRefresh=async()=>{ const b=todayISO(), a=addDays(b,-1);   // الأيام القديمة مبتتغيرش — التحديث دايماً امبارح + النهارده
