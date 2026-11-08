@@ -43,7 +43,7 @@ Ingest endpoint: https://ibpwudzjwjraqhfdmzet.supabase.co/functions/v1/ingest
    (التواريخ بتوقيت الرياض ومكتوب عليها Z). الرد data[] فيه id,title,numberOfDonations,totalDonationAmount.
 4. خد الصفوف اللي فيها تبرعات أو مبلغ، وحوّل كل واحد لـ:
    {client_id:'3sa3k1k', date, link_id:String(id), title, camp_no, custom, creative_id, code, platform, product, rest, donations, amount}
-   بالـ regex: ^-?([A-Z]{2,4}-\d{3,6})-(?:([A-Za-z]+)-)?(\d{14}(?:~\d{14})*)-([A-Za-z]{2,3})-(.+)$  → camp, custom, creative (أول ID)، code، rest (product = أول كلمة).
+   بالـ regex: ^-?([A-Z]{2,4}-\d{3,6})-(?:([A-Za-z0-9_]+)-)?(\d{14}(?:~\d{14})*)-([A-Za-z]{2,3})-(.+)$  → camp, custom (= اسم الـ Ad Set، ممكن فيه أرقام زي CPA35 أو Mansour_1), creative (أول ID)، code، rest (product = أول كلمة).
    لو مطابقش: camp من ^[A-Z]{2,4}-\d{3,6}، code من -(ME|TT|SC)- أو العنوان نفسه لو bio/com/DM، creative أول 14 رقم. platform: ME→meta, TT→tiktok, SC→snap.
 5. ابعت كل يوم بـ form POST (حقول key/table=khzama_link_daily/rows=JSON) لـ iframe مخفي باسم جديد لكل طلب.
 6. اتأكد بـ execute_sql: select date, count(*), sum(donations), sum(amount) from public.khzama_link_daily where client_id='3sa3k1k' and date in (...) group by 1.
