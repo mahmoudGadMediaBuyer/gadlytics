@@ -210,7 +210,13 @@ a{color:var(--cyan)}
 .cp-tbl td{vertical-align:top;font-size:17px;padding:12px 12px;border-bottom:1px solid var(--line)}.cp-tbl td.num,.cp-tbl th.num{text-align:left;direction:ltr;font-family:var(--f-num)}
 .cp-tbl td:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cp-c td{font-weight:600}.cp-c td:first-child b{font-size:17.5px}
 .cp-s td{font-size:15.5px;color:var(--ink-2);background:color-mix(in srgb,var(--ground-1) 55%,transparent)}.cp-s td:first-child{padding-inline-start:34px}
-.cp-a td{font-size:15px;color:var(--ink-2)}.cp-a td:first-child{padding-inline-start:64px}.cp-x td{color:var(--amber)}.cp-na{color:var(--ink-3)}
+.cp-a td{font-size:15px;color:var(--ink-2)}.cp-a td:first-child{padding-inline-start:64px}.cp-x td{color:var(--amber)}.cp-t7{grid-template-columns:repeat(7,minmax(0,1fr))}.cp-on{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
+.cp-sw{display:inline-block;vertical-align:middle;width:34px;height:19px;border-radius:12px;border:none;background:var(--line-2);position:relative;cursor:pointer;margin-inline-end:8px;padding:0}
+.cp-sw i{position:absolute;top:2px;inset-inline-start:2px;width:15px;height:15px;border-radius:50%;background:#fff;transition:inset-inline-start .15s}
+.cp-sw.is-on{background:var(--good)}.cp-sw.is-on i{inset-inline-start:17px}.cp-sw-na,.cp-sw-p{background:none;width:auto;color:var(--ink-3);cursor:default;text-align:center;min-width:34px}
+.cp-sw-c{font-size:12.5px;border-radius:7px;padding:3px 8px;border:none;cursor:pointer;margin-inline-end:4px;color:#fff}.cp-sw-c.off{background:var(--bad)}.cp-sw-c.on{background:var(--good)}
+.cp-sw-x{font-size:12px;border:none;background:none;color:var(--ink-3);cursor:pointer;margin-inline-end:6px}
+@media (max-width:1100px){.cp-t7{grid-template-columns:repeat(4,minmax(0,1fr))}}.cp-na{color:var(--ink-3)}
 .cp-tg{display:inline-block;width:26px;cursor:pointer;color:var(--ink-3);font-size:16px}.cp-tag{font-size:12.5px;padding:1px 6px;border-radius:5px;background:var(--ground-2);color:var(--ink-3);margin-inline-start:6px;font-weight:400}
 .cp-v{font-size:13px;padding:2px 8px;border:1px solid var(--line);border-radius:5px;margin-inline-start:6px;font-weight:600}.cp-sub{display:block;font-size:13.5px;color:var(--ink-3);padding-inline-start:26px;font-weight:400}
 .cp-ar{display:block;font-size:13px;margin-top:2px;font-weight:500}.cp-ed{cursor:pointer;border-bottom:1px dashed var(--line-2)}.cp-pen{font-size:14px;color:var(--ink-3)}.cp-pend{color:var(--amber)}
@@ -13237,7 +13243,7 @@ ACT.rfQuick=async()=>{ if(RF.busy||!(window.SUPA_DB&&SUPA_DB.client)) return; RF
    لينك قديم من غير Custom: تبرعاته بتتقسم على الـ Ad Sets اللي فيها نفس الفيديو حسب الصرف (علامة ~).
    الحالة والميزانية والمزايدة من camp_struct. تعديل الميزانية/المزايدة وزرار التحديث بيكتبوا طلب
    (campchg/* و sys/campreq) — Claude بينفّذه على المنصة (الموقع مبيكلمش المنصات مباشرة). */
-const CP={per:"y",day:"",cmp:"prev",plats:[],proj:"",open:{},edit:null,act:"active",key:"",busy:false,err:"",struct:null,chg:[],map:{},req:null,mapOpen:null};
+const CP={per:"y",day:"",cmp:"prev",plats:[],proj:"",open:{},edit:null,act:"all",stf:"",arm:null,key:"",busy:false,err:"",struct:null,chg:[],map:{},req:null,mapOpen:null};
 const cpCid=()=>S.ws||(S.cfg.clients[0]||{}).id;
 function cpRange(){ const T=todayISO(), y=addDays(T,-1);
   if(CP.per==="t") return [T,T]; if(CP.per==="y") return [y,y]; if(CP.per==="7") return [addDays(T,-7),y]; if(CP.per==="30") return [addDays(T,-30),y];
@@ -13250,6 +13256,7 @@ async function cpLoad(force){ const [a,b]=cpRange(), [c,d]=cpPrevRange(a,b), cid
   try{ const sb=SUPA_DB.client;
     if(force){ EX.cache={}; }
     await exFetch(a,b); await exFetch(c,d);
+    if(a===b&&a<todayISO()) await exFetch(addDays(a,1),addDays(a,1));
     const st=[]; for(let i=0;;i+=1000){ const r=await sb.from("camp_struct").select("*").eq("client_id",cid).range(i,i+999); if(r.error) break; st.push(...r.data); if(r.data.length<1000) break; }
     CP.struct=st;
     CP.chg=(await RT.list("campchg").catch(()=>[])).filter(x=>x.client===cid);
@@ -13330,12 +13337,23 @@ function cpVerdict(v,tg,cpaRef){ if(!tg) return "";
   return '<span class="cp-v" style="color:'+k[2]+';border-color:color-mix(in srgb,'+k[2]+' 45%,transparent)">'+esc(L(k[0],k[1]))+"</span>"; }
 const cpStatus=(lvl,id,pl)=>(CP.struct||[]).find(x=>x.level===lvl&&x.id===String(id)&&x.platform===pl&&x.status!=="stale");
 const cpActive=x=>!!x&&/^(active|enable|enabled|delivering)$/i.test(String(x.status||""));
+/* حالة الحملة في الفترة: النهارده/فترة = الحالة الحالية على المنصة؛ يوم قديم = لو صرفت اليوم اللي بعده تبقى كانت شغالة، غير كده اتقفلت يومها */
+function cpDayState(x,lvl,pl,next){ const st=cpStatus(lvl,x.id,pl), now=cpActive(st);
+  if(!next) return st? (now?"on":"off") : "na";
+  return next.has(String(x.id))? "on" : (now? "on" : "off"); }
+function cpStateTag(k){ return k==="on"? '<span class="cp-tag cp-on">'+esc(L("شغالة","On"))+"</span>" : k==="off"? '<span class="cp-tag cp-off">'+esc(L("موقفة","Off"))+"</span>" : ""; }
+/* زرار تشغيل/إيقاف: الضغطة الأولى بتطلب تأكيد، التانية بتبعت الطلب للمنصة */
+function cpSwitch(pl,lvl,id,name){ const st=cpStatus(lvl,id,pl); if(!st) return '<span class="cp-sw cp-sw-na" title="'+esc(L("الحالة مش متسجلة — دوس «تحديث الأرقام»","Status unknown — refresh"))+'">·</span>';
+  const p=cpPend(id,"status"); if(p) return '<span class="cp-sw cp-sw-p" title="'+esc(L("مستني التنفيذ على المنصة","Waiting for the platform"))+'">⏳</span>';
+  const on=cpActive(st), key=lvl+"|"+id;
+  if(CP.arm===key) return '<button class="cp-sw-c '+(on?"off":"on")+'" data-a="cpSwitch" data-pl="'+pl+'" data-lvl="'+lvl+'" data-id="'+esc(id)+'" data-n="'+esc(name||"")+'" data-to="'+(on?"PAUSED":"ACTIVE")+'">'+esc(on?L("تأكيد الإيقاف","Confirm pause"):L("تأكيد التشغيل","Confirm on"))+'</button><button class="cp-sw-x" data-a="cpSwArm" data-k="">✕</button>';
+  return '<button class="cp-sw '+(on?"is-on":"")+'" data-a="cpSwArm" data-k="'+esc(key)+'" title="'+esc(on?L("شغالة — دوس للإيقاف","On — click to pause"):L("موقفة — دوس للتشغيل","Off — click to turn on"))+'"><i></i></button>'; }
 const cpPend=(id,field)=>CP.chg.filter(x=>x.objId===String(id)&&x.field===field&&x.status==="pending").sort((a,b)=>(b.at||0)-(a.at||0))[0];
 function cpEd(pl,lvl,id,field,val,label,name){ const key=id+"|"+field, C=CURR[S.cfg.settings.currency]||"";
   if(CP.edit===key) return '<span class="cp-edit"><input id="cpIn" type="number" min="1" step="1" value="'+(val!=null?Math.round(val):"")+'"><button class="btn btn-s" data-a="cpSave" data-pl="'+pl+'" data-lvl="'+lvl+'" data-id="'+esc(id)+'" data-f="'+field+'" data-old="'+(val==null?"":val)+'" data-n="'+esc(name||"")+'" data-lb="'+esc(label||"")+'">'+esc(L("تطبيق على المنصة","Apply"))+'</button><button class="btn btn-s" data-a="cpCancel">✕</button></span><small id="cpErr" class="cp-err"></small>';
   const fl=CP.chg.filter(x=>x.objId===String(id)&&x.field===field&&x.status==="failed"&&Date.now()-(x.at||0)<864e5).sort((a,b)=>(b.at||0)-(a.at||0))[0];
   const p=cpPend(id,field);
-  if(p) return '<span class="cp-pend" title="'+esc(L("مستني التنفيذ على المنصة — قول لـ Claude «نفّذ طلبات الحملات»","Waiting — tell Claude «apply campaign requests»"))+'">'+(label?esc(label)+" ":"")+fnum(p.to,0)+" ⏳</span>";
+  if(p) return '<span class="cp-pend" title="'+esc(L("مستني التنفيذ على المنصة (خلال دقيقتين تقريباً)","Waiting for the platform (~2 minutes)"))+'">'+(label?esc(label)+" ":"")+fnum(p.to,0)+" ⏳</span>";
   return '<span class="cp-ed" data-a="cpEdit" data-k="'+esc(key)+'" title="'+esc(L("عدّل","Edit"))+'">'+(label?esc(label)+" ":"")+(val==null?"—":fnum(val,0))+' <span class="cp-pen">✎</span></span>'+
     (fl?'<small class="cp-err" title="'+esc(fl.error||"")+'">'+esc(L("التعديل لـ ","Edit to "))+fnum(fl.to,0)+esc(L(" فشل",' failed'))+(fl.error?": "+esc(fl.error):"")+"</small>":""); }
 function cpSpendOnly(v){ return '<td class="num">'+fnum(v.s,0)+'</td><td class="num cp-na">—</td><td class="num cp-na">—</td><td class="num cp-na">—</td><td class="num cp-na">—</td>'; }
@@ -13353,36 +13371,40 @@ function renderCampPerf(){
     esc(L("الصرف من المنصة · التبرعات والإيراد من خزامى · ROAS = إيراد خزامى ÷ صرف المنصة","Spend from the platform · donations and revenue from Khzama"))+"</div>";
   const rq=CP.req, pend=rq&&rq.status==="pending";
   h+='<div class="cp-rf"><button class="btn'+(pend?"":" btn-p")+'" data-a="cpRefresh"'+(pend?" disabled":"")+'>⟳ '+esc(pend?L("بيتحدث…","Updating…"):L("تحديث الأرقام","Refresh numbers"))+'</button><small class="hint">'+
-    esc(pend? L("اتطلب ","Requested ")+ftime(rq.at)+L(" — قول لـ Claude «نفّذ طلبات الحملات»"," — tell Claude «apply campaign requests»")
+    esc(pend? L("اتطلب ","Requested ")+ftime(rq.at)+L(" — المنصات + خزامى بس، خلال دقايق"," — platforms + Khzama only, within minutes")
        : (rq&&rq.done_at? L("آخر تحديث: ","Updated: ")+fdate(new Date(rq.done_at).toISOString().slice(0,10))+" "+ftime(rq.done_at) : L("المنصات + خزامى بس","Platforms + Khzama only")))+"</small></div></div>";
   h+='<div class="cp-bar"><span class="flab">'+esc(L("التاريخ","Date"))+'</span><select class="sel" data-c="cpPer">'+
     [["t","النهارده","Today"],["y","امبارح","Yesterday"],["7","آخر 7 أيام","Last 7 days"],["30","آخر 30 يوم","Last 30 days"],["d","يوم معين…","Pick a day…"],["r","فترة من… لـ…","Date range…"]].map(x=>'<option value="'+x[0]+'"'+(CP.per===x[0]?" selected":"")+">"+esc(L(x[1],x[2]))+"</option>").join("")+"</select>"+
     (CP.per==="d"?'<input class="sel" type="date" data-c="cpDay" value="'+esc(CP.day||addDays(todayISO(),-1))+'" max="'+todayISO()+'">':"")+
     (CP.per==="r"?'<input class="sel" type="date" data-c="cpFrom" value="'+esc(a)+'" max="'+todayISO()+'"><span class="flab">'+esc(L("لـ","to"))+'</span><input class="sel" type="date" data-c="cpTo" value="'+esc(b)+'" max="'+todayISO()+'">':"")+
     '<span class="flab">'+esc(L("مقارنة بـ","Compare with"))+'</span><select class="sel" data-c="cpCmp"><option value="prev"'+(CP.cmp==="prev"?" selected":"")+">"+esc(L("الفترة اللي قبلها","Previous period"))+'</option><option value="week"'+(CP.cmp==="week"?" selected":"")+">"+esc(L("نفس الأيام الأسبوع اللي فات","Same days last week"))+"</option></select>"+
-    '<span class="flab">'+esc(L("الحملات","Campaigns"))+'</span><select class="sel" data-c="cpAct"><option value="active"'+(CP.act==="active"?" selected":"")+">"+esc(L("الشغالة بس","Active only"))+'</option><option value="all"'+(CP.act==="all"?" selected":"")+">"+esc(L("كل اللي صرفت في الفترة","All that spent in the period"))+"</option></select></div>";
+    '<span class="flab">'+esc(L("الحالة","Status"))+'</span><select class="sel" data-c="cpStf"><option value="">'+esc(L("الكل","All"))+'</option><option value="on"'+(CP.stf==="on"?" selected":"")+">"+esc(L("الشغالة","On"))+'</option><option value="off"'+(CP.stf==="off"?" selected":"")+">"+esc(L("الموقفة","Off"))+"</option></select></div>";
   if(!cur||!prv) return h+'<div class="hint" style="padding:30px 0">'+esc(CP.err||L("بيحمّل…","Loading…"))+"</div></div>";
   const M=cpBuild(cur), PV=cpBuild(prv), pvIdx={};
   Object.keys(PV).forEach(pl=>Object.values(PV[pl].camps).forEach(c=>{ pvIdx["c|"+pl+"|"+c.code]=c.v; Object.values(c.sets).forEach(s=>{ pvIdx["s|"+s.id]=s.v; Object.values(s.ads).forEach(a=>{ pvIdx["a|"+a.id]=a.v; }); }); }));
-  const haveStruct=(CP.struct||[]).length>0, useActive=CP.act==="active"&&haveStruct;
+  const haveStruct=(CP.struct||[]).length>0, useActive=false;
+  const nxt=(a===b&&a<todayISO())? exC(addDays(a,1),addDays(a,1)) : null, next=nxt? new Set(nxt.filter(r=>r.level==="ad"&&(+r.spend||0)>0).flatMap(r=>[String(r.campaign_id),String(r.adset_id),String(r.ad_id)])) : null;
   const projs={}; Object.values(M).forEach(p=>Object.values(p.camps).forEach(c=>{ if(c.proj) projs[c.proj]=1; }));
   h+='<div class="cp-bar"><span class="flab">'+esc(L("المنصة","Platform"))+"</span>"+PAIDP().filter(pl=>M[pl]).map(pl=>'<button class="chip'+(CP.plats.indexOf(pl)>=0?" on":"")+'" data-a="cpPlat" data-id="'+pl+'"><i class="sw" style="background:'+((platById(pl)||{}).color||"#888")+'"></i>'+esc((platById(pl)||{}).name||pl)+"</button>").join("")+
     '<span class="flab">'+esc(L("المشروع","Project"))+'</span><select class="sel" data-c="cpProj"><option value="">'+esc(L("كل المشاريع","All projects"))+"</option>"+Object.keys(projs).sort().map(x=>'<option'+(CP.proj===x?" selected":"")+">"+esc(x)+"</option>").join("")+"</select>"+
     (tg?'<span class="hint">'+esc(L("هدف الـ ROAS ","ROAS target "))+tg.toFixed(2)+"x ("+esc(T.src)+")</span>":'<span class="hint">'+esc(L("حط هدف ROAS في الإعدادات عشان يظهر حكم زوّد/راقب/وقّف","Set a ROAS target in settings to get verdicts"))+"</span>")+"</div>";
   if(convClient(cid)) h+='<div class="hint cp-note" style="color:var(--ink-3)">'+esc(L("الطلبات والإيراد من AppsFlyer وسلة على مستوى الحملة بس (AppsFlyer مبيقسّمش أقل من كده) — الـ Ad Set والإعلان بالصرف بس.","Orders come from AppsFlyer and Salla per campaign only; ad sets and ads show spend only."))+"</div>";
-  if(CP.act==="active"&&!haveStruct) h+='<div class="hint cp-note">'+esc(L("لسه مفيش لقطة لحالة الحملات وميزانياتها — دوس «تحديث الأرقام». لحد ما تيجي، ظاهر كل اللي صرف في الفترة.","No status/budget snapshot yet — press «Refresh numbers». Until then, everything that spent is shown."))+"</div>";
+  if(!haveStruct) h+='<div class="hint cp-note">'+esc(L("لسه مفيش لقطة لحالة الحملات وميزانياتها — دوس «تحديث الأرقام». لحد ما تيجي، ظاهر كل اللي صرف في الفترة.","No status/budget snapshot yet — press «Refresh numbers». Until then, everything that spent is shown."))+"</div>";
   const camps=[]; Object.keys(M).forEach(pl=>{ if(CP.plats.length&&CP.plats.indexOf(pl)<0) return;
     Object.values(M[pl].camps).forEach(c=>{ c.pl=pl; c.st=cpStatus("campaign",c.id,pl);
       if(CP.proj&&c.proj!==CP.proj) return;
-      if(useActive&&!cpActive(c.st)) return;
-      if(!useActive&&!c.v.s&&!c.v.o) return; camps.push(c); }); });
+      const today=a===b&&a===todayISO();
+      if(!c.v.s&&!c.v.o&&!(today&&cpActive(c.st))) return;
+      c.ds=cpDayState(c,"campaign",pl,next);
+      if(CP.stf&&c.ds!==CP.stf) return; camps.push(c); }); });
   const tot=cpZero(), ptot=cpZero(); let bud=0;
   const campBudget=c=>{ const st=c.st; if(!st) return null; if(st.budget_mode==="CBO"||st.daily_budget!=null&&st.budget_mode!=="ABO") return st.daily_budget;
     const on=cpActive(st); let sum=0, any=false; (CP.struct||[]).filter(x=>x.level==="adset"&&x.parent_id===String(c.id)&&x.status!=="stale"&&(!on||cpActive(x))).forEach(x=>{ if(x.daily_budget!=null){ sum+=+x.daily_budget; any=true; } }); return any?sum:null; };
   camps.forEach(c=>{ cpAdd(tot,c.v); const pv=pvIdx["c|"+c.pl+"|"+c.code]; if(pv) cpAdd(ptot,pv); const bb=cpActive(c.st)? campBudget(c) : null; if(bb) bud+=+bb; });
   const tile=(lb,val,ar)=>'<div class="cp-tile"><small>'+esc(lb)+"</small><b>"+val+"</b>"+(ar||"")+"</div>";
   const tr=cpRoas(tot), tc=cpCpa(tot), cpaRef=tc;
-  h+='<div class="cp-tiles">'+tile(L("الصرف","Spend"),fnum(tot.s,0)+" <small>"+esc(C)+"</small>")+tile(L("التبرعات","Donations"),fnum(tot.o,0))+tile(L("الإيراد","Revenue"),fnum(tot.r,0)+" <small>"+esc(C)+"</small>")+
+  const nOn=camps.filter(c=>c.ds==="on").length, nOff=camps.filter(c=>c.ds==="off").length;
+  h+='<div class="cp-tiles cp-t7">'+tile(L("عدد الحملات","Campaigns"),fnum(camps.length,0),'<small class="cp-ar" style="color:var(--ink-3)">'+nOn+" "+esc(L("شغالة","on"))+" · "+nOff+" "+esc(L("موقفة","off"))+"</small>")+tile(L("الصرف","Spend"),fnum(tot.s,0)+" <small>"+esc(C)+"</small>")+tile(L("التبرعات","Donations"),fnum(tot.o,0))+tile(L("الإيراد","Revenue"),fnum(tot.r,0)+" <small>"+esc(C)+"</small>")+
     tile("ROAS",tr==null?"—":tr.toFixed(2)+"x",cpArrow(tr,cpRoas(ptot),false))+tile(L("تكلفة التبرع","Cost / donation"),tc==null?"—":fnum(tc,0),cpArrow(tc,cpCpa(ptot),true))+
     tile(L("الميزانية الحالية","Current budget"),haveStruct?fnum(bud,0)+" <small>"+esc(C)+"</small>":"—")+"</div>";
   const head='<tr><th style="width:30%">'+esc(L("الحملة","Campaign"))+'</th><th class="num">'+esc(L("الصرف","Spend"))+'</th><th class="num">'+esc(L("التبرعات","Donations"))+'</th><th class="num">'+esc(L("الإيراد","Revenue"))+'</th><th class="num">ROAS</th><th class="num">'+esc(L("تكلفة التبرع","Cost / don."))+'</th><th class="num" style="width:19%">'+esc(L("الميزانية الحالية","Current budget"))+"</th></tr>";
@@ -13390,23 +13412,23 @@ function renderCampPerf(){
     const pp=platById(pl)||{name:pl};
     h+='<div class="cp-ph"><i class="sw" style="background:'+(pp.color||"#888")+'"></i>'+esc(pp.name)+' <small class="hint">'+cs.length+" "+esc(useActive?L("حملة شغالة","active campaigns"):L("حملة","campaigns"))+'</small></div><div class="tw"><table class="cp-tbl">'+head;
     cs.forEach(c=>{ const st=c.st, ck="c:"+pl+":"+c.id, open=CP.open[ck], mode=st&&st.budget_mode||"";
-      const sets=Object.values(c.sets).map(s=>{ s.st=cpStatus("adset",s.id,pl); return s; }).filter(s=>!useActive||cpActive(s.st)||!s.st).sort((x,y)=>y.v.s-x.v.s);
+      const sets=Object.values(c.sets).map(s=>{ s.st=cpStatus("adset",s.id,pl); return s; }).filter(s=>s.v.s||s.v.o||cpActive(s.st)).sort((x,y)=>y.v.s-x.v.s);
       const bcell= !st? "—" : mode==="ABO"? fnum(campBudget(c)||0,0)+' <small class="hint">'+esc(L("مجموع","sum"))+"</small>" : cpEd(pl,"campaign",c.id,"budget",st.daily_budget,"",c.code);
-      h+='<tr class="cp-c"><td><span class="cp-tg" data-a="cpTog" data-k="'+esc(ck)+'">'+(open?"▾":"◂")+'</span><b>'+esc(c.code)+"</b>"+(mode?'<span class="cp-tag">'+esc(mode)+"</span>":"")+(st&&!cpActive(st)?'<span class="cp-tag cp-off">'+esc(L("موقفة","Paused"))+"</span>":"")+cpVerdict(c.v,tg,cpaRef)+(c.proj?'<small class="cp-sub">'+esc(c.proj)+"</small>":"")+"</td>"+cpCells(c.v,pvIdx["c|"+pl+"|"+c.code])+'<td class="num">'+bcell+"</td></tr>";
+      h+='<tr class="cp-c"><td>'+cpSwitch(pl,"campaign",c.id,c.code)+'<span class="cp-tg" data-a="cpTog" data-k="'+esc(ck)+'">'+(open?"▾":"◂")+'</span><b>'+esc(c.code)+"</b>"+(mode?'<span class="cp-tag">'+esc(mode)+"</span>":"")+cpStateTag(c.ds)+cpVerdict(c.v,tg,cpaRef)+(c.proj?'<small class="cp-sub">'+esc(c.proj)+"</small>":"")+"</td>"+cpCells(c.v,pvIdx["c|"+pl+"|"+c.code])+'<td class="num">'+bcell+"</td></tr>";
       if(!open) return;
       sets.forEach(s=>{ const sk="s:"+s.id, so=CP.open[sk], sst=s.st;
         const b= mode==="ABO"&&sst? cpEd(pl,"adset",s.id,"budget",sst.daily_budget,"",s.name) : mode==="CBO"? '<small class="hint">'+esc(L("ميزانية الحملة","Campaign budget"))+"</small>" : (sst&&sst.daily_budget!=null? cpEd(pl,"adset",s.id,"budget",sst.daily_budget,"",s.name):"");
         const bid= sst&&sst.bid_type? '<div class="cp-bid">'+cpEd(pl,"adset",s.id,"bid",sst.bid,sst.bid_type,s.name)+"</div>" : sst? '<div class="cp-bid hint">'+esc(L("أقل تكلفة","Lowest cost"))+"</div>" : "";
-        h+='<tr class="cp-s"><td><span class="cp-tg" data-a="cpTog" data-k="'+esc(sk)+'">'+(so?"▾":"◂")+"</span>"+esc(s.name)+(c.conv?"":cpVerdict(s.v,tg,cpaRef))+"</td>"+(c.conv?cpSpendOnly(s.v):cpCells(s.v,pvIdx["s|"+s.id]))+'<td class="num">'+b+bid+"</td></tr>";
+        h+='<tr class="cp-s"><td>'+cpSwitch(pl,"adset",s.id,s.name)+'<span class="cp-tg" data-a="cpTog" data-k="'+esc(sk)+'">'+(so?"▾":"◂")+"</span>"+esc(s.name)+cpStateTag(cpDayState(s,"adset",pl,next))+(c.conv?"":cpVerdict(s.v,tg,cpaRef))+"</td>"+(c.conv?cpSpendOnly(s.v):cpCells(s.v,pvIdx["s|"+s.id]))+'<td class="num">'+b+bid+"</td></tr>";
         if(!so) return;
         const conv=c.conv, all=Object.values(s.ads).sort((x,y)=>y.v.s-x.v.s);
         if(s.smart&&(s.smart.o||s.smart.r)){ const vids=all.filter(a=>!a.v.o&&!a.v.r), infs=[...new Set(vids.map(a=>a.inf).filter(Boolean))];
           const sv=Object.assign(cpZero(),{s:vids.reduce((u,a)=>u+a.v.s,0),o:s.smart.o,r:s.smart.r,approx:s.smart.approx});
           h+='<tr class="cp-a"><td title="'+esc(vids.map(a=>a.cr||a.name).join(" · "))+'">'+esc(L("إعلان Smart+ · ","Smart+ ad · "))+vids.length+esc(L(" فيديو"," videos"))+(infs.length?" · "+esc(infs.slice(0,2).join("، "))+(infs.length>2?"…":""):"")+cpVerdict(sv,tg,cpaRef)+"</td>"+cpCells(sv,null)+"<td></td></tr>";
           all.filter(a=>a.v.o||a.v.r).forEach(ad=>{ const nm=ad.cr? ad.cr+(ad.inf?" · "+ad.inf:"") : (ad.name||ad.id);
-            h+='<tr class="cp-a"><td title="'+esc(ad.name||"")+'">'+esc(nm)+cpVerdict(ad.v,tg,cpaRef)+"</td>"+cpCells(ad.v,pvIdx["a|"+ad.id])+"<td></td></tr>"; }); }
+            h+='<tr class="cp-a"><td title="'+esc(ad.name||"")+'">'+cpSwitch(pl,"ad",ad.id,nm)+esc(nm)+cpVerdict(ad.v,tg,cpaRef)+"</td>"+cpCells(ad.v,pvIdx["a|"+ad.id])+"<td></td></tr>"; }); }
         else all.forEach(ad=>{ const nm=ad.cr? ad.cr+(ad.inf?" · "+ad.inf:"") : (ad.name||ad.id);
-          h+='<tr class="cp-a"><td title="'+esc(ad.name||"")+'">'+esc(nm)+(conv?"":cpVerdict(ad.v,tg,cpaRef))+"</td>"+(conv?cpSpendOnly(ad.v):cpCells(ad.v,pvIdx["a|"+ad.id]))+"<td></td></tr>"; });
+          h+='<tr class="cp-a"><td title="'+esc(ad.name||"")+'">'+cpSwitch(pl,"ad",ad.id,nm)+esc(nm)+(conv?"":cpVerdict(ad.v,tg,cpaRef))+"</td>"+(conv?cpSpendOnly(ad.v):cpCells(ad.v,pvIdx["a|"+ad.id]))+"<td></td></tr>"; });
         if(s.loose.o||s.loose.r) h+='<tr class="cp-a cp-x"><td>'+esc(L("لينكات على الـ Ad Set كله (الفيديو في أكتر من إعلان أو مش لاقيه)","Links for the whole ad set (video in several ads or not found)"))+"</td>"+cpCells(s.loose,null)+"<td></td></tr>"; });
       Object.values(c.unmatched||{}).forEach(u=>{ const mk=pl+"|"+c.code+"|"+u.custom;
         h+='<tr class="cp-s cp-x"><td>⚠ '+esc(L("لينكات «","Links «"))+esc(u.custom)+esc(L("» مش مربوطة بـ Ad Set","» not linked to an ad set"))+
@@ -13427,20 +13449,31 @@ ACT.cpPlat=t=>{ const k=t.dataset.id; CP.plats=CP.plats.indexOf(k)>=0? CP.plats.
 ACT.cpTog=t=>{ const k=t.dataset.k; CP.open[k]=!CP.open[k]; render(); };
 ACT.cpEdit=t=>{ CP.edit=t.dataset.k; render(); setTimeout(()=>{ const i=$("#cpIn"); if(i) i.focus(); },0); };
 ACT.cpCancel=()=>{ CP.edit=null; render(); };
+ACT.cpSwArm=t=>{ CP.arm=t.dataset.k||null; render(); };
+ACT.cpSwitch=async t=>{ const id=sid(), lvl=t.dataset.lvl, oid=String(t.dataset.id), st=cpStatus(lvl,oid,t.dataset.pl);
+  const doc={client:cpCid(),platform:t.dataset.pl,level:lvl,objId:oid,name:t.dataset.n||"",field:"status",from:st&&cpActive(st)?"ACTIVE":"PAUSED",to:t.dataset.to,status:"pending",at:Date.now(),by:ME.email||""};
+  try{ await RT.set("campchg/"+id,doc); CP.chg.push(Object.assign({_id:id},doc)); CP.arm=null;
+    toast(t.dataset.to==="PAUSED"?L("اتبعت طلب الإيقاف — خلال دقيقتين تقريباً","Pause sent — within ~2 minutes"):L("اتبعت طلب التشغيل — خلال دقيقتين تقريباً","Turn-on sent — within ~2 minutes")); cpPoll(); }
+  catch(e){ toast((e&&e.message)||String(e),true); } render(); };
+CHG.cpStf=v=>{ CP.stf=v; render(); };
 ACT.cpSave=async t=>{ const i=$("#cpIn"), v=Math.round(+(i&&i.value)), f=t.dataset.f, er=$("#cpErr");
   if(!(v>0)||(f==="budget"&&v<20)){ if(er) er.textContent=f==="budget"?L("اكتب ميزانية 20 أو أكتر","Enter a budget of 20 or more"):L("اكتب رقم أكبر من صفر","Enter a number above zero"); return; }
   const old=t.dataset.old===""?null:+t.dataset.old; if(old!=null&&Math.round(old)===v){ CP.edit=null; render(); return; }
   const id=sid(), doc={client:cpCid(),platform:t.dataset.pl,level:t.dataset.lvl,objId:String(t.dataset.id),name:t.dataset.n||"",field:f,bidType:t.dataset.lb||null,from:old,to:v,status:"pending",at:Date.now(),by:ME.email||""};
   try{ await RT.set("campchg/"+id,doc); CP.chg.push(Object.assign({_id:id},doc)); CP.edit=null;
-    toast(L("اتسجل — قول لـ Claude «نفّذ طلبات الحملات» يطبّقه على المنصة","Saved — tell Claude «apply campaign requests» to push it to the platform")); }
+    toast(L("اتبعت — هيتطبق على المنصة خلال دقيقتين تقريباً","Sent — applied on the platform within ~2 minutes")); cpPoll(); }
   catch(e){ if(er) er.textContent=(e&&e.message)||String(e); return; }
   render(); };
 ACT.cpRefresh=async()=>{ const [a,b]=cpRange();
   try{ await RT.set("sys/campreq",{at:Date.now(),by:ME.email||"",status:"pending",client:cpCid(),from:a,to:b});
-    CP.req={at:Date.now(),status:"pending",from:a,to:b}; toast(L("اتطلب التحديث — قول لـ Claude «نفّذ طلبات الحملات» (المنصات + خزامى بس)","Refresh requested — tell Claude «apply campaign requests»")); cpPoll(); }
+    CP.req={at:Date.now(),status:"pending",from:a,to:b}; toast(L("اتطلب التحديث — المنصات + خزامى بس، خلال دقايق","Refresh requested — platforms + Khzama only, within minutes")); cpPoll(); }
   catch(e){ toast((e&&e.message)||String(e),true); } render(); };
-function cpPoll(){ setTimeout(async()=>{ if(S.view!=="campperf") return; const r=await RT.get("sys/campreq").catch(()=>null); CP.req=r;
-  if(r&&r.status==="pending") return cpPoll(); cpLoad(true); },30000); }
+function cpPoll(){ if(CP.polling) return; CP.polling=true; setTimeout(async()=>{ CP.polling=false; if(S.view!=="campperf") return;
+  const r=await RT.get("sys/campreq").catch(()=>null); CP.req=r;
+  const ch=(await RT.list("campchg").catch(()=>[])).filter(x=>x.client===cpCid()); const was=CP.chg.filter(x=>x.status==="pending").length; CP.chg=ch;
+  const now=ch.filter(x=>x.status==="pending").length;
+  if(r&&r.status==="pending"||now){ if(now<was){ const st=[]; const sb=SUPA_DB.client; for(let i=0;;i+=1000){ const q=await sb.from("camp_struct").select("*").eq("client_id",cpCid()).range(i,i+999); if(q.error) break; st.push(...q.data); if(q.data.length<1000) break; } CP.struct=st; render(); } return cpPoll(); }
+  cpLoad(true); },20000); }
 ACT.cpMapOpen=t=>{ CP.mapOpen=t.dataset.k; render(); };
 CHG.cpMap=async(v,el)=>{ if(!v) return; const pl=el.dataset.pl, camp=el.dataset.camp, cu=el.dataset.cu, id=(cpCid()+"_"+pl+"_"+camp+"_"+cu).replace(/[^A-Za-z0-9_-]/g,"_");
   try{ await RT.set("campmap/"+id,{client:cpCid(),platform:pl,camp:camp,custom:cu,adset:v,at:Date.now(),by:ME.email||""});
