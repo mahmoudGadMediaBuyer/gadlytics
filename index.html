@@ -13278,8 +13278,14 @@ function cpBuild(rows){ const conv=convClient(cpCid()), P={};
   kz.forEach(k=>{ const pl=k.platform; if(!k.camp_no||PAIDP().indexOf(pl)<0) return; const o=+k.donations||0, rv=+k.amount||0; if(!o&&!rv) return;
     let cs=byCode[pl+"|"+k.camp_no];
     if(!cs){ const p=P[pl]||(P[pl]={camps:{}}), id="kz:"+k.camp_no; const c={id:id,code:k.camp_no,name:k.camp_no,proj:exProd(k.product)||"",v:cpZero(),sets:{},loose:cpZero(),kzOnly:true}; p.camps[id]=c; cs=byCode[pl+"|"+k.camp_no]=[c]; }
-    const c=cs[0]; if(conv){ give(c.loose,o,rv,false); return; }
-    const sets=Object.values(c.sets), ids=String(k.title||"").match(/\d{14}/g)||(k.creative_id?[k.creative_id]:[]);
+    const ids=String(k.title||"").match(/\d{14}/g)||(k.creative_id?[k.creative_id]:[]);
+    /* أكتر من حملة بنفس الكود (حملة اتعملت تاني): اللينك يروح للحملة اللي فيها الـ Ad Set (Custom) أو الفيديو، وإلا للي صرفها أكبر */
+    const hasSet=x=>{ if(!k.custom) return false; const cu=String(k.custom).toLowerCase(), nn=cpNorm(cu); return Object.values(x.sets).some(st=>cpToks(st.name).indexOf(cu)>=0||cpNorm(st.name).indexOf(nn)>=0); };
+    const hasVid=x=>Object.values(x.sets).some(st=>Object.values(st.ads).some(a=>a.cr&&ids.indexOf(a.cr)>=0));
+    const spend=x=>Object.values(x.sets).reduce((t,st)=>t+Object.values(st.ads).reduce((u,a)=>u+a.v.s,0),0);
+    const c= cs.length===1? cs[0] : (cs.find(x=>hasSet(x)&&hasVid(x))||cs.find(hasSet)||cs.find(hasVid)||cs.slice().sort((x,y)=>spend(y)-spend(x))[0]);
+    if(conv){ give(c.loose,o,rv,false); return; }
+    const sets=Object.values(c.sets);
     let target=null;
     if(k.custom){ const cu=String(k.custom), mk=pl+"|"+c.code+"|"+cu.toLowerCase(), man=CP.map[mk];
       if(man&&c.sets[man]) target=c.sets[man];
