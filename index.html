@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="gad-build" content="20261109121926">
+<meta name="gad-build" content="20261109122342">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -16,7 +16,7 @@
 <script>
 /* تحديث تلقائي للتطبيق على الموبايل/الآيباد: مفيش service worker ولا كاش. كل ما التطبيق يتفتح أو يرجع للواجهة
    بيجيب index.html جديد (no-store) ويقارن رقم البيلد؛ لو فيه نسخة أحدث بيفتحها على طول. */
-(function(){ var B="20261109121926", last=0;
+(function(){ var B="20261109122342", last=0;
   function busy(){ return document.querySelector("#cpIn:focus, .ma-sheet, input:focus, textarea:focus"); }
   function chk(){ var n=Date.now(); if(n-last<20000) return; last=n; if(busy()) return;
     fetch(location.pathname+"?_b="+n,{cache:"no-store"}).then(function(r){ return r.ok? r.text() : ""; }).then(function(t){
@@ -824,8 +824,8 @@ html.ma-on .toast{inset-inline:16px!important;bottom:calc(112px + env(safe-area-
   .ma{--ma-pad:28px;--t-l:34px;--t-h:22px;--t-b:17px;--t-m:16px;--t-s:13px;max-width:900px;margin:0 auto}
   .ma-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
   .ma-mg{grid-template-columns:repeat(3,minmax(0,1fr))}.ma-mg>.ma-mc:first-child{grid-column:span 2}
-  .ma-filters{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:8px;align-items:center;margin-bottom:16px}
-  .ma-filters .ma-dates,.ma-filters .ma-tabs{margin:0}.ma-filters .ma-range{grid-column:1/-1;margin:0}
+  .ma-filters{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);grid-template-areas:"d t" "r r";gap:8px;align-items:center;margin-bottom:16px}
+  .ma-filters .ma-dates{grid-area:d;margin:0}.ma-filters .ma-tabs{grid-area:t;margin:0}.ma-filters .ma-range{grid-area:r;margin:0;max-width:520px}
 }
 /* آيباد عرض ≥1024: ليستة + تفاصيل جنب بعض، والأرقام الـ 7 في سطر واحد */
 @media (min-width:1024px){
@@ -13647,7 +13647,7 @@ const maIco={
   edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>'};
 const maN=v=>'<span class="num">'+v+"</span>";
 function maDelta(cur,old,low){ if(cur==null||old==null||!isFinite(old)||!old) return '<span class="ma-dl"></span>'; const d=(cur-old)/old*100;
-  if(Math.abs(d)<3) return '<span class="ma-dl" style="color:var(--ink-3)">≈ '+esc(L("زي","flat"))+"</span>";
+  if(Math.abs(d)<3) return '<span class="ma-dl" style="color:var(--ink-3)">≈ '+esc(L("ثابت","flat"))+"</span>";
   const good=low? d<0 : d>0; return '<span class="ma-dl" style="color:'+(good?"var(--good)":"var(--bad)")+'">'+(d>0?"▲":"▼")+' <span class="num">'+fnum(Math.abs(d),0)+"%</span></span>"; }
 function maVerdict(v,tg,cpaRef){ const h=cpVerdict(v,tg,cpaRef); return h? h.replace('class="cp-v"','class="cp-v ma-v"') : ""; }
 /* زرار تشغيل/إيقاف: بيفتح شيت تأكيد */
@@ -13687,8 +13687,8 @@ function maCampDetail(m,c,pad){ const pl=c.pl, st=c.st, mode=st&&st.budget_mode|
   let h='<div class="ma-det">'+(pad?"":'<div class="ma-nb ma-nb-d"><button class="ma-back" data-a="maBack">'+maIco.back+'<span>'+esc(L("الحملات","Campaigns"))+'</span></button><span class="ma-nbt">'+esc(c.code)+'</span><span class="ma-nbs"></span></div>');
   h+='<div class="ma-dh"><div class="ma-dt"><h2>'+esc(c.code)+"</h2>"+maSwitch(pl,"campaign",c.id,c.code)+'</div><div class="ma-ds">'+maStateDot(c.ds)+esc(c.ds==="on"?L("شغالة","On"):c.ds==="off"?L("موقفة","Off"):L("الحالة مش معروفة","Unknown"))+
     ' · <i class="ma-pl" style="background:'+(pp.color||"#888")+'"></i>'+esc(pp.name)+(mode?" · "+esc(mode):"")+(c.proj?" · "+esc(c.proj):"")+(conv?"":" "+maVerdict(c.v,tg,cpaRef))+"</div></div>";
-  const bud= !st? "" : mode==="ABO"? '<div class="ma-ed is-ro"><span class="ma-edl">'+esc(L("الميزانية (مجموع الـ Ad sets)","Budget (sum of ad sets)"))+'</span><span class="ma-edv">'+maN(fnum(m.campBudget(c)||0,0))+" <small>"+esc(C)+"</small></span></div>" : maEdit(pl,"campaign",c.id,"budget",st.daily_budget,"",c.code);
-  h+=maMetrics(c.v,pv,conv,"")+(bud?'<div class="ma-eds">'+bud+"</div>":"");
+  const bud= !st? "" : mode==="ABO"? '<div class="ma-ed is-ro"><span class="ma-edl">'+esc(L("الميزانية (مجموع المجموعات)","Budget (sum of ad sets)"))+'</span><span class="ma-edv">'+maN(fnum(m.campBudget(c)||0,0))+" <small>"+esc(C)+"</small></span></div>" : maEdit(pl,"campaign",c.id,"budget",st.daily_budget,"",c.code);
+  h+=maMetrics(c.v,pv,false,"")+(bud?'<div class="ma-eds">'+bud+"</div>":"");   // الحملة دايماً بأرقامها كاملة (ديمان: من AppsFlyer + سلة)
   h+='<div class="ma-sec">'+esc(L("المجموعات الإعلانية","Ad sets"))+' <small>'+sets.length+"</small></div>";
   if(sets.length){ h+='<div class="ma-list">'+sets.map(s=>maRow({k:"s|"+pl+"|"+c.id+"|"+s.id,name:s.name,v:s.v,dot:cpDayState(s,"adset",pl,m.next),spendOnly:conv,verdict:conv?"":maVerdict(s.v,tg,cpaRef),
       sw:maSwitch(pl,"adset",s.id,s.name),tag:s.st&&s.st.bid_type?s.st.bid_type+" "+fnum(s.st.bid,0):""})).join("")+"</div>"; }
@@ -13773,11 +13773,12 @@ function renderCampApp(){
       k(L("الإيراد","Revenue"),maN(fnum(tot.r,0))+"<small>"+esc(C)+"</small>",maDelta(tot.r,ptot.r,false))+
       k("ROAS",maN(tr==null?"—":tr.toFixed(2)+"x"),maDelta(tr,cpRoas(ptot),false))+
       k(L("تكلفة التبرع","Cost / donation"),maN(tc==null?"—":fnum(tc,0)),maDelta(tc,cpCpa(ptot),true))+"</div>";
-    h+='<div class="ma-strip"><div><small>'+esc(L("الحملات","Campaigns"))+"</small><b>"+maN(fnum(m.camps.length,0))+'</b><span class="ma-dl" style="color:var(--ink-3)">'+maN(m.nOn)+" "+esc(L("شغالة","on"))+" · "+maN(m.nOff)+" "+esc(L("موقفة","off"))+"</span></div>"+
-      "<div><small>"+esc(L("التبرعات","Donations"))+"</small><b>"+maN(fnum(tot.o,0))+"</b>"+maDelta(tot.o,ptot.o,false)+"</div>"+
-      "<div><small>"+esc(L("الميزانية الحالية","Current budget"))+"</small><b>"+(m.haveStruct?maN(fnum(m.bud,0)):"—")+'</b><span class="ma-dl" style="color:var(--ink-3)">'+esc(C)+"</span></div></div></div>";
+    h+='<div class="ma-strip"><div><small>'+esc(L("الحملات","Campaigns"))+"</small><b>"+maN(fnum(m.camps.length,0))+'</b><span class="ma-dl" style="color:var(--ink-3)">'+maN(m.nOn)+" "+esc(L("شغالة","on"))+"<br>"+maN(m.nOff)+" "+esc(L("موقفة","off"))+"</span></div>"+
+      "<div><small>"+esc(L("التبرعات","Donations"))+"</small><b>"+maN(fnum(tot.o,0))+"</b>"+maDelta(tot.o,ptot.o,false)+'<span class="ma-dl"></span></div>'
++
+      "<div><small>"+esc(L("الميزانية الحالية","Current budget"))+"</small><b>"+(m.haveStruct?maN(fnum(m.bud,0)):"—")+'</b><span class="ma-dl" style="color:var(--ink-3)">'+esc(C)+'</span><span class="ma-dl"></span></div></div></div>';
     if(m.T) h+='<div class="ma-note">'+esc(L("هدف الـ ROAS ","ROAS target "))+maN(m.tg.toFixed(2)+"x")+" · "+esc(L("المقارنة بـ ","vs "))+esc(CP.cmp==="week"?L("نفس الأيام الأسبوع اللي فات","same days last week"):L("الفترة اللي قبلها","the previous period"))+"</div>";
-    if(conv) h+='<div class="ma-note">'+esc(L("الطلبات والإيراد من AppsFlyer وسلة على مستوى الحملة بس — الـ Ad Set والإعلان بالصرف بس.","Orders per campaign only; ad sets and ads show spend."))+"</div>";
+    if(conv) h+='<div class="ma-note">'+esc(L("الطلبات والإيراد من AppsFlyer وسلة على مستوى الحملة بس — المجموعات والإعلانات بالصرف بس.","Orders per campaign only; ad sets and ads show spend."))+"</div>";
     const camps=m.camps.slice().sort((x,y)=>y.v.s-x.v.s), sel=pad? (top&&maFind(m,top.k||(top.pl+"|"+top.cid))) || camps[0] : null;
     let list='<div class="ma-sec">'+esc(L("الحملات","Campaigns"))+" <small>"+camps.length+"</small></div>";
     list+= camps.length? '<div class="ma-list">'+camps.map(c=>{ const st=c.st, mode=st&&st.budget_mode||"";
