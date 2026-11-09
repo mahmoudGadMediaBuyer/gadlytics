@@ -42,7 +42,11 @@ field "status": to = "ACTIVE" (تشغيل) أو "PAUSED" (إيقاف):
    objectId:<objId>, level:<level>, campaign:<camp_no من camp_struct>}
 لو فشل: status 'failed' + 'error' (جملة عربي قصيرة)، ومتعيدش المحاولة لوحدك.
 
-## 2) تحديث الأرقام — docs sys/campreq {client, from, to}
+## 2) تحديث الأرقام — docs sys/campreq {client, from, to, parts?}
+⚡ من 9 نوفمبر 2026: زرار «تحديث الأرقام» بينده edge function اسمها camp-refresh (supabase/functions/camp-refresh) اللي بتسحب صرف ميتا وسناب (level ad، امبارح + النهارده لحد الدقيقة دي) + حالة/ميزانيات الحملات والـ Ad sets والإعلانات من المنصات مباشرة في ~6–10 ث، وتكتب ad_daily + camp_struct (قراية بس من المنصات). تيك توك لسه (not_configured لحد ما توكن TIKTOK_TOKEN يتحط).
+الطلب اللي بيوصل هنا فيه parts: ["khzama"] (ملبي) أو ["conv"] (ديمان) → نفّذ الجزء ده بس (خطوة 2 تحت) + rebuild_entries، ومتسحبش المنصات ولا camp_struct.
+تشغيل يدوي/من سكريبت: POST .../functions/v1/camp-refresh بهيدر x-ingest-key (المفتاح المحلي، متطبعهوش) + Authorization Bearer <anon key> و body {client, from?, to?, dry?, platforms?}.
+
 الأرقام اللي في الصفحة بس — مش Airtable ولا الكفرات ولا ميكس بانل.
 1. المنصات → ad_daily للأيام from..to للعميل ده بس (نفس خطوة 1 في daily_pull.md؛ ديمان: قسم ديمان).
 2. ملبي: خزامى → khzama_link_daily لنفس الأيام (خطوة 2 في daily_pull.md). ديمان: AppsFlyer + سلة → conv_daily.
