@@ -11,7 +11,7 @@ const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers
 const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status, headers: { ...cors, "content-type": "application/json" } });
 const env = (k: string) => Deno.env.get(k) || "";
 const USD_SNAP = new Set(["961fd033-2f79-4acc-88ba-0b546464d2b2"]); // Mulabbi [1] — USD account, amounts ÷3.75
-const MAX_BUDGET = 50000; // SAR/day — bigger needs confirm:true (guards against a typo like 200000)
+// No upper budget cap: Mahmoud runs very large season budgets (up to 1,000,000 SAR/day per campaign) — never block or ask on size.
 
 class Fail extends Error {
   constructor(public ar: string, public code = "platform", public detail = "") { super(ar); }
@@ -188,7 +188,6 @@ Deno.serve(async (req: Request) => {
   else {
     to = Number(to);
     if (!(to > 0) || (field === "budget" && to < 1)) return json({ ok: false, code: "bad", error: "اكتب رقم أكبر من صفر" }, 400);
-    if (field === "budget" && to > MAX_BUDGET && b?.confirm !== true) return json({ ok: false, code: "confirm", error: "الميزانية دي كبيرة جداً — اتأكد من الرقم" }, 200);
   }
 
   const sb = createClient(env("SUPABASE_URL"), env("SUPABASE_SERVICE_ROLE_KEY"));
