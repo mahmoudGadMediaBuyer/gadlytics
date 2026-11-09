@@ -19,7 +19,13 @@ field "status": to = "ACTIVE" (تشغيل) أو "PAUSED" (إيقاف):
 عدّل الحقل ده بس — ممنوع تلمس أي إعداد تاني (استهداف، حالة، إعلانات). ميزانية = يومية بالريال.
 - Meta (ads_update_entity، entity_type campaign أو ad_set، ad_account_id = account_id):
   budget → fields {"daily_budget": <to×100>} (بالهللة) · bid → fields {"bid_amount": <to×100>} على الـ ad set.
-  الـ MCP فيه Draft mode: لو الرد is_draft=true انشر التعديل ده بس بـ ads_activate_entity على نفس الكيان. لو status_forced_to_paused=true أو الحالة بقت PAUSED: اعتبره فشل وبلّغ.
+  ⚠️ قبل التعديل اقرا الحالة المضبوطة (status، مش effective_status) بـ ads_get_ad_entities object_ids=[id] fields [status, daily_budget] — camp_struct ممكن تكون قديمة.
+  لما الـ Draft mode مقفول (is_draft=false) ميتا بتوقّف أي كيان status=ACTIVE بيتعدّل (status_forced_to_paused=true):
+    - لو الحالة قبل التعديل كانت ACTIVE → ads_activate_entity على نفس الكيان بس عشان يرجع شغال.
+    - لو كانت PAUSED → ممنوع تندَه ads_activate_entity أبداً (بيشغّل الحملة!). الإيقاف ده مالوش أثر.
+    (9 نوفمبر 2026: اتشغّلت 8 حملات موقفة بالغلط بالطريقة دي ورجعت اتوقفت في دقايق، صرف 0.)
+  لو is_draft=true: انشر التعديل ده بس بـ ads_activate_entity (publish_as_active=false) على نفس الكيان.
+  بعدها اتأكد إن status رجعت زي ما كانت قبل التعديل بالظبط، والميزانية = to.
   اتأكد بـ ads_get_ad_entities (object_ids=[id]) إن daily_budget/bid_amount = to والحالة لسه ACTIVE.
 - TikTok (advertiser من account_id):
   Ad group Smart+ budget → smart_plus_adgroup_budget_update {"budget":[{"adgroup_id":id,"budget":to}]}.
