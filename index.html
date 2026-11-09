@@ -13369,10 +13369,10 @@ function renderCampPerf(){
   const T=roasTarget(cid), tg=T?T.v:null;
   let h='<div class="cp"><div class="cp-head"><div class="hint">'+
     esc(L("الصرف من المنصة · التبرعات والإيراد من خزامى · ROAS = إيراد خزامى ÷ صرف المنصة","Spend from the platform · donations and revenue from Khzama"))+"</div>";
-  const rq=CP.req, pend=rq&&rq.status==="pending";
-  h+='<div class="cp-rf"><button class="btn'+(pend?"":" btn-p")+'" data-a="cpRefresh"'+(pend?" disabled":"")+'>⟳ '+esc(pend?L("بيتحدث…","Updating…"):L("تحديث أرقام امبارح والنهارده","Refresh yesterday + today"))+'</button><small class="hint">'+
-    esc(pend? L("اتطلب ","Requested ")+ftime(rq.at)+L(" — المنصات + خزامى بس، خلال دقايق"," — platforms + Khzama only, within minutes")
-       : (rq&&rq.done_at? L("آخر تحديث: ","Updated: ")+fdate(new Date(rq.done_at).toISOString().slice(0,10))+" "+ftime(rq.done_at) : L("المنصات + خزامى بس","Platforms + Khzama only")))+"</small></div></div>";
+  const rq=CP.req, pend=rq&&rq.status==="pending", fr=cpFast(), fb=CP.fbusy, src=convClient(cid)?L("AppsFlyer + سلة","AppsFlyer + Salla"):L("خزامى","Khzama");
+  h+='<div class="cp-rf"><button class="btn'+(fb?"":" btn-p")+'" data-a="cpRefresh"'+(fb?" disabled":"")+'>⟳ '+esc(fb?L("بيتحدث…","Updating…"):L("تحديث الأرقام","Refresh numbers"))+'</button><small class="hint">'+
+    esc((fr? L("آخر تحديث للصرف ","Spend updated ")+cpHM(fr.at)+(fr.ms?" ("+Math.max(1,Math.round(fr.ms/1000))+L(" ث)","s)"):"") : L("الصرف من المنصات في ثواني","Platform spend in seconds"))+
+      " · "+src+": "+(pend? L("بيتحدث (اتطلب ","updating (requested ")+cpHM(rq.at)+")" : (rq&&rq.done_at? L("آخر تحديث ","updated ")+cpHM(rq.done_at) : "—")))+"</small></div></div>";
   h+='<div class="cp-bar"><span class="flab">'+esc(L("التاريخ","Date"))+'</span><select class="sel" data-c="cpPer">'+
     [["t","النهارده","Today"],["y","امبارح","Yesterday"],["7","آخر 7 أيام","Last 7 days"],["30","آخر 30 يوم","Last 30 days"],["d","يوم معين…","Pick a day…"],["r","فترة من… لـ…","Date range…"]].map(x=>'<option value="'+x[0]+'"'+(CP.per===x[0]?" selected":"")+">"+esc(L(x[1],x[2]))+"</option>").join("")+"</select>"+
     (CP.per==="d"?'<input class="sel" type="date" data-c="cpDay" value="'+esc(CP.day||addDays(todayISO(),-1))+'" max="'+todayISO()+'">':"")+
@@ -13475,10 +13475,23 @@ ACT.cpSave=async t=>{ const i=$("#cpIn"), v=Math.round(+(i&&i.value)), f=t.datas
     cpApply(id,doc,L("اتبعت — هيتطبق على المنصة خلال دقيقتين تقريباً","Sent — applied on the platform within ~2 minutes")); }
   catch(e){ if(er) er.textContent=(e&&e.message)||String(e); return; }
   render(); };
-ACT.cpRefresh=async()=>{ const b=todayISO(), a=addDays(b,-1);   // الأيام القديمة مبتتغيرش — التحديث دايماً امبارح + النهارده
-  try{ await RT.set("sys/campreq",{at:Date.now(),by:ME.email||"",status:"pending",client:cpCid(),from:a,to:b});
-    CP.req={at:Date.now(),status:"pending",from:a,to:b}; toast(L("اتطلب التحديث — المنصات + خزامى بس، خلال دقايق","Refresh requested — platforms + Khzama only, within minutes")); cpPoll(); }
-  catch(e){ toast((e&&e.message)||String(e),true); } render(); };
+/* «تحديث الأرقام»: صرف المنصات + حالة الحملات من السيرفر (camp-refresh) في ثواني — دايماً امبارح + النهارده لحد الدقيقة دي.
+   خزامى (ملبي) / AppsFlyer + سلة (ديمان) مالهمش API من السيرفر → بيتطلبوا من المهمة المجدولة (sys/campreq parts) زي الأول. */
+const cpHM=t=>{ try{ return new Intl.DateTimeFormat("en-GB",{timeZone:"Asia/Riyadh",hour:"2-digit",minute:"2-digit"}).format(new Date(t)); }catch(e){ return ""; } };
+function cpFast(){ const k="cpFast|"+cpCid(); if(CP.fast&&CP.fast.cid===cpCid()) return CP.fast; try{ const v=JSON.parse(localStorage.getItem(k)||"null"); if(v){ CP.fast=v; return v; } }catch(e){} return null; }
+ACT.cpRefresh=async()=>{ if(CP.fbusy) return; const cid=cpCid(), b=todayISO(), a=addDays(b,-1), conv=convClient(cid);
+  CP.fbusy=true; if(CP.per!=="t"){ CP.per="t"; CP.key=""; } render();
+  try{ await RT.set("sys/campreq",{at:Date.now(),by:ME.email||"",status:"pending",client:cid,from:a,to:b,parts:[conv?"conv":"khzama"]}); CP.req={at:Date.now(),status:"pending",from:a,to:b}; }catch(e){}
+  const t0=Date.now(); let r=null;
+  try{ const q=await SUPA_DB.client.functions.invoke("camp-refresh",{body:{client:cid,from:a,to:b}}); r=q.data||{ok:false,error:(q.error&&q.error.message)||"?"}; }
+  catch(e){ r={ok:false,error:(e&&e.message)||String(e)}; }
+  CP.fbusy=false;
+  const nm={meta:"ميتا",snap:"سناب",tiktok:"تيك توك"}, parts=[];
+  Object.keys(r.platforms||{}).forEach(p=>{ const v=r.platforms[p]; parts.push(nm[p]+" "+(v==="not_configured"||v==="not_built"? L("لسه بالطريقة القديمة","not connected yet") : v&&v.error? "✗ "+v.error : Math.round((v&&v.spend)||0).toLocaleString("en-US"))); });
+  if(r.ok||Object.keys(r.platforms||{}).length){ CP.fast={cid:cid,at:r.at||new Date().toISOString(),ms:r.ms||Date.now()-t0}; try{ localStorage.setItem("cpFast|"+cid,JSON.stringify(CP.fast)); }catch(e){} }
+  toast((r.ok? L("الصرف اتحدّث ✓ (","Spend updated ✓ (")+Math.max(1,Math.round((Date.now()-t0)/1000))+L(" ث) — ","s) — ") : L("مااتحدّثش كله: ","Partly failed: ")+(r.error? r.error+" — ":""))+parts.join(" · ")+
+    L(" · "+(conv?"AppsFlyer + سلة":"خزامى")+": خلال دقايق"," · "+(conv?"AppsFlyer + Salla":"Khzama")+": within minutes"), !r.ok);
+  await cpLoad(true); cpPoll(); };
 function cpPoll(){ if(CP.polling) return; CP.polling=true; setTimeout(async()=>{ CP.polling=false; if(S.view!=="campperf") return;
   const r=await RT.get("sys/campreq").catch(()=>null); CP.req=r;
   const ch=(await RT.list("campchg").catch(()=>[])).filter(x=>x.client===cpCid()); const was=CP.chg.filter(x=>x.status==="pending").length; CP.chg=ch;
