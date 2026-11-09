@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="gad-build" content="20261109122342">
+<meta name="gad-build" content="20261109122733">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -16,7 +16,7 @@
 <script>
 /* تحديث تلقائي للتطبيق على الموبايل/الآيباد: مفيش service worker ولا كاش. كل ما التطبيق يتفتح أو يرجع للواجهة
    بيجيب index.html جديد (no-store) ويقارن رقم البيلد؛ لو فيه نسخة أحدث بيفتحها على طول. */
-(function(){ var B="20261109122342", last=0;
+(function(){ var B="20261109122733", last=0;
   function busy(){ return document.querySelector("#cpIn:focus, .ma-sheet, input:focus, textarea:focus"); }
   function chk(){ var n=Date.now(); if(n-last<20000) return; last=n; if(busy()) return;
     fetch(location.pathname+"?_b="+n,{cache:"no-store"}).then(function(r){ return r.ok? r.text() : ""; }).then(function(t){
@@ -813,7 +813,7 @@ html.ma-on .toast{inset-inline:16px!important;bottom:calc(112px + env(safe-area-
 .ma-pad .ma-nb{min-height:56px}
 .ma-split{display:grid;grid-template-columns:minmax(300px,40%) minmax(0,1fr);gap:20px;align-items:start}
 .ma-lp{min-width:0}
-.ma-dp{position:sticky;top:calc(64px + env(safe-area-inset-top));max-height:calc(100vh - 160px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow:auto;min-width:0;padding-top:4px;scrollbar-width:thin}
+.ma-dp{position:sticky;top:calc(64px + env(safe-area-inset-top));max-height:calc(100vh - 160px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow-y:auto;overflow-x:hidden;min-width:0;padding-top:4px;scrollbar-width:thin}
 .ma-dp .ma-nb-d{position:static;margin:0 0 4px;padding:0;background:transparent;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;min-height:44px}
 .ma-dp .ma-nb-d .ma-nbt,.ma-dp .ma-nb-d .ma-nbs{display:none}
 .ma-dp .ma-sec:first-child{margin-top:0}
