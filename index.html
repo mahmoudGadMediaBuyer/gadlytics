@@ -13479,7 +13479,7 @@ ACT.cpSave=async t=>{ const i=$("#cpIn"), v=Math.round(+(i&&i.value)), f=t.datas
    خزامى (ملبي) / AppsFlyer + سلة (ديمان) مالهمش API من السيرفر → بيتطلبوا من المهمة المجدولة (sys/campreq parts) زي الأول. */
 const cpHM=t=>{ try{ return new Intl.DateTimeFormat("en-GB",{timeZone:"Asia/Riyadh",hour:"2-digit",minute:"2-digit"}).format(new Date(t)); }catch(e){ return ""; } };
 function cpFast(){ const k="cpFast|"+cpCid(); if(CP.fast&&CP.fast.cid===cpCid()) return CP.fast; try{ const v=JSON.parse(localStorage.getItem(k)||"null"); if(v){ CP.fast=v; return v; } }catch(e){} return null; }
-ACT.cpRefresh=async()=>{ if(CP.fbusy) return; const cid=cpCid(), b=todayISO(), a=addDays(b,-1), conv=convClient(cid);
+ACT.cpRefresh=async()=>{ if(CP.fbusy) return; const cid=cpCid(), b=todayISO(), a=b, conv=convClient(cid);   // النهارده بس: من 12 بالليل (الرياض) لحد اللحظة دي
   CP.fbusy=true; if(CP.per!=="t"){ CP.per="t"; CP.key=""; } render();
   try{ await RT.set("sys/campreq",{at:Date.now(),by:ME.email||"",status:"pending",client:cid,from:a,to:b,parts:[conv?"conv":"khzama"]}); CP.req={at:Date.now(),status:"pending",from:a,to:b}; }catch(e){}
   const t0=Date.now(); let r=null;
