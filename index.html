@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="gad-build" content="20261109122733">
+<meta name="gad-build" content="20261109190108">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -16,7 +16,7 @@
 <script>
 /* تحديث تلقائي للتطبيق على الموبايل/الآيباد: مفيش service worker ولا كاش. كل ما التطبيق يتفتح أو يرجع للواجهة
    بيجيب index.html جديد (no-store) ويقارن رقم البيلد؛ لو فيه نسخة أحدث بيفتحها على طول. */
-(function(){ var B="20261109122733", last=0;
+(function(){ var B="20261109190108", last=0;
   function busy(){ return document.querySelector("#cpIn:focus, .ma-sheet, input:focus, textarea:focus"); }
   function chk(){ var n=Date.now(); if(n-last<20000) return; last=n; if(busy()) return;
     fetch(location.pathname+"?_b="+n,{cache:"no-store"}).then(function(r){ return r.ok? r.text() : ""; }).then(function(t){
@@ -678,10 +678,10 @@ html.ma-on .rail,html.ma-on #topbar,html.ma-on .ai-fab,html.ma-on #aiHost,html.m
 html.ma-on .shell{display:block}
 html.ma-on .main{padding:0!important;max-width:none!important;margin:0!important}
 html.ma-on,html.ma-on body{background:var(--ground-0);overscroll-behavior-y:none;-webkit-text-size-adjust:100%}
-html.ma-on .toast{inset-inline:16px!important;bottom:calc(112px + env(safe-area-inset-bottom))!important;text-align:center}
+html.ma-on .toast{inset-inline:16px!important;bottom:calc(20px + env(safe-area-inset-bottom))!important;text-align:center}
 .ma{--g:8px;--ma-pad:16px;--t-l:28px;--t-h:20px;--t-b:17px;--t-m:15px;--t-s:13px;--rad:14px;--sep:color-mix(in srgb,var(--ink-3) 18%,transparent);
   font-family:"Almarai","Cairo",-apple-system,system-ui,sans-serif;letter-spacing:normal;line-height:1.45;color:var(--ink);
-  padding:0 max(var(--ma-pad),env(safe-area-inset-right)) calc(132px + env(safe-area-inset-bottom)) max(var(--ma-pad),env(safe-area-inset-left));min-height:100vh}
+  padding:0 max(var(--ma-pad),env(safe-area-inset-right)) calc(32px + env(safe-area-inset-bottom)) max(var(--ma-pad),env(safe-area-inset-left));min-height:100vh}
 .ma *{letter-spacing:normal}
 .ma .num{font-family:-apple-system,"SF Pro Text","SF Pro Display",system-ui,"Almarai",sans-serif;font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
 .ma small{font-size:var(--t-s);color:var(--ink-3);font-weight:400}
@@ -815,27 +815,71 @@ html.ma-on .toast{inset-inline:16px!important;bottom:calc(112px + env(safe-area-
 .ma-lp{min-width:0}
 .ma-dp{position:sticky;top:calc(64px + env(safe-area-inset-top));max-height:calc(100vh - 160px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow-y:auto;overflow-x:hidden;min-width:0;padding-top:4px;scrollbar-width:thin}
 .ma-dp .ma-nb-d{position:static;margin:0 0 4px;padding:0;background:transparent;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;min-height:44px}
-.ma-dp .ma-nb-d .ma-nbt,.ma-dp .ma-nb-d .ma-nbs{display:none}
+.ma-dp .ma-nb-d .ma-nbt,.ma-dp .ma-nb-d .ma-nbs,.ma-dp .ma-rfb{display:none}
 .ma-dp .ma-sec:first-child{margin-top:0}
 .ma-pad .ma-mg{grid-template-columns:repeat(2,minmax(0,1fr))}.ma-pad .ma-mg>.ma-mc:first-child{grid-column:1/-1}
 
-/* تابلت بالطول (761–1023): نفس تنقّل الموبايل بس بمقاسات أكبر */
+/* ── تحسينات نوفمبر: هيدر في سطر واحد، KPIs شريط، chips الميزانية على السطر، من غير شريط تحت ── */
+.ma-nb-main{gap:4px;min-height:56px}
+.ma-ttl{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;line-height:1.25;padding-inline-start:2px}
+.ma-ttl b{font-size:var(--t-b);font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.ma-ttl small{font-size:12px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.ma-rfb.busy svg{animation:maSpin 1s linear infinite}.ma-rfb[disabled]{opacity:.7}
+.ma-filters{display:flex;flex-direction:column;gap:var(--g);margin:4px 0 12px}
+.ma-filters .ma-dates,.ma-filters .ma-tabs{margin:0}
+.ma-dchip{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 14px;border-radius:18px;border:0;background:color-mix(in srgb,var(--cyan) 16%,transparent);color:var(--cyan);font-size:var(--t-m);font-weight:800;cursor:pointer;position:relative}
+.ma-dchip::before{content:"";position:absolute;inset:-4px 0}.ma-dchip svg{width:16px;height:16px}
+.ma-ks{display:flex;gap:var(--g);overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin:0 calc(-1*var(--ma-pad)) var(--g);padding:0 var(--ma-pad);scroll-padding-inline:var(--ma-pad)}
+.ma-ks::-webkit-scrollbar{display:none}
+.ma-ks .ma-k{flex:0 0 calc((100% - 2*var(--ma-pad) - var(--g))/2.25);min-height:76px;padding:10px 12px;gap:2px;scroll-snap-align:start}
+.ma-ks .ma-k b{font-size:21px}.ma-ks .ma-k small{font-size:12px}
+.ma-ks .ma-dl{font-size:12px;min-height:16px}
+.ma-line{font-size:var(--t-s);color:var(--ink-2);margin:0 2px 4px;line-height:1.6}.ma-line span{color:var(--ink-3)}
+.ma-nospend{background:var(--ground-1);border-radius:var(--rad);padding:16px;text-align:center;color:var(--ink-2);font-size:var(--t-m);font-weight:700;margin-bottom:var(--g)}
+.ma-lh{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:16px 2px 8px}.ma-lh .ma-sec{margin:0}
+.ma-sort{position:relative;display:inline-flex;align-items:center;height:36px;border-radius:18px;background:var(--ground-2);padding:0 12px;flex:none}
+.ma-sort select{appearance:none;-webkit-appearance:none;border:0;background:transparent;color:var(--ink-2);font:inherit;font-size:13px;font-weight:700;padding-inline-end:18px}
+.ma-sort svg{width:14px;height:14px;position:absolute;inset-inline-end:10px;pointer-events:none;color:var(--ink-3)}
+.ma-q{display:flex;align-items:center;gap:8px;height:40px;border-radius:12px;background:var(--ground-2);padding:0 12px;margin-bottom:var(--g)}
+.ma-q svg{width:18px;height:18px;color:var(--ink-3);flex:none}
+.ma-q input{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font-size:16px;outline:none;font-family:inherit}
+.ma-r2>span b{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:4px;font-size:var(--t-m);font-weight:800}
+.ma-md{font-style:normal;font-size:11px;font-weight:700;color:var(--ink-3)}.ma-md.up{color:var(--good)}.ma-md.dn{color:var(--bad)}
+.ma-r3{display:flex;flex-wrap:wrap;gap:var(--g)}
+.ma-bc{position:relative;display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:0 12px;border:0;border-radius:17px;background:color-mix(in srgb,var(--cyan) 13%,transparent);color:var(--ink);font-size:var(--t-m);font-weight:800;cursor:pointer;white-space:nowrap}
+.ma-bc::before{content:"";position:absolute;inset:-5px -2px}
+.ma-bc small{font-size:12px;color:var(--ink-2);font-weight:700}
+.ma-bci{display:grid;color:var(--cyan)}.ma-bci svg{width:14px;height:14px}
+.ma-bc:active{background:color-mix(in srgb,var(--cyan) 24%,transparent)}
+.ma-bc.is-ro{background:var(--ground-2);color:var(--ink-2);font-weight:700;cursor:default}.ma-bc.is-p{cursor:default}
+.ma-sw-busy{cursor:default;opacity:.85}.ma-sw-busy i::after{content:"";position:absolute;inset:6px;border-radius:50%;border:2px solid var(--line-2);border-top-color:var(--cyan);animation:maSpin .8s linear infinite}
+.ma-tap{transition:background .12s}.ma-tap:active{background:var(--ground-2)}
+.ma-a-push{animation:maPushIn .24s cubic-bezier(.2,.8,.2,1)}.ma-a-pop{animation:maPopIn .22s cubic-bezier(.2,.8,.2,1)}.ma-a-fade{animation:maFade .2s}
+@keyframes maPushIn{from{transform:translateX(-28%);opacity:.4}to{transform:none;opacity:1}}
+@keyframes maPopIn{from{transform:translateX(22%);opacity:.5}to{transform:none;opacity:1}}
+[dir=ltr] .ma-a-push{animation-name:maPopIn}[dir=ltr] .ma-a-pop{animation-name:maPushIn}
+@media (prefers-reduced-motion:reduce){.ma-a-push,.ma-a-pop,.ma-a-fade,.ma-sheet,.ma-shbg{animation:none!important}}
+
+/* تابلت 761–819: نفس الموبايل بمقاسات أكبر */
 @media (min-width:761px){
-  .ma{--ma-pad:28px;--t-l:34px;--t-h:22px;--t-b:17px;--t-m:16px;--t-s:13px;max-width:900px;margin:0 auto}
-  .ma-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .ma{--ma-pad:28px;--t-l:30px;--t-h:20px;--t-b:17px;--t-m:16px;--t-s:13px;max-width:900px;margin:0 auto}
+  .ma-ks{margin-inline:0;padding:0;overflow:visible;display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+  .ma-ks .ma-k{flex:none}
   .ma-mg{grid-template-columns:repeat(3,minmax(0,1fr))}.ma-mg>.ma-mc:first-child{grid-column:span 2}
-  .ma-filters{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);grid-template-areas:"d t" "r r";gap:8px;align-items:center;margin-bottom:16px}
-  .ma-filters .ma-dates{grid-area:d;margin:0}.ma-filters .ma-tabs{grid-area:t;margin:0}.ma-filters .ma-range{grid-area:r;margin:0;max-width:520px}
+  .ma-filters{flex-direction:row;flex-wrap:nowrap;align-items:center}
+  .ma-filters .ma-dates{flex:1.25 1 0;min-width:0}.ma-filters .ma-tabs{flex:1 1 0;min-width:0}
+  .ma-dchip{align-self:center;flex:none}
 }
-/* آيباد عرض ≥1024: ليستة + تفاصيل جنب بعض، والأرقام الـ 7 في سطر واحد */
-@media (min-width:1024px){
-  .ma{max-width:none}
-  .ma-sum{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,3fr);gap:8px;margin-bottom:8px}
-  .ma-sum .ma-kpis,.ma-sum .ma-strip{margin:0}
-  .ma-sum .ma-k{min-height:96px}.ma-sum .ma-k b{font-size:26px}
-  .ma-sum .ma-strip>div{justify-content:flex-start;padding:14px 16px}
+/* آيباد ≥820 (بالطول والعرض): الليستة 380px + التفاصيل بسكرول لوحدها */
+@media (min-width:820px){
+  .ma{max-width:none;--ma-pad:24px}
+  .ma-split{grid-template-columns:380px minmax(0,1fr);gap:20px}
+  .ma-dp{top:calc(64px + env(safe-area-inset-top));max-height:calc(100vh - 80px - env(safe-area-inset-top) - env(safe-area-inset-bottom))}
+  .ma-pad .ma-mg{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ma-ks .ma-k{min-height:76px}
 }
-@media (max-width:380px){.ma{--t-l:26px}.ma-k b{font-size:22px}.ma-seg button{font-size:12px;padding:0 4px}.ma-r2>span{font-size:14px}}
+@media (min-width:1100px){ .ma-pad .ma-mg{grid-template-columns:repeat(3,minmax(0,1fr))}.ma-pad .ma-mg>.ma-mc:first-child{grid-column:span 3} }
+@media (max-width:380px){.ma{--t-l:26px;--ma-pad:12px}.ma-ks .ma-k b{font-size:19px}.ma-seg button{font-size:12px;padding:0 4px}.ma-r2>span b{font-size:14px}.ma-pill{max-width:34vw}.ma-ttl small{font-size:11px}}
 </style>
 <div dir="rtl" lang="ar" class="shell">
   <aside class="rail">
@@ -13633,7 +13677,7 @@ function renderCampPerf(){
   if(!camps.length) h+='<div class="hint" style="padding:30px 0">'+esc(L("مفيش حملات بالفلتر ده في الفترة دي.","No campaigns match these filters in this period."))+"</div>";
   return h+"</div>"; }
 /* ══ تطبيق الموبايل / الآيباد لـ «أداء الحملات» (≤1180px) — نفس الداتا (cpModel) ونفس أكشنز التعديل والتحديث؛ الديسكتوب زي ما هو ══ */
-const maMQ=window.matchMedia? matchMedia("(max-width:1180px)") : null, maPadMQ=window.matchMedia? matchMedia("(min-width:1024px)") : null;
+const maMQ=window.matchMedia? matchMedia("(max-width:1180px)") : null, maPadMQ=window.matchMedia? matchMedia("(min-width:820px)") : null;
 const maOn=()=>S.view==="campperf"&&!!maMQ&&maMQ.matches;
 const maPad=()=>!!maPadMQ&&maPadMQ.matches;
 if(maMQ&&maMQ.addEventListener){ const rr=()=>{ try{ if(S.view==="campperf") render(); }catch(e){} }; maMQ.addEventListener("change",rr); if(maPadMQ) maPadMQ.addEventListener("change",rr); }
@@ -13653,7 +13697,7 @@ function maVerdict(v,tg,cpaRef){ const h=cpVerdict(v,tg,cpaRef); return h? h.rep
 /* زرار تشغيل/إيقاف: بيفتح شيت تأكيد */
 function maSwitch(pl,lvl,id,name){ const st=cpStatus(lvl,id,pl);
   if(!st) return '<span class="ma-sw ma-sw-na" title="'+esc(L("الحالة مش متسجلة — دوس «تحديث الأرقام»","Status unknown — refresh"))+'"><i></i></span>';
-  if(cpPend(id,"status")) return '<span class="ma-sw ma-sw-p">⏳</span>';
+  const pp=cpPend(id,"status"); if(pp) return '<span class="ma-sw ma-sw-busy'+(pp.to==="ACTIVE"?" is-on":"")+'" aria-label="'+esc(L("بيتطبق…","Applying…"))+'"><i></i></span>';
   const on=cpActive(st);
   return '<button class="ma-sw'+(on?" is-on":"")+'" data-a="maSwAsk" data-pl="'+pl+'" data-lvl="'+lvl+'" data-id="'+esc(id)+'" data-n="'+esc(name||"")+'" data-to="'+(on?"PAUSED":"ACTIVE")+'" aria-label="'+esc(on?L("شغالة — إيقاف","On — pause"):L("موقفة — تشغيل","Off — turn on"))+'"><i></i></button>'; }
 /* قيمة قابلة للتعديل (ميزانية / مزايدة): بتفتح شيت التعديل */
@@ -13666,12 +13710,28 @@ function maEdit(pl,lvl,id,field,val,label,name){ const p=cpPend(id,field), C=CUR
     (fl?'<div class="ma-err">'+esc(L("التعديل لـ ","Edit to "))+maN(fnum(fl.to,0))+esc(L(" فشل"," failed"))+(fl.error?": "+esc(fl.error):"")+"</div>":""); }
 function maStateDot(k){ return '<span class="ma-dot '+(k==="on"?"on":k==="off"?"off":"na")+'"></span>'; }
 /* سطر في ليستة (حملة / Ad set / إعلان) */
-function maRow(o){ const v=o.v, ro=cpRoas(v), cp=cpCpa(v);
-  const mt= o.spendOnly? '<span><small>'+esc(L("الصرف","Spend"))+'</small>'+maN(fnum(v.s,0))+'</span><span class="ma-na"><small>ROAS</small>—</span><span class="ma-na"><small>'+esc(L("تكلفة التبرع","Cost/don."))+"</small>—</span>"
-    : '<span><small>'+esc(L("الصرف","Spend"))+'</small>'+maN(fnum(v.s,0))+'</span><span><small>ROAS</small>'+maN(ro==null?"—":ro.toFixed(2)+"x")+'</span><span><small>'+esc(L("تكلفة التبرع","Cost/don."))+"</small>"+maN(cp==null?"—":fnum(cp,0))+"</span>";
-  return '<div class="ma-row'+(o.k?" ma-tap":"")+'"'+(o.k?' data-a="maOpen" data-k="'+esc(o.k)+'"':"")+'><div class="ma-r1">'+(o.dot!=null?maStateDot(o.dot):"")+(o.pl?'<i class="ma-pl" style="background:'+((platById(o.pl)||{}).color||"#888")+'"></i>':"")+
+function maMini(cur,old,low){ if(cur==null||old==null||!isFinite(old)||!old) return ""; const d=(cur-old)/old*100; if(Math.abs(d)<3) return '<em class="ma-md">≈</em>';
+  const good=low? d<0 : d>0; return '<em class="ma-md '+(good?"up":"dn")+'">'+(d>0?"▲":"▼")+maN(fnum(Math.abs(d),0)+"%")+"</em>"; }
+/* chip الميزانية / المزايدة على سطر الليستة نفسه — بيفتح نفس شيت التعديل */
+function maChipEd(pl,lvl,id,field,val,label,name){ const p=cpPend(id,field), C=CURR[S.cfg.settings.currency]||"";
+  const ttl=field==="bid"? (label||L("المزايدة","Bid")) : L("الميزانية","Budget");
+  if(p) return '<span class="ma-bc is-p"><small>'+esc(ttl)+"</small>"+maN(fnum(p.to,0))+" ⏳</span>";
+  return '<button class="ma-bc" data-a="maEditAsk" data-pl="'+pl+'" data-lvl="'+lvl+'" data-id="'+esc(id)+'" data-f="'+field+'" data-old="'+(val==null?"":val)+'" data-n="'+esc(name||"")+'" data-lb="'+esc(label||"")+'"><small>'+esc(ttl)+"</small>"+
+    maN(val==null?"—":fnum(val,0))+(val==null?"":" <small>"+esc(C)+"</small>")+'<i class="ma-bci">'+maIco.edit+"</i></button>"; }
+function maRow(o){ const v=o.v, ro=cpRoas(v), cp=cpCpa(v), pv=o.pv;
+  const mt= o.spendOnly? '<span><small>'+esc(L("الصرف","Spend"))+'</small><b>'+maN(fnum(v.s,0))+maMini(v.s,pv&&pv.s,false)+'</b></span><span class="ma-na"><small>ROAS</small><b>—</b></span><span class="ma-na"><small>'+esc(L("تكلفة التبرع","Cost/don."))+"</small><b>—</b></span>"
+    : '<span><small>'+esc(L("الصرف","Spend"))+'</small><b>'+maN(fnum(v.s,0))+maMini(v.s,pv&&pv.s,false)+'</b></span><span><small>ROAS</small><b>'+maN(ro==null?"—":ro.toFixed(2)+"x")+maMini(ro,pv?cpRoas(pv):null,false)+'</b></span><span><small>'+esc(L("تكلفة التبرع","Cost/don."))+"</small><b>"+maN(cp==null?"—":fnum(cp,0))+maMini(cp,pv?cpCpa(pv):null,true)+"</b></span>";
+  return '<div class="ma-row'+(o.k?" ma-tap":"")+'"'+(o.k?' data-a="maOpen" data-k="'+esc(o.k)+'"':"")+(o.q?' data-q="'+esc(String(o.q).toLowerCase())+'"':"")+'><div class="ma-r1">'+(o.dot!=null?maStateDot(o.dot):"")+(o.pl?'<i class="ma-pl" style="background:'+((platById(o.pl)||{}).color||"#888")+'"></i>':"")+
     '<b class="ma-nm" title="'+esc(o.title||o.name)+'">'+esc(o.name)+"</b>"+(o.tag?'<span class="ma-tag">'+esc(o.tag)+"</span>":"")+'<span class="ma-sp"></span>'+(o.sw||"")+(o.k?'<i class="ma-chv">'+maIco.chev+"</i>":"")+"</div>"+
-    '<div class="ma-r2">'+mt+(o.verdict?'<span class="ma-vc">'+o.verdict+"</span>":"")+"</div>"+(o.sub?'<div class="ma-sub">'+esc(o.sub)+"</div>":"")+"</div>"; }
+    '<div class="ma-r2">'+mt+(o.verdict?'<span class="ma-vc">'+o.verdict+"</span>":"")+"</div>"+(o.chips?'<div class="ma-r3">'+o.chips+"</div>":"")+(o.sub?'<div class="ma-sub">'+esc(o.sub)+"</div>":"")+"</div>"; }
+/* chips الصف: الحملة (CBO = ميزانية، ABO = على الـ Ad sets) — الـ Ad set (ABO = ميزانية + المزايدة) */
+function maCampChips(c){ const st=c.st, mode=st&&st.budget_mode||""; if(!st) return "";
+  if(mode==="ABO") return '<span class="ma-bc is-ro"><small>ABO</small>'+esc(L("الميزانية على الـ Ad sets","Budget on the ad sets"))+"</span>";
+  return maChipEd(c.pl,"campaign",c.id,"budget",st.daily_budget,"",c.code); }
+function maSetChips(c,s){ const sst=s.st, mode=c.st&&c.st.budget_mode||""; if(!sst) return ""; let h="";
+  if(mode==="ABO"||(mode!=="CBO"&&sst.daily_budget!=null)) h+=maChipEd(c.pl,"adset",s.id,"budget",sst.daily_budget,"",s.name);
+  if(sst.bid_type) h+=maChipEd(c.pl,"adset",s.id,"bid",sst.bid,sst.bid_type,s.name);
+  return h; }
 function maMetrics(v,pv,conv,extra){ const C=CURR[S.cfg.settings.currency]||"", ro=cpRoas(v), cp=cpCpa(v);
   const cell=(lb,val,dl)=>'<div class="ma-mc"><small>'+esc(lb)+"</small><b>"+val+"</b>"+(dl||'<span class="ma-dl"></span>')+"</div>";
   const na='<span class="ma-na">—</span>';
@@ -13684,14 +13744,14 @@ const maFind=(m,k)=>{ const p=String(k||"").split("|"); return (m.camps||[]).fin
 /* شاشة تفاصيل الحملة */
 function maCampDetail(m,c,pad){ const pl=c.pl, st=c.st, mode=st&&st.budget_mode||"", conv=!!c.conv, tg=m.tg, cpaRef=m.cpaRef, C=CURR[S.cfg.settings.currency]||"";
   const pv=m.pvIdx["c|"+pl+"|"+c.code], sets=m.setsOf(c,pl), pp=platById(pl)||{name:pl};
-  let h='<div class="ma-det">'+(pad?"":'<div class="ma-nb ma-nb-d"><button class="ma-back" data-a="maBack">'+maIco.back+'<span>'+esc(L("الحملات","Campaigns"))+'</span></button><span class="ma-nbt">'+esc(c.code)+'</span><span class="ma-nbs"></span></div>');
+  let h='<div class="ma-det">'+(pad?"":'<div class="ma-nb ma-nb-d"><button class="ma-back" data-a="maBack">'+maIco.back+'<span>'+esc(L("الحملات","Campaigns"))+'</span></button><span class="ma-nbt">'+esc(c.code)+'</span>'+maRefBtn()+'</div>');
   h+='<div class="ma-dh"><div class="ma-dt"><h2>'+esc(c.code)+"</h2>"+maSwitch(pl,"campaign",c.id,c.code)+'</div><div class="ma-ds">'+maStateDot(c.ds)+esc(c.ds==="on"?L("شغالة","On"):c.ds==="off"?L("موقفة","Off"):L("الحالة مش معروفة","Unknown"))+
     ' · <i class="ma-pl" style="background:'+(pp.color||"#888")+'"></i>'+esc(pp.name)+(mode?" · "+esc(mode):"")+(c.proj?" · "+esc(c.proj):"")+(conv?"":" "+maVerdict(c.v,tg,cpaRef))+"</div></div>";
   const bud= !st? "" : mode==="ABO"? '<div class="ma-ed is-ro"><span class="ma-edl">'+esc(L("الميزانية (مجموع المجموعات)","Budget (sum of ad sets)"))+'</span><span class="ma-edv">'+maN(fnum(m.campBudget(c)||0,0))+" <small>"+esc(C)+"</small></span></div>" : maEdit(pl,"campaign",c.id,"budget",st.daily_budget,"",c.code);
   h+=maMetrics(c.v,pv,false,"")+(bud?'<div class="ma-eds">'+bud+"</div>":"");   // الحملة دايماً بأرقامها كاملة (ديمان: من AppsFlyer + سلة)
   h+='<div class="ma-sec">'+esc(L("المجموعات الإعلانية","Ad sets"))+' <small>'+sets.length+"</small></div>";
-  if(sets.length){ h+='<div class="ma-list">'+sets.map(s=>maRow({k:"s|"+pl+"|"+c.id+"|"+s.id,name:s.name,v:s.v,dot:cpDayState(s,"adset",pl,m.next),spendOnly:conv,verdict:conv?"":maVerdict(s.v,tg,cpaRef),
-      sw:maSwitch(pl,"adset",s.id,s.name),tag:s.st&&s.st.bid_type?s.st.bid_type+" "+fnum(s.st.bid,0):""})).join("")+"</div>"; }
+  if(sets.length){ h+='<div class="ma-list">'+sets.map(s=>maRow({k:"s|"+pl+"|"+c.id+"|"+s.id,name:s.name,v:s.v,pv:conv?null:m.pvIdx["s|"+s.id],dot:cpDayState(s,"adset",pl,m.next),spendOnly:conv,verdict:conv?"":maVerdict(s.v,tg,cpaRef),
+      sw:maSwitch(pl,"adset",s.id,s.name),chips:maSetChips(c,s)})).join("")+"</div>"; }
   else h+='<div class="ma-empty">'+esc(L("مفيش مجموعات صرفت في الفترة دي.","No ad sets spent in this period."))+"</div>";
   const extra=[]; Object.values(c.unmatched||{}).forEach(u=>extra.push(maRow({name:"⚠ "+L("لينكات «","Links «")+u.custom+L("» مش مربوطة بمجموعة","» not linked to an ad set"),v:u.v,sub:L("اربطها من الديسكتوب","Link it on desktop")})));
   if(c.loose.o||c.loose.r) extra.push(maRow({name:L("لينكات على الحملة كلها","Links for the whole campaign"),v:c.loose,sub:L("من غير Custom، والفيديو في أكتر من مجموعة","No Custom, video in several ad sets")}));
@@ -13699,7 +13759,7 @@ function maCampDetail(m,c,pad){ const pl=c.pl, st=c.st, mode=st&&st.budget_mode|
   return h+"</div>"; }
 /* شاشة تفاصيل الـ Ad set + الإعلانات */
 function maSetDetail(m,c,s,pad){ const pl=c.pl, sst=s.st, mode=c.st&&c.st.budget_mode||"", conv=!!c.conv, tg=m.tg, cpaRef=m.cpaRef;
-  let h='<div class="ma-det"><div class="ma-nb ma-nb-d"><button class="ma-back" data-a="maBack">'+maIco.back+'<span>'+esc(c.code)+'</span></button><span class="ma-nbt">'+esc(s.name)+'</span><span class="ma-nbs"></span></div>';
+  let h='<div class="ma-det"><div class="ma-nb ma-nb-d"><button class="ma-back" data-a="maBack">'+maIco.back+'<span>'+esc(c.code)+'</span></button><span class="ma-nbt">'+esc(s.name)+'</span>'+maRefBtn()+'</div>';
   h+='<div class="ma-dh"><div class="ma-dt"><h2>'+esc(s.name)+"</h2>"+maSwitch(pl,"adset",s.id,s.name)+'</div><div class="ma-ds">'+maStateDot(cpDayState(s,"adset",pl,m.next))+esc(c.code)+(conv?"":" "+maVerdict(s.v,tg,cpaRef))+"</div></div>";
   const eds=[];
   if(mode==="ABO"&&sst) eds.push(maEdit(pl,"adset",s.id,"budget",sst.daily_budget,"",s.name));
@@ -13731,6 +13791,10 @@ function maSheet(){ const sh=CP.sheet; if(!sh) return ""; const C=CURR[S.cfg.set
       '<div class="ma-sh-cur">'+esc(off?L("هتقف على المنصة خلال ثواني.","It will stop on the platform within seconds."):L("هتشتغل على المنصة خلال ثواني.","It will start on the platform within seconds."))+"</div>"+
       '<button class="ma-btn '+(off?"ma-btn-d":"ma-btn-p")+'" data-a="cpSwitch" data-pl="'+sh.pl+'" data-lvl="'+sh.lvl+'" data-id="'+esc(sh.id)+'" data-n="'+esc(sh.n||"")+'" data-to="'+sh.to+'">'+esc(off?L("أيوه، وقّف","Yes, pause"):L("أيوه، شغّل","Yes, turn on"))+"</button>"+
       '<button class="ma-btn" data-a="maClose">'+esc(L("إلغاء","Cancel"))+"</button>"; }
+  else if(sh.kind==="date"){ const m=CP._m||{}; const a=CP.per==="d"?CP.day:(CP.from||m.a), b2=CP.per==="d"?CP.day:(CP.to||m.b);
+    b='<div class="ma-sh-t">'+esc(L("فترة مخصصة","Custom range"))+"</div>"+
+      '<div class="ma-range"><label><small>'+esc(L("من","From"))+'</small><input type="date" data-c="maFrom" value="'+esc(a||"")+'" max="'+todayISO()+'"></label><label><small>'+esc(L("لـ","To"))+'</small><input type="date" data-c="maTo" value="'+esc(b2||"")+'" max="'+todayISO()+'"></label></div>'+
+      '<button class="ma-btn ma-btn-p" data-a="maClose">'+esc(L("تمام","Done"))+"</button>"; }
   else if(sh.kind==="menu"){ b='<div class="ma-sh-t">'+esc(L("الشاشات","Screens"))+'</div><nav class="nav ma-menu">'+navHTML()+"</nav>"; }
   else if(sh.kind==="filt"){ const projs=Object.keys((CP._m&&CP._m.projs)||{}).sort();
     b='<div class="ma-sh-t">'+esc(L("فلاتر","Filters"))+"</div>"+
@@ -13739,27 +13803,47 @@ function maSheet(){ const sh=CP.sheet; if(!sh) return ""; const C=CURR[S.cfg.set
       (projs.length?'<div class="ma-fl"><span>'+esc(L("المشروع","Project"))+'</span><select class="ma-sel" data-c="cpProj"><option value="">'+esc(L("كل المشاريع","All projects"))+"</option>"+projs.map(x=>'<option'+(CP.proj===x?" selected":"")+">"+esc(x)+"</option>").join("")+"</select></div>":"")+
       '<button class="ma-btn ma-btn-p" data-a="maClose">'+esc(L("تمام","Done"))+"</button>"; }
   return '<div class="ma-shbg" data-a="maClose"></div><div class="ma-sheet'+(sh.kind==="menu"?" ma-sheet-tall":"")+'" role="dialog"><i class="ma-grab"></i>'+b+"</div>"; }
+const MA_MON=["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+function maDLabel(a,b){ const p=x=>{ const d=new Date(x+"T00:00:00Z"); return [d.getUTCDate(),d.getUTCMonth()]; }; const x=p(a), y=p(b);
+  if(a===b) return x[0]+" "+MA_MON[x[1]]; if(x[1]===y[1]) return x[0]+"–"+y[0]+" "+MA_MON[y[1]]; return x[0]+" "+MA_MON[x[1]]+" – "+y[0]+" "+MA_MON[y[1]]; }
+function maPerLabel(){ return CP.per==="t"?L("النهارده","today"):CP.per==="y"?L("امبارح","yesterday"):CP.per==="7"?L("في آخر 7 أيام","in the last 7 days"):CP.per==="30"?L("في آخر 30 يوم","in the last 30 days"):L("في الفترة دي","in this period"); }
+/* إعدادات الجهاز: الفترة والمنصة والترتيب بتتفتكر على كل جهاز لوحده (العميل محفوظ أصلاً في gad.ws). أول مرة: النهارده */
+function maPrefsInit(){ if(CP.mInit) return; CP.mInit=1; let p={}; try{ p=JSON.parse(localStorage.getItem("gad.ma")||"{}")||{}; }catch(e){}
+  if(!CP.urlPer){ CP.per=p.per||"t"; if(CP.per==="r"){ if(p.from&&p.to){ CP.from=p.from; CP.to=p.to; } else CP.per="t"; } CP.key=""; }
+  if(Array.isArray(p.plats)) CP.plats=p.plats; CP.msort=p.sort||"s"; CP.mq=""; }
+function maPrefsSave(){ try{ localStorage.setItem("gad.ma",JSON.stringify({per:CP.per==="d"?"r":CP.per,from:CP.per==="d"?CP.day:CP.from,to:CP.per==="d"?CP.day:CP.to,plats:CP.plats,sort:CP.msort})); }catch(e){} }
+function maRefBtn(){ const fb=CP.fbusy; return '<button class="ma-ib ma-rfb'+(fb?" busy":"")+'" data-a="cpRefresh"'+(fb?" disabled":"")+' aria-label="'+esc(L("تحديث الأرقام","Refresh numbers"))+'">'+maIco.ref+"</button>"; }
+function maUpdTxt(){ const fr=cpFast(), rq=CP.req, pend=rq&&rq.status==="pending", conv=convClient(cpCid()), src=conv?L("AppsFlyer","AppsFlyer"):L("خزامى","Khzama");
+  if(CP.fbusy) return L("بيتحدث…","Updating…");
+  return (fr? L("آخر تحديث ","Updated ")+cpHM(fr.at) : L("اسحب لتحت للتحديث","Pull down to refresh"))+(pend? " · "+src+L(" بيتحدث"," updating") : ""); }
+function maSortCamps(camps){ const k=CP.msort||"s", big=1e15, a=camps.slice();
+  if(k==="roas") a.sort((x,y)=>((cpRoas(y.v)==null?-1:cpRoas(y.v))-(cpRoas(x.v)==null?-1:cpRoas(x.v)))||(y.v.s-x.v.s));
+  else if(k==="cpa") a.sort((x,y)=>((cpCpa(x.v)==null?big:cpCpa(x.v))-(cpCpa(y.v)==null?big:cpCpa(y.v)))||(y.v.s-x.v.s));
+  else if(k==="name") a.sort((x,y)=>String(x.code).localeCompare(String(y.code)));
+  else a.sort((x,y)=>y.v.s-x.v.s);
+  return a; }
 function renderCampApp(){
+  maPrefsInit();
   const m=cpModel(); CP._m=m; const cid=m.cid, conv=convClient(cid), pad=maPad(), C=CURR[S.cfg.settings.currency]||"";
-  const fr=cpFast(), rq=CP.req, pend=rq&&rq.status==="pending", fb=CP.fbusy, src=conv?L("AppsFlyer + سلة","AppsFlyer + Salla"):L("خزامى","Khzama");
-  const cl=S.cfg.clients||[];
+  const cl=S.cfg.clients||[], anim=CP.manim; CP.manim=null;
   let h='<div class="ma'+(pad?" ma-pad":"")+'" id="maRoot">';
   const top=CP.mnav.length? CP.mnav[CP.mnav.length-1] : null;
   const phoneDetail=!pad&&top;
+  const pill= cl.length>1&&!isClient()? '<label class="ma-pill"><select data-c="ws" aria-label="'+esc(L("العميل","Client"))+'">'+cl.map(c=>'<option value="'+c.id+'"'+(cid===c.id?" selected":"")+">"+esc(c.name)+"</option>").join("")+"</select>"+maIco.down+"</label>" : '<span class="ma-pill">'+esc((clientById(cid)||{}).name||"")+"</span>";
   if(!phoneDetail){
-    h+='<div class="ma-nb"><button class="ma-ib" data-a="maMenu" aria-label="'+esc(L("الشاشات","Screens"))+'">'+maIco.menu+'</button><span class="ma-nbt">'+esc(L("أداء الحملات","Campaigns"))+'</span>'+
-      (cl.length>1&&!isClient()?'<label class="ma-pill"><select data-c="ws" aria-label="'+esc(L("العميل","Client"))+'">'+cl.map(c=>'<option value="'+c.id+'"'+(cid===c.id?" selected":"")+">"+esc(c.name)+"</option>").join("")+"</select>"+maIco.down+"</label>":'<span class="ma-pill">'+esc((clientById(cid)||{}).name||"")+"</span>")+"</div>";
-    h+='<h1 class="ma-lt">'+esc(L("أداء الحملات","Campaigns"))+"</h1>";
-    h+='<div class="ma-filters"><div class="ma-seg ma-dates">'+[["t","النهارده","Today"],["y","امبارح","Yesterday"],["7","7 أيام","7 days"],["30","30 يوم","30 days"],["r","مخصص","Custom"]].map(x=>'<button class="'+(CP.per===x[0]||(x[0]==="r"&&CP.per==="d")?"on":"")+'" data-a="maPer" data-v="'+x[0]+'">'+esc(L(x[1],x[2]))+"</button>").join("")+"</div>";
-    if(CP.per==="r"||CP.per==="d"){ const a=m.a, b=m.b;
-      h+='<div class="ma-range"><label><small>'+esc(L("من","From"))+'</small><input type="date" data-c="maFrom" value="'+esc(a)+'" max="'+todayISO()+'"></label><label><small>'+esc(L("لـ","To"))+'</small><input type="date" data-c="maTo" value="'+esc(b)+'" max="'+todayISO()+'"></label></div>'; }
-    const plats=PAIDP().filter(pl=>m.M&&m.M[pl]&&Object.keys(m.M[pl].camps||{}).length);
+    h+='<div class="ma-nb ma-nb-main"><button class="ma-ib" data-a="maMenu" aria-label="'+esc(L("الشاشات","Screens"))+'">'+maIco.menu+'</button>'+
+      '<div class="ma-ttl"><b>'+esc(L("أداء الحملات","Campaigns"))+'</b><small>'+esc(maUpdTxt())+'</small></div>'+maRefBtn()+pill+"</div>";
+    const per=CP.per==="d"?"r":CP.per;
+    h+='<div class="ma-filters"><div class="ma-seg ma-dates">'+[["t","النهارده","Today"],["y","امبارح","Yesterday"],["7","7 أيام","7 days"],["30","30 يوم","30 days"],["r","مخصص","Custom"]].map(x=>'<button class="'+(per===x[0]?"on":"")+'" data-a="maPer" data-v="'+x[0]+'">'+esc(L(x[1],x[2]))+"</button>").join("")+"</div>";
+    if(per==="r") h+='<button class="ma-dchip" data-a="maDate">'+maN(maDLabel(m.a,m.b))+maIco.down+"</button>";
+    const plats=PAIDP().filter(pl=>m.M&&m.M[pl]&&Object.keys(m.M[pl].camps||{}).length||CP.plats.indexOf(pl)>=0);
     const nf=(CP.stf?1:0)+(CP.proj?1:0)+(CP.cmp!=="prev"?1:0);
     h+='<div class="ma-tabs"><div class="ma-seg ma-plats"><button class="'+(!CP.plats.length?"on":"")+'" data-a="maPlat" data-v="">'+esc(L("الكل","All"))+"</button>"+plats.map(pl=>'<button class="'+(CP.plats.length===1&&CP.plats[0]===pl?"on":"")+'" data-a="maPlat" data-v="'+pl+'"><i class="ma-pl" style="background:'+((platById(pl)||{}).color||"#888")+'"></i>'+esc((platById(pl)||{}).name||pl)+"</button>").join("")+"</div>"+
       '<button class="ma-fbtn'+(nf?" on":"")+'" data-a="maFilt">'+esc(L("فلاتر","Filters"))+(nf?' <b>'+nf+"</b>":"")+"</button></div></div>";
   }
+  h+='<div class="ma-pg'+(anim?" ma-a-"+anim:"")+'">';
   if(!m.ready){
-    h+='<div class="ma-kpis">'+[1,2,3,4].map(()=>'<div class="ma-k ma-skel"><i></i><i></i></div>').join("")+'</div><div class="ma-list">'+[1,2,3,4].map(()=>'<div class="ma-row ma-skel"><i></i><i></i></div>').join("")+"</div>";
+    h+='<div class="ma-ks">'+[1,2,3,4].map(()=>'<div class="ma-k ma-skel"><i></i><i></i></div>').join("")+'</div><div class="ma-list">'+[1,2,3,4].map(()=>'<div class="ma-row ma-skel"><i></i><i></i></div>').join("")+"</div>";
     if(CP.err) h+='<div class="ma-empty">'+esc(CP.err)+"</div>";
   } else if(phoneDetail){
     const c=maFind(m,top.k||(top.pl+"|"+top.cid));
@@ -13768,43 +13852,56 @@ function renderCampApp(){
     else h+=maCampDetail(m,c,false);
   } else {
     const tot=m.tot, ptot=m.ptot, tr=m.tr, tc=m.tc;
-    const k=(lb,val,dl)=>'<div class="ma-k"><small>'+esc(lb)+"</small><b>"+val+"</b>"+dl+"</div>";
-    h+='<div class="ma-sum"><div class="ma-kpis">'+k(L("الصرف","Spend"),maN(fnum(tot.s,0))+"<small>"+esc(C)+"</small>",maDelta(tot.s,ptot.s,false))+
-      k(L("الإيراد","Revenue"),maN(fnum(tot.r,0))+"<small>"+esc(C)+"</small>",maDelta(tot.r,ptot.r,false))+
-      k("ROAS",maN(tr==null?"—":tr.toFixed(2)+"x"),maDelta(tr,cpRoas(ptot),false))+
-      k(L("تكلفة التبرع","Cost / donation"),maN(tc==null?"—":fnum(tc,0)),maDelta(tc,cpCpa(ptot),true))+"</div>";
-    h+='<div class="ma-strip"><div><small>'+esc(L("الحملات","Campaigns"))+"</small><b>"+maN(fnum(m.camps.length,0))+'</b><span class="ma-dl" style="color:var(--ink-3)">'+maN(m.nOn)+" "+esc(L("شغالة","on"))+"<br>"+maN(m.nOff)+" "+esc(L("موقفة","off"))+"</span></div>"+
-      "<div><small>"+esc(L("التبرعات","Donations"))+"</small><b>"+maN(fnum(tot.o,0))+"</b>"+maDelta(tot.o,ptot.o,false)+'<span class="ma-dl"></span></div>'
-+
-      "<div><small>"+esc(L("الميزانية الحالية","Current budget"))+"</small><b>"+(m.haveStruct?maN(fnum(m.bud,0)):"—")+'</b><span class="ma-dl" style="color:var(--ink-3)">'+esc(C)+'</span><span class="ma-dl"></span></div></div></div>';
-    if(m.T) h+='<div class="ma-note">'+esc(L("هدف الـ ROAS ","ROAS target "))+maN(m.tg.toFixed(2)+"x")+" · "+esc(L("المقارنة بـ ","vs "))+esc(CP.cmp==="week"?L("نفس الأيام الأسبوع اللي فات","same days last week"):L("الفترة اللي قبلها","the previous period"))+"</div>";
+    const plName=CP.plats.length===1? ((platById(CP.plats[0])||{}).name||CP.plats[0]) : "";
+    if(!tot.s&&!tot.r&&!tot.o){
+      h+='<div class="ma-nospend">'+esc(L("مفيش صرف","No spend")+(plName?L(" على "," on ")+plName:"")+" "+maPerLabel())+"</div>";
+    } else {
+      const k=(lb,val,dl)=>'<div class="ma-k"><small>'+esc(lb)+"</small><b>"+val+"</b>"+dl+"</div>";
+      h+='<div class="ma-ks">'+k(L("الصرف","Spend"),maN(fnum(tot.s,0))+"<small>"+esc(C)+"</small>",maDelta(tot.s,ptot.s,false))+
+        k(L("الإيراد","Revenue"),maN(fnum(tot.r,0))+"<small>"+esc(C)+"</small>",maDelta(tot.r,ptot.r,false))+
+        k("ROAS",maN(tr==null?"—":tr.toFixed(2)+"x"),maDelta(tr,cpRoas(ptot),false))+
+        k(L("تكلفة التبرع","Cost / donation"),maN(tc==null?"—":fnum(tc,0)),maDelta(tc,cpCpa(ptot),true))+"</div>";
+    }
+    h+='<div class="ma-line">'+maN(fnum(m.camps.length,0))+" "+esc(L("حملة","campaigns"))+' <span>('+maN(m.nOn)+" "+esc(L("شغالة","on"))+" · "+maN(m.nOff)+" "+esc(L("موقفة","off"))+")</span>"+
+      " · "+maN(fnum(tot.o,0))+" "+esc(conv?L("طلب","orders"):L("تبرع","donations"))+
+      (m.haveStruct?" · "+esc(L("الميزانية ","Budget "))+maN(fnum(m.bud,0))+" "+esc(C):"")+"</div>";
     if(conv) h+='<div class="ma-note">'+esc(L("الطلبات والإيراد من AppsFlyer وسلة على مستوى الحملة بس — المجموعات والإعلانات بالصرف بس.","Orders per campaign only; ad sets and ads show spend."))+"</div>";
-    const camps=m.camps.slice().sort((x,y)=>y.v.s-x.v.s), sel=pad? (top&&maFind(m,top.k||(top.pl+"|"+top.cid))) || camps[0] : null;
-    let list='<div class="ma-sec">'+esc(L("الحملات","Campaigns"))+" <small>"+camps.length+"</small></div>";
-    list+= camps.length? '<div class="ma-list">'+camps.map(c=>{ const st=c.st, mode=st&&st.budget_mode||"";
-        return maRow({k:c.pl+"|"+c.id,name:c.code,title:c.proj||"",v:c.v,dot:c.ds,pl:CP.plats.length===1?null:c.pl,tag:mode,spendOnly:false,verdict:maVerdict(c.v,m.tg,m.cpaRef),sw:maSwitch(c.pl,"campaign",c.id,c.code),sub:c.proj||""}).replace('class="ma-row ma-tap"','class="ma-row ma-tap'+(sel&&sel===c?" sel":"")+'"'); }).join("")+"</div>"
-      : '<div class="ma-empty">'+esc(L("مفيش حملات بالفلتر ده في الفترة دي.","No campaigns match these filters in this period."))+"</div>";
+    const q=(CP.mq||"").trim().toLowerCase();
+    let camps=maSortCamps(m.camps); const all=camps.length; if(q) camps=camps.filter(c=>String(c.code).toLowerCase().indexOf(q)>=0||String(c.proj||"").toLowerCase().indexOf(q)>=0);
+    const sel=pad? (top&&maFind(m,top.k||(top.pl+"|"+top.cid))) || camps[0] : null;
+    let list='<div class="ma-lh"><div class="ma-sec">'+esc(L("الحملات","Campaigns"))+" <small>"+all+"</small></div>"+
+      '<label class="ma-sort"><select data-c="maSort" aria-label="'+esc(L("ترتيب","Sort"))+'">'+[["s","الصرف","Spend"],["roas","ROAS","ROAS"],["cpa","تكلفة التبرع","Cost/don."],["name","الاسم","Name"]].map(x=>'<option value="'+x[0]+'"'+((CP.msort||"s")===x[0]?" selected":"")+">"+esc(L("ترتيب: ","Sort: ")+L(x[1],x[2]))+"</option>").join("")+"</select>"+maIco.down+"</label></div>";
+    if(all>3||q) list+='<label class="ma-q"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="maQ" type="search" inputmode="search" autocomplete="off" placeholder="'+esc(L("دوّر بكود الحملة","Search campaign code"))+'" value="'+esc(CP.mq||"")+'"></label>';
+    list+= camps.length? '<div class="ma-list">'+camps.map(c=>
+        maRow({k:c.pl+"|"+c.id,q:c.code+" "+(c.proj||""),name:c.code,title:c.proj||"",v:c.v,pv:m.pvIdx["c|"+c.pl+"|"+c.code],dot:c.ds,pl:CP.plats.length===1?null:c.pl,verdict:maVerdict(c.v,m.tg,m.cpaRef),sw:maSwitch(c.pl,"campaign",c.id,c.code),chips:maCampChips(c),sub:c.proj||""})
+          .replace('class="ma-row ma-tap"','class="ma-row ma-tap'+(sel&&sel===c?" sel":"")+'"')).join("")+"</div>"
+      : '<div class="ma-empty">'+esc(q? L("مفيش حملة بالكود ده.","No campaign with that code.") : (L("مفيش حملات","No campaigns")+(plName?L(" على "," on ")+plName:"")+" "+maPerLabel()))+"</div>";
     if(pad){ let det='<div class="ma-empty">'+esc(L("اختار حملة","Pick a campaign"))+"</div>";
       if(sel){ if(top&&top.t==="set"){ const s=m.setsOf(sel,sel.pl).find(x=>String(x.id)===String(top.sid)); det= s? maSetDetail(m,sel,s,true) : maCampDetail(m,sel,true); } else det=maCampDetail(m,sel,true); }
-      h+='<div class="ma-split"><div class="ma-lp">'+list+'</div><div class="ma-dp">'+det+"</div></div>"; }
+      h+='<div class="ma-split"><div class="ma-lp">'+list+'</div><div class="ma-dp'+(anim?" ma-a-fade":"")+'" id="maDp">'+det+"</div></div>"; }
     else h+=list;
   }
-  h+='<div class="ma-bb"><button class="ma-rf'+(fb?" busy":"")+'" data-a="cpRefresh"'+(fb?" disabled":"")+'><i>'+maIco.ref+"</i>"+esc(fb?L("بيتحدث…","Updating…"):L("تحديث الأرقام","Refresh numbers"))+'</button><small>'+
-    esc((fr? L("آخر تحديث للصرف ","Spend updated ")+cpHM(fr.at) : L("الصرف من المنصات في ثواني","Platform spend in seconds"))+" · "+src+": "+(pend? L("بيتحدث","updating") : (rq&&rq.done_at? cpHM(rq.done_at) : "—")))+"</small></div>";
+  h+="</div>";
   h+='<div class="ma-ptr" id="maPtr">'+maIco.ref+"</div>";
   return h+maSheet()+"</div>"; }
 /* الأكشنز */
-const maPush=e=>{ CP.mscroll=window.scrollY; CP.mnav.push(e); try{ history.pushState({ma:CP.mnav.length},""); }catch(x){} render(); window.scrollTo(0,0); };
+const maPush=e=>{ CP.mscroll=window.scrollY; CP.mnav.push(e); CP.manim="push"; try{ history.pushState({ma:CP.mnav.length},""); }catch(x){} render(); window.scrollTo(0,0); };
 ACT.maOpen=t=>{ const k=t.dataset.k||""; if(k.indexOf("s|")===0){ const p=k.split("|"); const e={t:"set",pl:p[1],cid:p[2],sid:p[3],k:p[1]+"|"+p[2]};
-    if(maPad()){ CP.mnav=[{t:"camp",k:e.k},e]; render(); const dp=document.querySelector(".ma-dp"); if(dp) dp.scrollTop=0; } else maPush(e); return; }
-  if(maPad()){ CP.mnav=[{t:"camp",k:k}]; render(); const dp=document.querySelector(".ma-dp"); if(dp) dp.scrollTop=0; return; }
+    if(maPad()){ CP.mnav=[{t:"camp",k:e.k},e]; CP.manim="fade"; render(); const dp=document.querySelector(".ma-dp"); if(dp) dp.scrollTop=0; } else maPush(e); return; }
+  if(maPad()){ CP.mnav=[{t:"camp",k:k}]; CP.manim="fade"; render(); const dp=document.querySelector(".ma-dp"); if(dp) dp.scrollTop=0; return; }
   maPush({t:"camp",k:k}); };
-ACT.maBack=()=>{ if(maPad()){ CP.mnav=CP.mnav.slice(0,1); render(); return; } try{ history.back(); }catch(x){ CP.mnav.pop(); render(); } };
-window.addEventListener("popstate",()=>{ if(S.view!=="campperf"||!CP.mnav.length) return; CP.mnav.pop(); CP.sheet=null; render(); const y=CP.mnav.length?0:(CP.mscroll||0); setTimeout(()=>window.scrollTo(0,y),0); });
-ACT.maPer=t=>{ const v=t.dataset.v; CP.per=v; if(v==="r"){ const T=todayISO(); CP.from=CP.from||addDays(T,-6); CP.to=CP.to||T; } CP.mnav=[]; render(); };
-CHG.maFrom=v=>{ CP.per="r"; CP.from=v; if(!CP.to||CP.to<v) CP.to=v; render(); };
-CHG.maTo=v=>{ CP.per="r"; CP.to=v; if(!CP.from||CP.from>v) CP.from=v; render(); };
-ACT.maPlat=t=>{ const v=t.dataset.v; CP.plats=v?[v]:[]; CP.mnav=[]; render(); };
+ACT.maBack=()=>{ if(maPad()){ CP.mnav=CP.mnav.slice(0,1); CP.manim="fade"; render(); return; } try{ history.back(); }catch(x){ CP.mnav.pop(); render(); } };
+window.addEventListener("popstate",()=>{ if(S.view!=="campperf"||!CP.mnav.length) return; CP.mnav.pop(); CP.sheet=null; CP.manim="pop"; render(); const y=CP.mnav.length?0:(CP.mscroll||0); setTimeout(()=>window.scrollTo(0,y),0); });
+ACT.maPer=t=>{ const v=t.dataset.v; if(v==="r"){ const T=todayISO(), m=CP._m||{}; if(CP.per!=="r"&&CP.per!=="d"){ CP.from=m.a||addDays(T,-6); CP.to=m.b||T; } else if(CP.per==="d"){ CP.from=CP.to=CP.day; } CP.per="r"; CP.sheet={kind:"date"}; }
+  else { CP.per=v; } CP.mnav=[]; maPrefsSave(); render(); };
+ACT.maDate=()=>{ CP.sheet={kind:"date"}; render(); };
+CHG.maFrom=v=>{ if(!v) return; CP.per="r"; CP.from=v; if(!CP.to||CP.to<v) CP.to=v; maPrefsSave(); render(); };
+CHG.maTo=v=>{ if(!v) return; CP.per="r"; CP.to=v; if(!CP.from||CP.from>v) CP.from=v; maPrefsSave(); render(); };
+ACT.maPlat=t=>{ const v=t.dataset.v; CP.plats=v?[v]:[]; CP.mnav=[]; maPrefsSave(); render(); };
+CHG.maSort=v=>{ CP.msort=v||"s"; maPrefsSave(); render(); };
+/* البحث بالكود: بيفلتر الصفوف في مكانها من غير ما الصفحة تترسم تاني (الكيبورد ميقفلش) */
+document.addEventListener("input",e=>{ if(!e.target||e.target.id!=="maQ") return; CP.mq=e.target.value; const q=CP.mq.trim().toLowerCase();
+  document.querySelectorAll("#maRoot .ma-lp .ma-row[data-q], #maRoot > .ma-pg > .ma-list .ma-row[data-q]").forEach(r=>{ r.style.display=!q||r.dataset.q.indexOf(q)>=0?"":"none"; }); });
 ACT.maStf=t=>{ CP.stf=t.dataset.v||""; render(); };
 ACT.maCmp=t=>{ CP.cmp=t.dataset.v||"prev"; render(); };
 ACT.maFilt=()=>{ CP.sheet={kind:"filt"}; render(); };
@@ -13815,6 +13912,12 @@ ACT.maEditAsk=t=>{ const d=t.dataset; CP.sheet={kind:"edit",pl:d.pl,lvl:d.lvl,id
 ACT.maPct=t=>{ const i=$("#cpIn"); if(!i) return; const b=+t.dataset.b, p=+t.dataset.p; i.value=Math.max(1,Math.round(b*(1+p/100))); };
 document.addEventListener("click",e=>{ if(e.target.closest&&e.target.closest('.ma-menu [data-a="go"]')){ CP.sheet=null; CP.mnav=[]; } },true);
 document.addEventListener("keydown",e=>{ if(e.key==="Enter"&&e.target&&e.target.id==="cpIn"&&CP.sheet&&CP.sheet.kind==="edit"){ e.preventDefault(); const b=document.querySelector('.ma-sheet [data-a="cpSave"]'); if(b) b.click(); } });
+/* رجوع بالسحب من طرف الشاشة (زي iOS) — في شاشات التفاصيل على الموبايل */
+(function(){ let x0=null, y0=0, side=0;
+  document.addEventListener("touchstart",e=>{ x0=null; if(!maOn()||maPad()||CP.sheet||!CP.mnav.length) return; const t=e.touches[0], w=window.innerWidth;
+    if(t.clientX>w-28){ side=-1; } else if(t.clientX<28){ side=1; } else return; x0=t.clientX; y0=t.clientY; },{passive:true});
+  document.addEventListener("touchend",e=>{ if(x0==null) return; const t=e.changedTouches[0], dx=t.clientX-x0, dy=Math.abs(t.clientY-y0); x0=null;
+    if(dy<60&&dx*side>70) ACT.maBack(); },{passive:true}); })();
 /* العنوان الكبير بيتلم في شريط صغير مع السكرول + اسحب لتحت للتحديث */
 window.addEventListener("scroll",()=>{ const r=document.getElementById("maRoot"); if(r) r.classList.toggle("ma-sc",window.scrollY>36); },{passive:true});
 (function(){ let y0=null, dy=0; const ptr=()=>document.getElementById("maPtr");
@@ -13864,7 +13967,7 @@ ACT.cpSave=async t=>{ const i=$("#cpIn"), v=Math.round(+(i&&i.value)), f=t.datas
 const cpHM=t=>{ try{ return new Intl.DateTimeFormat("en-GB",{timeZone:"Asia/Riyadh",hour:"2-digit",minute:"2-digit"}).format(new Date(t)); }catch(e){ return ""; } };
 function cpFast(){ const k="cpFast|"+cpCid(); if(CP.fast&&CP.fast.cid===cpCid()) return CP.fast; try{ const v=JSON.parse(localStorage.getItem(k)||"null"); if(v){ CP.fast=v; return v; } }catch(e){} return null; }
 ACT.cpRefresh=async()=>{ if(CP.fbusy) return; const cid=cpCid(), b=todayISO(), a=b, conv=convClient(cid);   // النهارده بس: من 12 بالليل (الرياض) لحد اللحظة دي
-  CP.fbusy=true; if(CP.per!=="t"){ CP.per="t"; CP.key=""; } render();
+  CP.fbusy=true; if(CP.per!=="t"){ CP.per="t"; CP.key=""; } if(maOn()) maPrefsSave(); render();
   try{ await RT.set("sys/campreq",{at:Date.now(),by:ME.email||"",status:"pending",client:cid,from:a,to:b,parts:[conv?"conv":"khzama"]}); CP.req={at:Date.now(),status:"pending",from:a,to:b}; }catch(e){}
   const t0=Date.now(); let r=null;
   try{ const q=await SUPA_DB.client.functions.invoke("camp-refresh",{body:{client:cid,from:a,to:b}}); r=q.data||{ok:false,error:(q.error&&q.error.message)||"?"}; }
@@ -14222,7 +14325,8 @@ function render(){
   if(!S.urlInit&&S.cfg.clients.length){ S.urlInit=1; try{ const q=new URLSearchParams(location.search);
     const ws=q.get("ws"); if(ws&&clientById(ws)){ S.ws=ws; S.wsInit=1; lsSet("gad.ws",ws); }
     if(q.get("p")==="campperf"){ S.view="campperf"; const f=q.get("from"), t=q.get("to"), d=q.get("day");
-      if(f&&t){ CP.per="r"; CP.from=f; CP.to=t; } else if(d){ CP.per="d"; CP.day=d; } if(q.get("act")==="all") CP.act="all"; } }catch(e){} }
+      if(f&&t){ CP.per="r"; CP.from=f; CP.to=t; CP.urlPer=1; } else if(d){ CP.per="d"; CP.day=d; CP.urlPer=1; } if(q.get("act")==="all") CP.act="all"; }
+    else if(!q.get("p")&&(maMQ&&maMQ.matches||(window.matchMedia&&matchMedia("(display-mode: standalone)").matches)||navigator.standalone)) S.view="campperf"; }catch(e){} }
   /* أكتر من عميل: السيستم بيفتح على آخر عميل اخترته (أو أول عميل) بدل ما يجمع أرقام العملا مع بعض. «كل العملاء» بتتحفظ برضه. */
   if(!S.wsInit&&S.cfg.clients.length>1){ S.wsInit=1; const r=lsGet("gad.ws",""); if(r!=="*"&&!S.ws) S.ws=(r&&clientById(r))? r : S.cfg.clients[0].id; }
   CONV_WS=!!(S.ws&&convClient(S.ws));

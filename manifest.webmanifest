@@ -4,7 +4,7 @@
   "description": "أداء الحملات — الصرف من المنصات، والتبرعات والإيراد من خزامى",
   "lang": "ar",
   "dir": "rtl",
-  "start_url": "./?p=campperf&app=1",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
