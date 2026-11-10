@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>GADLYTICS · تقرير</title>
+<style>
+body{font:16px/1.7 'Cairo','Tajawal',system-ui,-apple-system,'Segoe UI',Tahoma,sans-serif;margin:0;padding:24px 16px;color:#111;background:#fff}
+.box{max-width:640px;margin:0 auto}
+.err{border:1px solid #e0a0a0;background:#fff5f5;color:#8a1c1c;border-radius:8px;padding:14px 16px}
+code{direction:ltr;unicode-bidi:isolate;font-family:ui-monospace,Menlo,monospace;font-size:13px}
+pre{white-space:pre-wrap;word-wrap:break-word;font:15px/1.7 'Cairo','Tajawal',system-ui,sans-serif;margin:0}
+</style>
+<script src="config.js"></script>
+</head>
+<body>
+<div class="box" id="m">جاري تحميل التقرير…</div>
+<script>
+(function () {
+  var m = document.getElementById("m");
+  function fail(t) {
+    m.innerHTML = '<div class="err"><b>مقدرتش أجيب التقرير.</b><br>' + t +
+      '<br><small>الصيغة: <code>r.html#key=&lt;KEY&gt;&amp;client=3sa3k1k&amp;period=today</code></small></div>';
+  }
+  function params() {
+    var h = new URLSearchParams(location.hash.replace(/^#/, "")), s = new URLSearchParams(location.search);
+    function g(k) { return h.get(k) || s.get(k) || ""; }
+    return { key: g("key").trim(), client: g("client").trim() || "3sa3k1k", period: g("period").trim() || "today", text: g("text") === "1" };
+  }
+  var C = window.GADLYTICS_CONFIG || {}, p = params();
+  if (!C.supabaseUrl || !C.supabaseAnonKey) return fail("ملف الإعدادات (config.js) مااتحملش.");
+  if (!p.key) return fail("مفيش مفتاح في اللينك — حط <code>#key=…</code>.");
+  var url = C.supabaseUrl + "/functions/v1/gad-api/report?client=" + encodeURIComponent(p.client) +
+    "&period=" + encodeURIComponent(p.period) + (p.text ? "&format=text" : "");
+  fetch(url, { headers: { "Authorization": "Bearer " + C.supabaseAnonKey, "apikey": C.supabaseAnonKey, "x-api-key": p.key }, cache: "no-store", referrerPolicy: "no-referrer" })
+    .then(function (r) {
+      return r.text().then(function (b) {
+        if (!r.ok) {
+          var msg = "";
+          try { var j = JSON.parse(b); msg = j.error_ar || j.message || ""; } catch (e) { msg = ""; }
+          if (r.status === 401) msg = msg || "المفتاح غلط أو اتلغى.";
+          if (r.status === 429) msg = msg || "طلبات كتير — استنى دقيقة.";
+          throw new Error("السيرفر رد بـ " + r.status + (msg ? " — " + msg : ""));
+        }
+        if (p.text) {
+          var pre = document.createElement("pre"); pre.textContent = b; m.textContent = ""; m.appendChild(pre);
+        } else {
+          document.open(); document.write(b); document.close();
+        }
+      });
+    })
+    .catch(function (e) {
+      var t = String((e && e.message) || e);
+      fail(/fetch|network|load/i.test(t) ? "مشكلة في الاتصال بالسيرفر — جرّب تاني." : t.replace(/[<>&]/g, ""));
+    });
+})();
+</script>
+</body>
+</html>

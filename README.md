@@ -818,6 +818,8 @@ The ✦ button (bottom-left) opens an assistant that reads your numbers from the
 | `tools/prep_ad_daily.py` | Turns raw platform pulls into `ad_daily` rows: parses campaign and ad names, converts USD, flags Smart+ |
 | `tools/rebuild_entries.sql` | Rebuilds the daily report docs (platform metrics + Khzama orders and revenue) |
 | `supabase/functions/ai/` | The AI assistant function; calls the Claude API with the stored secret |
+| `supabase/functions/gad-api/` | Read-only API + MCP server for AI assistants (instinct, Claude, ChatGPT). See §32. |
+| `r.html` | Tiny page that turns a plain link into the `gad-api` report for browsing assistants (key in `#hash`). See §32. |
 | `skill/gadlytics/` | The Claude skill: how to run everything (runbooks + Mac scripts), so the work moves to another account or machine. No secrets in it. |
 
 **Deployed, but intentionally left out of this public repo:**
@@ -853,6 +855,7 @@ The ✦ button (bottom-left) opens an assistant that reads your numbers from the
 | `snapshots` | Cumulative intraday snapshots for *Today live*. |
 | `mx_daily` | Mixpanel events per day: `dim` = `aff` (Khzama link), `dev` (device), `src` (utm source), `pay` (payment method) or `hour`; `event` = session, page_view, view_content, add_to_cart, begin_checkout, purchase, revenue, checkout_error. |
 | `media` | One row per Airtable video: key fields, every board column (`fields` JSON), `hook_auto` (first sentence), `hook_full` (first 12 s), `thumb` (cover path in Storage `thumbs`), `thumb_hook` (hook written on the cover), `asset_note` (`no_video`), `local_file` (file name in ~/Downloads, for the «On this Mac» filter). |
+| `api_keys` | API keys for `gad-api` (§32): `name`, `key_hash` (SHA-256 only — the key itself is never stored), `scopes` (`read` / `read,refresh`), `last_used_at`, `revoked_at`. RLS on, no policies; written only through `ingest`. |
 
 ### 13.2 Views (all `security_invoker`)
 
@@ -1224,3 +1227,124 @@ These tasks stop on a permission prompt when they hit a tool they haven't been a
 | Nov 10 | Mac: «أداء الحملات» uses the iPad two-pane layout full width (list `clamp(520px,42%,820px)`, bigger text), «تفاصيل \| جدول» switch. |
 | Nov 10 | README §20–§31, skill (SKILL.md + runbooks) and repo sources (`supabase/functions/*`, `tools/build.py`) brought up to date. |
 | Nov 10 | `camp-alerts` v2: spike / norev use each device's own thresholds from the التنبيهات screen (`push_subs.prefs` spikePct/spikeMin/norevWin/norevMin), grouped into profiles and sent only to that profile's devices; ROAS alarm = client `roasAlarm`; norev default window 30 min (same as the page). `push` v5: `Topic` = SHA-256(tag)[0..32] (Apple returned 400 BadWebPushTopic for tag `ready`). |
+| Nov 10 | `gad-api` v1 deployed (verify_jwt **on**): read-only REST + MCP for AI assistants, own SHA-256 key auth (`api_keys`), `r.html` link page for instinct; tested against 2026-05-20 (spend 190,866.44 · donations 2,122 · revenue 387,894 · ROAS 2.03). §32. |
+
+## 32) AI assistants API (instinct / MCP) — `gad-api` (Nov 10 2026)
+
+One **read-only** edge function that lets an AI assistant (instinct, Claude, ChatGPT custom actions, any MCP client) read GADLYTICS the same way «أداء الحملات» shows it. Source: `supabase/functions/gad-api/index.ts`. Deployed as `gad-api` v1 with **verify_jwt on**.
+
+Base URL: `https://ibpwudzjwjraqhfdmzet.supabase.co/functions/v1/gad-api`
+
+**Numbers follow the site's rules:** spend from the ad platforms (`ad_daily`); donations/orders and revenue from Khzama (ملبي, `khzama_link_daily`) or AppsFlyer + Salla (ديمان, `conv_daily`) — never platform purchases. A TikTok Smart+ ad counts as one ad. Verdicts use the client's `roasGood` / `roasMin` / `roasAlarm`. SAR, Asia/Riyadh. Nothing in this function writes to the ad platforms.
+
+### 32.1 Endpoints
+
+| Method + path | What it returns |
+|---|---|
+| `GET /` | Name, version, auth hint, endpoint list |
+| `GET /openapi.json` | OpenAPI 3.1 spec (for ChatGPT custom actions and similar) |
+| `GET /clients` | Clients (ملبي `3sa3k1k`, ديمان `dm1n4an`), platforms, order source, ROAS rules |
+| `GET /summary?client=&period=&compare=` | The 8 KPI tiles with change vs the comparison period, per-platform totals, data freshness |
+| `GET /campaigns?client=&period=&compare=&platform=&status=&project=&limit=` | Every campaign: spend, donations, revenue, ROAS, CPA, previous period, on/off, daily budget, verdict |
+| `GET /campaign?code=MGG-03059&client=&period=` | One campaign with ad sets (status, budget, bid) and ads |
+| `GET /alerts?client=&days=7` | Alerts sent (`alerts_sent`) in the last N days (1–90) |
+| `GET /changes?client=&days=7` | Change log + edit requests from «أداء الحملات» |
+| `POST /refresh` `{client}` | Same as «تحديث الأرقام» (today's spend/status from Meta + Snapchat, Khzama queued). Needs the `refresh` scope |
+| `GET /report?client=&period=[&format=text]` | Everything on one page (HTML, RTL, no JS, < 50 KB) or as plain text — made for browsing assistants |
+| `POST /mcp` | MCP server, Streamable HTTP / JSON-RPC 2.0: `initialize`, `tools/list`, `tools/call`, `ping` |
+
+`period` = `today` · `yesterday` (default) · `7d` · `30d` · `day:YYYY-MM-DD` · `range:YYYY-MM-DD..YYYY-MM-DD` (max 92 days). `compare` = `prev` (default, previous period of the same length) or `week` (same days last week). `client` accepts the id or the Arabic/English name (default ملبي).
+
+MCP tools: `list_clients`, `get_summary`, `list_campaigns`, `get_campaign`, `list_alerts`, `list_changes`, `refresh_numbers` (same parameters as the REST endpoints).
+
+### 32.2 Auth — two layers
+
+| Header | Value | Checked by |
+|---|---|---|
+| `Authorization: Bearer <anon key>` | The **public** anon key from `config.js` | Supabase gateway (verify_jwt on) |
+| `apikey: <anon key>` | Same anon key | Supabase gateway |
+| `x-api-key: <GADLYTICS key>` | A key made with `make_api_key.py` | `gad-api` itself |
+
+- Without the anon bearer the **gateway** rejects the call before the function runs: `401 UNAUTHORIZED_NO_AUTH_HEADER` (or `UNAUTHORIZED_INVALID_JWT_FORMAT` if the bearer is not a JWT).
+- With the anon bearer but no / a wrong / a revoked `x-api-key`, the function answers `401 unauthorized` (`المفتاح غلط أو اتلغى`).
+- A bearer that is a JWT (`eyJ…`) or `sb_publishable_…` is never treated as an API key.
+- On GET read endpoints a **read-only** key may also go in `?key=` (the anon headers are still required). A key with the `refresh` scope is refused in a link (403).
+- Keys are stored only as SHA-256 hashes in `public.api_keys` (RLS on, no policies). The function never logs or echoes a key.
+
+**Scopes:** `read` (everything except `/refresh`) and `refresh` (adds `POST /refresh` / `refresh_numbers`; header only, never in a link).
+
+**Rate limits:** 120 requests / minute per key → `429`; 20 failed key attempts from one IP within 10 minutes → `429` for 10 minutes; `/refresh` once a minute per key and client. A revoked key stops working within 30 s (key cache).
+
+### 32.3 Keys — make and revoke (Mahmoud runs these in Terminal)
+
+```
+python3 ~/.gadlytics/make_api_key.py instinct            # read-only (works in r.html links)
+python3 ~/.gadlytics/make_api_key.py claude --refresh    # read + «تحديث الأرقام», header only
+python3 ~/.gadlytics/revoke_api_key.py instinct
+```
+
+The key is printed **once** and copied to the clipboard; only its hash is stored (through `ingest`). Making a key with an existing name replaces the old one. Copies of both scripts are in `skill/gadlytics/scripts/`.
+
+### 32.4 Plain link for browsing assistants (instinct) — `r.html`
+
+A plain link cannot carry the anon header, so the direct `…/gad-api/report?key=…` URL is rejected by the gateway. Give the assistant this link instead:
+
+```
+https://mahmoudgadmediabuyer.github.io/gadlytics/r.html#key=<KEY>&client=3sa3k1k&period=today
+```
+
+- `r.html` (≈3 KB, RTL, `noindex`, no analytics) loads `config.js`, reads `key`, `client` (default `3sa3k1k`) and `period` (default `today`) from the `#hash` first, then from `?query`, calls `/report` with the anon headers + `x-api-key`, and replaces itself with the returned report.
+- Put the key in the **hash** (`#key=`) — the hash is never sent to GitHub's servers. `?key=` works too but reaches GitHub's logs.
+- Add `text=1` for the plain-text report (shown in a `<pre>`): `r.html#key=<KEY>&period=yesterday&text=1`.
+- On failure it shows a clear Arabic message (no key, wrong/revoked key, rate limit, network).
+- Only use **read-only** keys in links.
+
+### 32.5 MCP client config
+
+URL: `https://ibpwudzjwjraqhfdmzet.supabase.co/functions/v1/gad-api/mcp` (Streamable HTTP, POST only).
+
+```json
+{
+  "mcpServers": {
+    "gadlytics": {
+      "type": "http",
+      "url": "https://ibpwudzjwjraqhfdmzet.supabase.co/functions/v1/gad-api/mcp",
+      "headers": {
+        "Authorization": "Bearer <ANON KEY from config.js>",
+        "apikey": "<ANON KEY from config.js>",
+        "x-api-key": "<GADLYTICS KEY>"
+      }
+    }
+  }
+}
+```
+
+Claude Code: `claude mcp add --transport http gadlytics <URL> --header "Authorization: Bearer <ANON>" --header "apikey: <ANON>" --header "x-api-key: <KEY>"`.
+
+ChatGPT custom action / other REST clients: import `GET /openapi.json`; it declares all three headers.
+
+### 32.6 Test results (Nov 10 2026, temporary key `claude-test-tmp`, revoked afterwards)
+
+`/summary?client=3sa3k1k&period=day:2026-05-20` matched the site exactly:
+
+| | Spend | Donations | Revenue | ROAS |
+|---|---|---|---|---|
+| Total | 190,866.44 | 2,122 | 387,894 | 2.03 |
+| Meta | 72,981.21 | 829 | 148,534 | 2.04 |
+| TikTok | 98,610.68 | 1,002 | 190,339 | 1.93 |
+| Snapchat | 19,274.55 | 291 | 49,021 | 2.54 |
+
+`/campaigns` (35 campaigns, same totals), `/report` HTML and text, MCP `initialize` / `tools/list` / `tools/call get_summary` all returned correct data; `r.html` rendered the report (HTML and text) and showed the Arabic error for a wrong key.
+
+**Timings, warm** (round trip from the Mac, 3 runs each; server time from the `x-gad-ms` header in brackets):
+
+| Call | Round trip | Server |
+|---|---|---|
+| `/summary` (one day) | 1.4–2.2 s | 1.1–1.8 s |
+| `/campaigns` (one day / 7d) | 1.0–1.2 s | 0.74–0.87 s |
+| `/report` HTML or text | 1.4–1.6 s | 1.1–1.3 s |
+| `/alerts` | 0.6–0.8 s | 0.2–0.4 s |
+| `/clients`, MCP `tools/list` | 0.3–0.4 s | ~0 ms |
+| MCP `tools/call get_summary` | 1.5–2.3 s | 1.1–1.9 s |
+
+The first call to a fresh function instance (cold start) took 4.7–6.6 s. Network + gateway overhead is ≈ 0.3 s.
