@@ -1048,6 +1048,8 @@ Also fixed while building this: `camp_struct` (2,450 rows for ملبي) was read
 
 - Rows in the app (Nov 10 2026): every campaign / ad set / ad row shows **الصرف · التبرعات · الإيراد · ROAS** in four equal columns with thin separators, the number on top and the ▲▼ comparison under it (Mahmoud's choice); the budget chip sits under them. Checked at 375 / 390 / 820 with 7-digit values — nothing clipped.
 
+- **Every screen on phone/iPad (Nov 10 2026, `html.ap-on`)**: on screens ≤1180px (or the installed app) all screens other than «أداء الحملات» get the app shell too — the desktop rail and top header are hidden; one sticky top bar (☰ · screen title · client pill) sits under the iPhone status bar/notch with `env(safe-area-inset-*)` padding; ☰ opens the «الشاشات» sheet with the same grouped nav plus an account row (alerts · language · theme · profile). The AI button sits above the home indicator and hides while a sheet is open. Phone (≤760): card grids collapse to one column (number grids to two), the big page title is hidden (it's in the bar), secondary header buttons (manual snapshot, data entry, edit page) move out, the client strip shows only its numbers; wide tables scroll inside their own card with an edge fade. Checked all 20 nav screens at 390×844 and 820×1180: page width = viewport, nothing clipped; desktop 1440 unchanged.
+
 ## 24) Sidebar order (Nov 10 2026, Mahmoud's order — desktop sidebar and the phone/iPad menu sheet use the same list)
 - **شغلي:** لوحتي · المهام · المجتمع
 - **الإدارة والتحليل:** نظرة عامة · أداء الحملات · إدارة الحملات · إدارة الميديا · مكتبة الكريتيف · المحلل · الموقع والقمع
