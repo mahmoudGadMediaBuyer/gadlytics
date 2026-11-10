@@ -71,3 +71,16 @@ App rows (Nov 10 2026): campaign/ad set/ad rows on phone/iPad show spend · dona
 App shell for every screen (Nov 10 2026): `html.ap-on` (≤1180, not campperf) hides rail/topbar, renders `apBar()` (☰ menu · title · client) + `maSheet()` around wsBar/headerFor/view, safe-area insets, phone grids → 1 column, tables scroll in their card. The menu sheet has an account row (`tbRight()`); the desktop #topbar is emptied at ≤1180 so its ids live in the sheet. Test all nav screens at 390 and 820 before deploying any UI change.
 
 Verdicts (Nov 10 2026): per-client roasAlarm/roasMin/roasGood in config/app (ملبي 2.0/2.1/2.8 → إنذار/راقب/كويس/زوّد). Push: sw.js (push+click only, NO caching) + edge fn `push` (VAPID in app_secrets, WebCrypto aes128gcm) + table push_subs; menu ← «التنبيهات». iPhone needs the home-screen app and a tap on «فعّل التنبيهات».
+
+Bulk edit / undo / pace / log / alerts history (Nov 10 2026, README §26):
+- «تعديل جماعي» works on CBO campaigns and ABO ad sets: ±10/±20%, custom %, or a fixed value, with an old→new preview, whole SAR and no cap. It applies item by item via campchg + camp-apply; TikTok is queued.
+- «تراجع» shows as a 10-second toast, and «آخر التعديلات» lists each change with «رجّع».
+- `cpUndoWhy` refuses to undo when the live camp_struct value changed since, or a later change exists.
+- 📊 «سرعة الصرف والتقييم الكامل» compares today with yesterday at the same hour (camp_hourly, written by camp-refresh v4 every refresh in 15-minute buckets), plus full stats for the period.
+- 🕒 «سجل التعديلات» shows the log per campaign.
+- On phone/iPad the panels open as a full screen (view `cppanel`), never pop-up sheets; pace is inline.
+- «سجل التنبيهات» on the push screen reads alerts_sent ordered by sent_at desc, 7 days at a time with «أقدم».
+  - Each row shows its delivery on this device: deliveries[].ep = sha256(endpoint)[0..16].
+  - Tap opens the client + campaign through `CP.focus`; kind "media" opens the library instead.
+- Rule toggles: cpa, bud, roas, spike, meta, stale, media, dailySummary.
+- The push function, the alerts_sent schema and the camp-alerts cron belong to the server-side alerts agent.
