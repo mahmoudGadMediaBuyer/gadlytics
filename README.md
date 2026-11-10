@@ -1228,6 +1228,7 @@ These tasks stop on a permission prompt when they hit a tool they haven't been a
 | Nov 10 | README §20–§31, skill (SKILL.md + runbooks) and repo sources (`supabase/functions/*`, `tools/build.py`) brought up to date. |
 | Nov 10 | `camp-alerts` v2: spike / norev use each device's own thresholds from the التنبيهات screen (`push_subs.prefs` spikePct/spikeMin/norevWin/norevMin), grouped into profiles and sent only to that profile's devices; ROAS alarm = client `roasAlarm`; norev default window 30 min (same as the page). `push` v5: `Topic` = SHA-256(tag)[0..32] (Apple returned 400 BadWebPushTopic for tag `ready`). |
 | Nov 10 | `gad-api` v1 deployed (verify_jwt **on**): read-only REST + MCP for AI assistants, own SHA-256 key auth (`api_keys`), `r.html` link page for instinct; tested against 2026-05-20 (spend 190,866.44 · donations 2,122 · revenue 387,894 · ROAS 2.03). §32. |
+| Nov 10 | Edits from instinct: `gad-api` v2 (1.1.0) `GET /edit/preview` + `POST /edit/apply`, new key scope `edit` (`make_api_key.py --edit`, `api_keys` check constraint + `ingest` v13), `camp-apply` v4 accepts the service role with a queued `campchg` docId, `r.html` edit mode (preview card → «تأكيد التعديل»). Tested on paused Snap MG-01380: 200→210→200 SAR, status stayed PAUSED. §32.7. |
 
 ## 32) AI assistants API (instinct / MCP) — `gad-api` (Nov 10 2026)
 
@@ -1280,6 +1281,7 @@ MCP tools: `list_clients`, `get_summary`, `list_campaigns`, `get_campaign`, `lis
 ```
 python3 ~/.gadlytics/make_api_key.py instinct            # read-only (works in r.html links)
 python3 ~/.gadlytics/make_api_key.py claude --refresh    # read + «تحديث الأرقام», header only
+python3 ~/.gadlytics/make_api_key.py instinct --edit     # read + edit (budget / bid / on-off) through r.html links
 python3 ~/.gadlytics/revoke_api_key.py instinct
 ```
 
@@ -1297,7 +1299,7 @@ https://mahmoudgadmediabuyer.github.io/gadlytics/r.html#key=<KEY>&client=3sa3k1k
 - Put the key in the **hash** (`#key=`) — the hash is never sent to GitHub's servers. `?key=` works too but reaches GitHub's logs.
 - Add `text=1` for the plain-text report (shown in a `<pre>`): `r.html#key=<KEY>&period=yesterday&text=1`.
 - On failure it shows a clear Arabic message (no key, wrong/revoked key, rate limit, network).
-- Only use **read-only** keys in links.
+- Read-only and **edit** keys may be used in `r.html#key=…` links (the hash never reaches a server; `r.html` sends the key in `x-api-key`). Never put a refresh or edit key in `?key=` — the API refuses it (403).
 
 ### 32.5 MCP client config
 
@@ -1348,3 +1350,41 @@ ChatGPT custom action / other REST clients: import `GET /openapi.json`; it decla
 | MCP `tools/call get_summary` | 1.5–2.3 s | 1.1–1.9 s |
 
 The first call to a fresh function instance (cold start) took 4.7–6.6 s. Network + gateway overhead is ≈ 0.3 s.
+
+### 32.7 Edits from instinct (Nov 10 2026) — `/edit/preview` + `/edit/apply`
+
+Mahmoud asks instinct on WhatsApp («خلّي ميزانية MGG-03059 ٥٠٠ ريال»); instinct opens an edit link, reads the preview card, clicks «تأكيد التعديل» and reads the result back. The edit goes through **exactly the path of «أداء الحملات»**: the same `campchg/*` doc, the same `camp-apply` call, the same change-log row, so it shows in «سجل التغييرات» and in the inline per-campaign log, and «رجّع» (undo) works on it.
+
+**Edit link** (the key needs the `edit` scope — `make_api_key.py <name> --edit`):
+
+```
+https://mahmoudgadmediabuyer.github.io/gadlytics/r.html#key=<KEY>&client=3sa3k1k&edit=1&code=MGG-03059&field=budget&to=500
+```
+
+| Param | Values |
+|---|---|
+| `code` | Campaign code (`MGG-03059`) or the platform campaign id |
+| `field` | `budget` (daily budget) · `bid` · `status` |
+| `to` | New value in **SAR** (Arabic digits and `٥٠٠ ريال` are fine), or `on` / `off` for `status` |
+| `adset` | Optional: ad-set id or name — needed for an ABO campaign with several ad sets, for `bid`, or to switch one ad set on/off |
+| `platform` | Optional: `meta` · `snap` · `tiktok` when the code exists on more than one platform/campaign |
+
+- Opening the link **never changes anything**: `r.html` calls `GET /edit/preview` and shows a card (campaign, platform, ad set or the campaign itself + CBO/ABO, current state, «من → لـ»). Only the «تأكيد التعديل» click sends `POST /edit/apply`. «إلغاء» shows «اتلغى — مفيش حاجة اتغيرت.»
+- Result line (plain Arabic, `#result`): «تم ✓ … بقت X (كانت Y) — اتأكدت من المنصة · الحالة زي ما هي (موقفة)» / «مستني (تيك توك لسه مش متوصل) — …» / «مااتنفذش ✗ — …».
+- Several matches → `409 choose_campaign` / `choose_adset` with the options; `r.html` lists them as links that open their own preview.
+
+**Target resolution** (same as the page's edit cells, from `camp_struct`): CBO (or a campaign that carries a daily budget) → the campaign budget; ABO → the ad set (one ad set → picked; several → choose). `bid` → an ad set with a bid type (Meta «ROAS goal» refused). `status` → the campaign, or the ad set when `adset` is given. Lifetime budgets are refused. Budget floor 20 SAR like the page; **no upper cap** (1,000,000 SAR/day is normal). Snap USD account `961fd033-…` is converted ÷3.75 by `camp-apply` (the preview shows the USD amount).
+
+**API**
+
+| Call | Notes |
+|---|---|
+| `GET /edit/preview?client=&code=&field=&to=[&adset=&platform=]` | Read-only. Returns `from`, `to`, platform, level, `object_id`, name, state, `message_ar`, and a `confirm_token` (HMAC-SHA256 over the target + values + key id, secret derived from the service-role key, expires in 10 min). `no_change: true` (no token) when the value is already that. |
+| `POST /edit/apply` `{confirm_token}` | Verifies the token (signature, expiry, same key), re-reads `camp_struct` (`409 changed` if the value moved since the preview), inserts `campchg/api<nonce>` (`status: pending`, `by: "api:<key name>"`; the nonce makes the token single-use → `409 already_used`), calls `camp-apply` with the service role, returns `result` = `applied` / `pending` / `failed` + `message_ar`, then pushes «<key name> عدّل …: من X لـ Y» to Mahmoud's devices (`push`, kind `edit`, logged in `alerts_sent`). |
+
+- Both routes need the `edit` scope and the key in the **`x-api-key` header only** (`?key=` → 401 on these routes; an edit key in `?key=` anywhere → 403). Read key on `/edit/*` → 403.
+- Limits: 30 edits / hour per key (`429`); the same object again within 15 s → `409 duplicate` (counted from the `campchg` docs, so it holds across function instances). Expired token → `410 token_expired`.
+- Only the requested field is sent to the platform — a budget edit never touches status; `status: on` happens only when asked for. TikTok: `camp-apply` answers `not_configured` until the TikTok app is approved → the doc stays `pending` for the scheduled task and the answer says «مستني (تيك توك لسه مش متوصل)».
+- `camp-apply` v4: besides a signed-in user it accepts the project's service-role key (server to server) — then a queued `docId` is required, and the doc's `by` is used in the change log (`api:<key name> · أداء الحملات`).
+
+**Test (Nov 10 2026, temporary keys `claude-edit-tmp` + `claude-read-tmp`, both revoked afterwards):** paused Snap CBO campaign MG-01380 (account 828aa8bb, SAR): 200 → 210 via `r.html` (preview card → «تأكيد التعديل»), read back 210 and Snap showed `daily_budget_micro` 210,000,000 + `PAUSED`; restored 210 → 200 via the API, Snap 200,000,000 + `PAUSED`. `camp-apply` 3.5–4.5 s, apply round trip ≈ 8 s, preview 1–2.7 s warm (5.4 s cold). Duplicate within 15 s → 409; replayed token → 409; read key → 403; no key / `?key=` only → 401; tampered token → 400; expired token → 410. Push delivered to both devices. One extra edit happened by mistake during the expiry test (a token that was still valid): paused Snap ad set of YA-0013 (USD account `961fd033-…`) 187.50 → 195 SAR (50 → 52 USD) and straight back to 187.50 (read back 187.50 both times in `camp_struct`); its platform status could not be cross-checked with the Snap MCP (that account is outside the MCP's organisation), but the Snap path only re-sends the object with the new `daily_budget_micro`.

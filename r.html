@@ -6,55 +6,158 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>GADLYTICS · تقرير</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
 <style>
-body{font:16px/1.7 'Cairo','Tajawal',system-ui,-apple-system,'Segoe UI',Tahoma,sans-serif;margin:0;padding:24px 16px;color:#111;background:#fff}
+body{font:16px/1.7 'Cairo','Tajawal',system-ui,-apple-system,'Segoe UI',Tahoma,sans-serif;margin:0;padding:24px 16px;color:#111;background:#fff;letter-spacing:normal}
 .box{max-width:640px;margin:0 auto}
 .err{border:1px solid #e0a0a0;background:#fff5f5;color:#8a1c1c;border-radius:8px;padding:14px 16px}
 code{direction:ltr;unicode-bidi:isolate;font-family:ui-monospace,Menlo,monospace;font-size:13px}
 pre{white-space:pre-wrap;word-wrap:break-word;font:15px/1.7 'Cairo','Tajawal',system-ui,sans-serif;margin:0}
+.card{border:1px solid #d6d9e0;border-radius:12px;padding:18px 18px 16px;background:#fafbfc}
+.card h1{font-size:20px;margin:0 0 12px}
+.row{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #eceef2}
+.row:last-of-type{border-bottom:0}
+.row b{min-width:96px;color:#555;font-weight:400}
+.row span{flex:1}
+.chg{font-size:19px;font-weight:700;margin:14px 0 6px}
+.chg .ar{color:#888;font-weight:400;padding:0 6px}
+.note{font-size:14px;color:#555;margin:6px 0 0}
+.btns{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+button{font:inherit;border-radius:10px;cursor:pointer}
+#ok{flex:1 1 220px;min-height:56px;font-size:19px;font-weight:700;border:0;background:#0b5cff;color:#fff}
+#no{flex:0 1 120px;min-height:56px;border:1px solid #c9ccd3;background:#fff;color:#333}
+button:disabled{opacity:.55;cursor:default}
+.res{margin-top:16px;border-radius:10px;padding:14px 16px;font-size:17px}
+.res.applied{background:#eefbf1;border:1px solid #9fd8ad;color:#14532d}
+.res.pending{background:#fff8e6;border:1px solid #f0cf7a;color:#713f12}
+.res.failed{background:#fff5f5;border:1px solid #e0a0a0;color:#8a1c1c}
+.res.cancel{background:#f4f5f7;border:1px solid #d6d9e0;color:#333}
+.opts{margin:10px 0 0;padding:0 18px 0 0}
+.opts li{margin:6px 0}
+a{color:#0b5cff}
+.ltr{direction:ltr;unicode-bidi:isolate}
 </style>
 <script src="config.js"></script>
 </head>
 <body>
-<div class="box" id="m">جاري تحميل التقرير…</div>
+<div class="box" id="m">جاري التحميل…</div>
 <script>
+/* GADLYTICS r.html — a static page for browsing assistants (instinct).
+   Report:  r.html#key=<KEY>&client=3sa3k1k&period=today            (&text=1 for plain text)
+   Edit:    r.html#key=<EDIT KEY>&client=3sa3k1k&edit=1&code=MGG-03059&field=budget&to=500   (+ &adset=<id|name> + &platform=meta|snap|tiktok)
+   The key stays in the URL hash (never sent to any server) and goes to gad-api in the x-api-key header.
+   An edit link only shows a preview; the change happens ONLY when «تأكيد التعديل» is clicked (POST /edit/apply). */
 (function () {
+  window.addEventListener("hashchange", function () { location.reload(); });   // a choice link only changes the hash → show its preview
   var m = document.getElementById("m");
-  function fail(t) {
-    m.innerHTML = '<div class="err"><b>مقدرتش أجيب التقرير.</b><br>' + t +
-      '<br><small>الصيغة: <code>r.html#key=&lt;KEY&gt;&amp;client=3sa3k1k&amp;period=today</code></small></div>';
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function fail(t, edit) {
+    m.innerHTML = '<div class="err" id="result"><b>' + (edit ? "مقدرتش أجهّز التعديل." : "مقدرتش أجيب التقرير.") + '</b><br>' + t +
+      '<br><small>الصيغة: <code>r.html#key=&lt;KEY&gt;&amp;client=3sa3k1k&amp;period=today</code><br>تعديل: <code>r.html#key=&lt;KEY&gt;&amp;client=3sa3k1k&amp;edit=1&amp;code=MGG-03059&amp;field=budget&amp;to=500</code></small></div>';
   }
-  function params() {
-    var h = new URLSearchParams(location.hash.replace(/^#/, "")), s = new URLSearchParams(location.search);
-    function g(k) { return h.get(k) || s.get(k) || ""; }
-    return { key: g("key").trim(), client: g("client").trim() || "3sa3k1k", period: g("period").trim() || "today", text: g("text") === "1" };
+  var h = new URLSearchParams(location.hash.replace(/^#/, "")), s = new URLSearchParams(location.search);
+  function g(k) { return (h.get(k) || s.get(k) || "").trim(); }
+  var p = { key: g("key"), client: g("client") || "3sa3k1k", period: g("period") || "today", text: g("text") === "1", edit: g("edit") === "1" };
+  var C = window.GADLYTICS_CONFIG || {};
+  if (!C.supabaseUrl || !C.supabaseAnonKey) return fail("ملف الإعدادات (config.js) مااتحملش.", p.edit);
+  if (!p.key) return fail("مفيش مفتاح في اللينك — حط <code>#key=…</code>.", p.edit);
+  var API = C.supabaseUrl + "/functions/v1/gad-api";
+  var HDR = { "Authorization": "Bearer " + C.supabaseAnonKey, "apikey": C.supabaseAnonKey, "x-api-key": p.key };
+  function errText(r, b) {
+    var j = null, msg = ""; try { j = JSON.parse(b); msg = j.error_ar || j.message || ""; } catch (e) { msg = ""; }
+    if (r.status === 401) msg = msg || "المفتاح غلط أو اتلغى.";
+    if (r.status === 403) msg = msg || "المفتاح ده مالوش الصلاحية دي.";
+    if (r.status === 429) msg = msg || "طلبات كتير — استنى دقيقة.";
+    return { j: j, t: "السيرفر رد بـ " + r.status + (msg ? " — " + msg : "") };
   }
-  var C = window.GADLYTICS_CONFIG || {}, p = params();
-  if (!C.supabaseUrl || !C.supabaseAnonKey) return fail("ملف الإعدادات (config.js) مااتحملش.");
-  if (!p.key) return fail("مفيش مفتاح في اللينك — حط <code>#key=…</code>.");
-  var url = C.supabaseUrl + "/functions/v1/gad-api/report?client=" + encodeURIComponent(p.client) +
-    "&period=" + encodeURIComponent(p.period) + (p.text ? "&format=text" : "");
-  fetch(url, { headers: { "Authorization": "Bearer " + C.supabaseAnonKey, "apikey": C.supabaseAnonKey, "x-api-key": p.key }, cache: "no-store", referrerPolicy: "no-referrer" })
+  function netMsg(e) { var t = String((e && e.message) || e); return /fetch|network|load/i.test(t) ? "مشكلة في الاتصال بالسيرفر — جرّب تاني." : esc(t); }
+
+  if (!p.edit) {
+    // ── report ──
+    m.textContent = "جاري تحميل التقرير…";
+    var url = API + "/report?client=" + encodeURIComponent(p.client) + "&period=" + encodeURIComponent(p.period) + (p.text ? "&format=text" : "");
+    fetch(url, { headers: HDR, cache: "no-store", referrerPolicy: "no-referrer" })
+      .then(function (r) {
+        return r.text().then(function (b) {
+          if (!r.ok) throw new Error(errText(r, b).t);
+          if (p.text) { var pre = document.createElement("pre"); pre.textContent = b; m.textContent = ""; m.appendChild(pre); }
+          else { document.open(); document.write(b); document.close(); }
+        });
+      })
+      .catch(function (e) { fail(netMsg(e)); });
+    return;
+  }
+
+  // ── edit: preview → card → (click) apply ──
+  document.title = "GADLYTICS · تأكيد تعديل";
+  m.textContent = "جاري تجهيز المعاينة… (مفيش حاجة بتتغير دلوقتي)";
+  var q = new URLSearchParams({ client: p.client, code: g("code"), field: g("field"), to: g("to") });
+  if (g("adset")) q.set("adset", g("adset"));
+  if (g("platform")) q.set("platform", g("platform"));
+  function linkWith(over) {
+    var n = new URLSearchParams(location.hash.replace(/^#/, "")); Object.keys(over).forEach(function (k) { n.set(k, over[k]); });
+    return location.pathname + location.search + "#" + n.toString();
+  }
+  function choices(j) {
+    var o = j.options || [], camp = j.choose === "campaign";
+    return '<ol class="opts">' + o.map(function (x) {
+      var href = camp ? linkWith({ code: x.id, platform: x.platform }) : linkWith({ adset: x.id });
+      var lab = camp ? (x.platform_ar + " · " + (x.code || "") + " · " + (x.name || x.id) + " · " + x.state_ar + (x.daily_budget != null ? " · " + x.daily_budget + " ر.س" : ""))
+        : ((x.name || x.id) + " · " + x.state_ar + (x.daily_budget != null ? " · ميزانية " + x.daily_budget + " ر.س" : "") + (x.bid_type ? " · " + x.bid_type + " " + (x.bid != null ? x.bid : "") : ""));
+      return '<li><a href="' + esc(href) + '">' + esc(lab) + '</a> <small class="ltr">' + esc(x.id) + '</small></li>';
+    }).join("") + "</ol>";
+  }
+  fetch(API + "/edit/preview?" + q.toString(), { headers: HDR, cache: "no-store", referrerPolicy: "no-referrer" })
     .then(function (r) {
       return r.text().then(function (b) {
         if (!r.ok) {
-          var msg = "";
-          try { var j = JSON.parse(b); msg = j.error_ar || j.message || ""; } catch (e) { msg = ""; }
-          if (r.status === 401) msg = msg || "المفتاح غلط أو اتلغى.";
-          if (r.status === 429) msg = msg || "طلبات كتير — استنى دقيقة.";
-          throw new Error("السيرفر رد بـ " + r.status + (msg ? " — " + msg : ""));
+          var e = errText(r, b);
+          if (e.j && e.j.options && e.j.options.length) {
+            m.innerHTML = '<div class="err" id="result"><b>محتاج تختار:</b> ' + esc(e.j.error_ar || "") + choices(e.j) + '<small>اختار واحد من دول (اللينك بيعرض المعاينة بس).</small></div>';
+            return;
+          }
+          throw new Error(e.t);
         }
-        if (p.text) {
-          var pre = document.createElement("pre"); pre.textContent = b; m.textContent = ""; m.appendChild(pre);
-        } else {
-          document.open(); document.write(b); document.close();
-        }
+        var d = JSON.parse(b);
+        if (d.no_change) { m.innerHTML = '<div class="res cancel" id="result">' + esc(d.message_ar) + "</div>"; return; }
+        card(d);
       });
     })
-    .catch(function (e) {
-      var t = String((e && e.message) || e);
-      fail(/fetch|network|load/i.test(t) ? "مشكلة في الاتصال بالسيرفر — جرّب تاني." : t.replace(/[<>&]/g, ""));
-    });
+    .catch(function (e) { fail(netMsg(e), true); });
+
+  function card(d) {
+    var where = d.level === "adset" ? "Ad Set: <bdi>" + esc(d.adset && d.adset.name || d.object_id) + "</bdi>" : "الحملة نفسها" + (d.campaign.budget_mode ? " (" + esc(d.campaign.budget_mode) + ")" : "");
+    var notes = [d.only_this_field_ar, d.platform_amount && (d.platform_amount.note_ar + ": " + d.platform_amount.value + " $"), d.note_ar].filter(Boolean);
+    m.innerHTML = '<div class="card"><h1>تأكيد تعديل</h1>' +
+      '<div class="row"><b>الحملة</b><span><span class="ltr">' + esc(d.campaign.code) + "</span><br><small><bdi>" + esc(d.campaign.name || "") + "</bdi></small></span></div>" +
+      '<div class="row"><b>المنصة</b><span>' + esc(d.platform_ar) + "</span></div>" +
+      '<div class="row"><b>على</b><span>' + where + "</span></div>" +
+      '<div class="row"><b>الحالة دلوقتي</b><span>' + esc(d.state_ar) + "</span></div>" +
+      '<div class="chg">' + esc(d.field_ar) + ": " + esc(d.from_text_ar) + '<span class="ar">←</span>' + esc(d.to_text_ar) + "</div>" +
+      notes.map(function (n) { return '<p class="note">' + esc(n) + "</p>"; }).join("") +
+      '<p class="note">التأكيد صالح لحد ' + esc(d.expires_at || "") + " (10 دقايق).</p>" +
+      '<div class="btns"><button id="ok" type="button">تأكيد التعديل</button><button id="no" type="button">إلغاء</button></div>' +
+      '<div id="out"></div></div>';
+    var tok = d.confirm_token, ok = document.getElementById("ok"), no = document.getElementById("no"), out = document.getElementById("out"), busy = false;
+    function show(cls, html) { out.innerHTML = '<div class="res ' + cls + '" id="result">' + html + "</div>"; }
+    no.onclick = function () { if (busy) return; tok = null; ok.disabled = no.disabled = true; show("cancel", "اتلغى — مفيش حاجة اتغيرت."); };
+    ok.onclick = function () {
+      if (busy || !tok) return; busy = true; ok.disabled = no.disabled = true; ok.textContent = "جاري التنفيذ…";
+      var t = tok; tok = null;
+      fetch(API + "/edit/apply", { method: "POST", headers: Object.assign({ "content-type": "application/json" }, HDR), body: JSON.stringify({ confirm_token: t }), cache: "no-store", referrerPolicy: "no-referrer" })
+        .then(function (r) {
+          return r.text().then(function (b) {
+            ok.textContent = "تأكيد التعديل";
+            if (!r.ok) { show("failed", "مااتنفذش ✗ — " + esc(errText(r, b).t)); return; }
+            var x = JSON.parse(b), cls = x.result === "applied" ? "applied" : x.result === "pending" ? "pending" : x.result === "no_change" ? "cancel" : "failed";
+            show(cls, esc(x.message_ar) + (x.undo_ar ? '<br><small>' + esc(x.undo_ar) + "</small>" : ""));
+          });
+        })
+        .catch(function (e) { ok.textContent = "تأكيد التعديل"; show("failed", "مش متأكد إذا اتنفذ (" + netMsg(e) + ") — افتح «أداء الحملات» أو التقرير وشوف سجل التعديلات قبل ما تعيد."); });
+    };
+  }
 })();
 </script>
 </body>
