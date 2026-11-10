@@ -36,6 +36,18 @@ The site **only displays data**. It never writes to or changes an ad account. Al
 17. [FAQ](#17-faq)
 18. [Glossary](#18-glossary)
 19. [Look and feel (November 2026)](#19-look-and-feel-november-2026)
+20. [Media-buyer tools (November 2026)](#20-media-buyer-tools-november-2026)
+21. [Second client: ديمان](#21-second-client-ديمان--app--salla-store-november-2026)
+22. [أداء الحملات — campaign performance, fast edits, «تحديث الأرقام»](#22-أداء-الحملات--campaign-performance-november-2026)
+23. [Phone / iPad app](#23-التطبيق-على-الموبايل--الآيباد-november-2026)
+24. [Sidebar order](#24-sidebar-order-nov-10-2026-mahmouds-order--desktop-sidebar-and-the-phoneipad-menu-sheet-use-the-same-list)
+25. [ROAS verdicts + push notifications](#25-roas-verdicts-per-client--phone-notifications-nov-10-2026)
+26. [Bulk edit, undo, spend pace, change log, alerts history](#26-أداء-الحملات--bulk-edit-undo-spend-pace-change-log-alerts-history-nov-10-2026)
+27. [Mac = iPad layout](#27-أداء-الحملات-on-the-mac--the-ipad-layout-nov-10-2026)
+28. [Server alerts engine (`camp-alerts`)](#28-server-alerts-engine-camp-alerts-nov-10-2026)
+29. [Connections, tokens, scheduled tasks — status and renewals](#29-connections-tokens-scheduled-tasks--status-and-renewals-nov-10-2026)
+30. [Rules learned the hard way](#30-rules-learned-the-hard-way-nov-8-10-2026)
+31. [Changelog](#31-changelog)
 
 ---
 
@@ -1033,9 +1045,9 @@ GADLYTICS works as an app on Mahmoud's iPhone and iPad (a home-screen web app �
 **Install (once per device):** open https://mahmoudgadmediabuyer.github.io/gadlytics/ in **Safari** → sign in → tap **Share** ⬆️ → **Add to Home Screen** → Add. The GADLYTICS icon appears with the other apps.
 
 **What the app looks like** (only on screens ≤ 1180 px and only on «أداء الحملات»; desktop is unchanged):
-- Phone (≤ 760 px) — Nov 9 polish: one-row nav bar (menu · «أداء الحملات» with «آخر تحديث HH:MM» under it · refresh icon that spins · client pill); date segmented control (النهارده / امبارح / 7 أيام / 30 يوم / مخصص — «مخصص» shows one chip «13–19 أكتوبر» that opens a date sheet); platform tabs + «فلاتر» sheet. KPIs = one swipeable strip of 4 small cards (spend, revenue, ROAS, cost/donation, ▲▼) + one summary line (campaigns on/off · donations · current budget); «مفيش صرف على Meta النهارده» instead of empty tiles. Campaign list: sort menu (الصرف / ROAS / تكلفة التبرع / الاسم) and code search; each row = state dot, code, switch, spend · ROAS · CPA with ▲▼, verdict chip, and a **budget chip «الميزانية 350 ر.س ✎»** that opens the edit sheet right from the list (ABO campaigns show «ABO · الميزانية على الـ Ad sets»; ad-set rows carry their own budget chip for ABO and a bid chip — Cost cap / Target CPA / Target cost). Tap → campaign screen → ad set screen with a slide animation (reduced-motion respected); back button, browser back, or a swipe from the screen edge goes back with the scroll position kept. Default period «النهارده»; period, platform and sort are remembered per device (`localStorage gad.ma`); the client was already remembered (`gad.ws`). Switches flip immediately with a spinner and revert with a red toast if the platform refuses.
-- 761–819 px: same navigation as the phone with bigger type, 4 KPI cards in one row, filters on one line.
-- iPad ≥ 820 px (portrait 820/1024 and landscape 1180): two panes — 380 px campaign list (RTL: on the right) + a detail pane that scrolls on its own; KPI row of 4 compact cards + summary line; filters on one line.
+- Phone (≤ 760 px) — Nov 9 polish: one-row nav bar (menu · «أداء الحملات» with «آخر تحديث HH:MM» under it · refresh icon that spins · client pill); date segmented control (النهارده / امبارح / يوم / 7 أيام / 30 يوم / فترة — since Nov 10 «يوم» picks any single day and «فترة» any from–to range, each opens a date sheet and then shows one chip such as «13–19 أكتوبر»; the old «مخصص» button is gone); platform tabs + «فلاتر» sheet. KPIs (Nov 10, Mahmoud's order) = **8 tiles**: الصرف · التبرعات · الإيراد · ROAS · عدد الحملات (with «N شغالة · N موقفة») · إجمالي الميزانية (active campaigns) · متوسط التبرع · تكلفة التبرع, each with ▲▼ vs the comparison period (ديمان reads الطلبات / متوسط الطلب / تكلفة الطلب); 2 columns × 4 rows on the phone (`cpKpis(m)` builds the list for every layout); «مفيش صرف على Meta النهارده» instead of empty tiles. Campaign list: sort menu (الصرف / ROAS / تكلفة التبرع / الاسم) and code search; each row = state dot, code, switch, spend · ROAS · CPA with ▲▼, verdict chip, and a **budget chip «الميزانية 350 ر.س ✎»** that opens the edit sheet right from the list (ABO campaigns show «ABO · الميزانية على الـ Ad sets»; ad-set rows carry their own budget chip for ABO and a bid chip — Cost cap / Target CPA / Target cost). Tap → campaign screen → ad set screen with a slide animation (reduced-motion respected); back button, browser back, or a swipe from the screen edge goes back with the scroll position kept. Default period «النهارده»; period, platform and sort are remembered per device (`localStorage gad.ma`); the client was already remembered (`gad.ws`). Switches flip immediately with a spinner and revert with a red toast if the platform refuses.
+- 761–819 px: same navigation as the phone with bigger type, 8 KPI tiles 4×2, filters on one line.
+- iPad ≥ 820 px (portrait 820/1024 and landscape 1180): two panes — 380 px campaign list (RTL: on the right) + a detail pane that scrolls on its own; 8 KPI tiles 4×2; filters on one line.
 - Edits open a bottom sheet: current value, numeric keypad, quick chips −20% / −10% / +10% / +20%, big «تطبيق على المنصة». On/off asks for confirmation in a sheet. Both use the same `campchg` + `camp-apply` path as desktop (Snap/Meta in seconds, TikTok queued). No upper budget limit.
 - «تحديث الأرقام» = the refresh icon in the top bar (no bottom bar any more, so nothing is covered) + pull-to-refresh at the top of the list (`camp-refresh` today-only + Khzama/conv request).
 - Code: `cpModel()` is the shared data model (desktop `renderCampPerf` and the app `renderCampApp` both use it); app mode = `html.ma-on` when `S.view==="campperf"` and `(max-width:1180px)`; styles under `.ma` (8-pt spacing, type scale 28/20/17/15/13 phone, 34/22/17/16/13 tablet). Icons in `icons/`, manifest `manifest.webmanifest`.
@@ -1059,8 +1071,8 @@ Also fixed while building this: `camp_struct` (2,450 rows for ملبي) was read
 
 ## 25) ROAS verdicts per client + phone notifications (Nov 10 2026)
 - **Verdicts, 4 levels, per client** (لوحة التحكم ← العملاء ← تعديل: «ROAS الإنذار» · «أقل ROAS مقبول» · «ROAS الكويس»). ملبي: ≥ 2.8 «زوّد» (green) · 2.1–2.8 «كويس» (teal) · 2.0–2.1 «راقب» (amber) · < 2.0 «إنذار» (red); «لسه بدري» for low data. Stored as `roasAlarm / roasMin / roasGood` on the client in `config/app`. A client without them (ديمان) shows no verdicts and a hint where to set them.
-- **Push notifications** (iPhone/iPad installed app on iOS 16.4+, and Chrome on the Mac): menu ← الإعدادات ← «التنبيهات» → «فعّل التنبيهات» (needs a tap; on iPhone only from the home-screen app) → «جرّب تنبيه». `sw.js` handles only `push` + `notificationclick` — no fetch handler, no caching, so the app always loads the latest build. Edge function `push` (source `supabase/functions/push/index.ts`): VAPID keys generated once and kept in `app_secrets` (never printed), RFC 8291 encryption with WebCrypto, actions vapid / subscribe / unsubscribe / prefs / mine / test, plus a server-only `send` (x-ingest-key). Subscriptions in `push_subs` (row security: each user sees only their own). Per-device settings in the same sheet: delivery hours (default 8–24), quiet hours, alert types on/off, daily summary time, silent. Sound can't be customised for web push on iOS — set it in iPhone Settings ← Notifications ← GADLYTICS.
-- Tables added: `camp_hourly` (intraday spend snapshots for «نفس الساعة امبارح»), `push_subs`, `alerts_sent`. The alert rules + 15-minute cron (`camp-alerts`) come next; bulk edit / undo / intraday stats / per-campaign log are in §26.
+- **Push notifications** (iPhone/iPad installed app on iOS 16.4+, and Chrome on the Mac): the bell 🔔 in the menu sheet's account row (or الإعدادات ← «التنبيهات») opens the **التنبيهات screen** (view `push`, `renderPushPage` — a full screen since Nov 10, not a sheet, see §28) → «تعديل» → «فعّل التنبيهات» (needs a tap; on iPhone only from the home-screen app) → «جرّب تنبيه». `sw.js` handles only `push` + `notificationclick` — no fetch handler, no caching, so the app always loads the latest build. Edge function `push` (source `supabase/functions/push/index.ts`): VAPID keys generated once and kept in `app_secrets` (never printed), RFC 8291 encryption with WebCrypto, actions vapid / subscribe / unsubscribe / prefs / mine / test, plus a server-only `send` (x-ingest-key). Subscriptions in `push_subs` (row security: each user sees only their own). Per-device settings under «تعديل» on the same screen: delivery hours (default 8–24), quiet hours, alert types on/off, daily summary time, silent. Sound can't be customised for web push on iOS — set it in iPhone Settings ← Notifications ← GADLYTICS.
+- Tables added: `camp_hourly` (intraday spend snapshots for «نفس الساعة امبارح»), `push_subs`, `alerts_sent`. The alert rules run on the server in `camp-alerts`, every 5 minutes (deployed Nov 10 — §28); bulk edit / undo / intraday stats / per-campaign log are in §26.
 
 ## 26) أداء الحملات — bulk edit, undo, spend pace, change log, alerts history (Nov 10 2026)
 Where each button is:
@@ -1093,9 +1105,116 @@ Where each button is:
   - each row also shows the delivery status on *this* device: `deliveries[].ep` = first 16 hex of SHA-256 of the push endpoint, matched in the browser.
   - tapping a row opens that client + campaign in «أداء الحملات» (`CP.focus` → `cpFocusApply`): the campaign screen on phone/iPad, the row expanded and highlighted on desktop. A «media» row opens مكتبة الكريتيف.
   - test pushes are logged too.
-- **Notifications screen layout (Mahmoud's choice)**: «سجل التنبيهات» comes first; «تعديل» opens the settings inline (enable / test / turn off, delivery hours, quiet hours, alert types, silent, save). Only four alert types are shown: roas «إنذار ROAS أقل من 2 (لكل حملة وللإجمالي)» (limit per client = `roasAlarm`), spike «زيادة مفاجئة في الصرف» (`spikePct` 40 %, `spikeMin` 150 SAR), norev «صرف من غير إيراد» (`norevWin` 15/30 min, `norevMin` 200 SAR) and media «ميديا جديدة على Airtable». cpa / bud / stale / dailySummary / meta are saved as off and hidden. Thresholds live in `push_subs.prefs` until the alerts engine defines its own storage. The `push` function / `alerts_sent` schema / `camp-alerts` cron are owned by the server-side alerts work.
+- **Notifications screen layout (Mahmoud's choice)**: «سجل التنبيهات» comes first; «تعديل» opens the settings inline (enable / test / turn off, delivery hours, quiet hours, alert types, silent, save). Only four alert types are shown: roas «إنذار ROAS أقل من 2 (لكل حملة وللإجمالي)» (limit per client = `roasAlarm`), spike «زيادة مفاجئة في الصرف» (`spikePct` 40 %, `spikeMin` 150 SAR), norev «صرف من غير إيراد» (`norevWin` 15/30 min, `norevMin` 200 SAR) and media «ميديا جديدة على Airtable». cpa / bud / stale / dailySummary / meta are saved as off and hidden. ⚠️ The threshold boxes on this screen (`spikePct`, `spikeMin`, `norevWin`, `norevMin`) are saved per device in `push_subs.prefs`, but the server engine does **not** read them: its thresholds come from the `config/alerts` row in `docs` (§28). What the device prefs do control: each rule on/off, delivery hours, quiet hours and silent (applied by `push` when it sends). To change a threshold today, edit `config/alerts` (ask Claude: «غيّر حد الصرف المفاجئ لـ 50%»).
 
 ## 27) «أداء الحملات» on the Mac = the iPad layout (Nov 10 2026)
 - On screens wider than 1180 px, «أداء الحملات» now renders the same two-pane app layout as the iPad (campaign list on one side, the tapped campaign's detail beside it with budget edit, «سرعة الصرف والتقييم الكامل» and «سجل التعديلات» inline, ad sets, toggles, verdicts; 8 KPI tiles; period control incl. «يوم»; platform tabs, فلاتر, ترتيب, بحث, «تعديل جماعي», page-level «سجل التعديلات») inside the normal desktop shell (sidebar + header stay). `html.ma-desk` + `ma-on`; the app's ☰ and client pill are hidden (the desktop header has them); edit sheets show as centred dialogs.
 - A «تفاصيل | جدول» switch (top of the page) brings back the old desktop table; the choice is remembered per browser (`localStorage gad.cpView`, default تفاصيل).
-- Sizes: list pane clamp(400px, 30vw, 460px), detail pane flexible, max width 1600 px; KPI tiles 4×2 below 1500 px and 8 in one row from 1500 px. Checked at 1280 / 1440 / 1920 (no horizontal scroll); 820 and 390 unchanged.
+- Sizes (final, Nov 10 — Mahmoud asked to use the empty space and widen the list): no max width (`html.ma-desk .ma{max-width:none;margin:0}`), so the page fills the whole content area beside the sidebar; list pane `clamp(520px, 42%, 820px)`, detail pane `minmax(0,1fr)`, gap 24 px. Bigger text in the list: campaign name 19 px, the four numbers 21 px, their labels 13.5 px. KPI tiles 4×2 below 1500 px, 8 in one row from 1500 px. Checked at 1280 / 1440 / 1920 (no horizontal scroll); 820 and 390 unchanged.
+- Opening the Mac layout is automatic (> 1180 px wide and «تفاصيل» selected); nothing to install.
+
+## 28) Server alerts engine (`camp-alerts`, Nov 10 2026)
+Mahmoud picked **four alerts only** (everything else is off and hidden):
+
+| Key | Shown as | Fires when (defaults) | Scope | Repeats |
+|---|---|---|---|---|
+| `roas` | «إنذار ROAS · MG-…» / «إنذار ROAS الإجمالي · ملبي» | ROAS < the client's alarm level (ملبي `roasAlarm` = **2.0**, from لوحة التحكم ← العملاء) once spend ≥ 300 SAR (`minSpend`) | every campaign code on its own **and** the client total (`total:true`) | again only if ROAS drops another 15 % (≤ 0.85× the worst already sent) |
+| `spike` | «صرف مفاجئ · MG-… (ميتا)» | spend in the last 15 min (`windowMin`) is ≥ 150 SAR (`minSar`) **and** more than 40 % (`pct`) above both the same 15 min yesterday and today's average 15-min pace (each base used only when it exists; today's pace needs ≥ 1 h of data) | per campaign | 60-min cooldown, or sooner if the rate is ≥ 1.2× and ≥ 1 SAR higher than the last one sent |
+| `norev` | «صرف من غير تبرعات · ملبي» / «… · MG-…» | ≥ 200 SAR spent in the last 15 min (`windowMin`, 15 or 30) with **zero** new Khzama revenue; checked for the client total first, then up to 3 campaigns (`campaigns:true`, `campMinSar` 200) | client total, then campaigns | 60-min cooldown |
+| `media` | «ميديا جديدة على Airtable» | new rows in `media` since the watermark `sys_kv.media_wm`; `media-sync` is called every 15 min (`everyMin`) first | one grouped push per run | never (watermark moves forward after a send/hold) |
+| `meta` | «توكن ميتا هيخلص بعد N يوم» | META_TOKEN invalid or < 7 days left | — | **off** (`on:false`) unless switched on |
+
+**How a run works** (source `supabase/functions/camp-alerts/index.ts`, deployed v1):
+1. pg_cron job **`gad-camp-alerts`**, schedule `*/5 5-20 * * *` UTC = every 5 minutes from 08:00 to 23:55 Riyadh, does `net.http_post` to the function with the project's **public anon key** (the same key `config.js` ships) — no secret is stored in SQL. The gateway JWT check stays on.
+2. Self-throttle: one real run per 4 minutes (`sys_kv.alerts_last`, epoch ms). Extra calls return immediately, so a double trigger is harmless.
+3. Calls `camp-refresh` (server-to-server, service-role key that never leaves Supabase) → today's Meta + Snap spend, which also writes `camp_hourly`.
+4. Writes fine snapshots to **`alert_snap`** (`client_id, scope, key, at, acct, code, spend, rev, don`; scope `acct` = an ad-account pull mark, `camp` = cumulative spend of a campaign at that pull, `rev` = Khzama cumulative revenue at each Khzama pull, key `_total` for the client). Upsert on `client_id,scope,key,at` (duplicates ignored). Pruned to 3 days.
+5. Evaluates the rules above. Spend at time t = the latest pull of each ad account at or before t (≤ 12 min tolerance); if any spending account has no pull near t the rule is skipped (never guessed). A campaign missing from a pull counts as 0 spend so far.
+6. **Revenue = Khzama only** (`khzama_link_daily`), never platform purchases. `roas` is skipped if Khzama is older than 180 min (`maxKzAgeMin`); `norev` is skipped unless Khzama was updated within the window. ديمان has no Khzama, so its `roas`/`norev` are skipped («no Khzama for this client»).
+7. De-duplication against today's `alerts_sent` (see "Repeats" column). An alert that was **held** (quiet hours / outside delivery hours / rule off on every device) is retried at most hourly while still true.
+8. Sends through the **`push`** function (`action:"send"`, `to:"all"`, tag = rule + campaign) and logs every alert in **`alerts_sent`** (`id, client_id, rule, obj, day, level, title, body, url, sent_at, campaign, platform, kind, status, deliveries jsonb, user_id, metric`). The push function applies each device's own prefs through `holdReason()` — rule off, outside delivery hours (default 8–24), quiet hours, silent — and records per-device deliveries (`ep` = first 16 hex of SHA-256 of the endpoint).
+
+**Thresholds** live in `docs` row **`config/alerts`**: `{defaults:{rule:{…}}, clients:{<client_id>:{rule:{…}}}}` merged over the built-in defaults:
+```
+roas:  {on:true, alarm:0 (→ client roasAlarm or 2.0), minSpend:300, cpaMult:2, total:true, maxKzAgeMin:180}
+spike: {on:true, pct:40, minSar:150, windowMin:15 (5–60), cooldownMin:60}
+norev: {on:true, minSar:200, windowMin:15 (15 or 30), campaigns:true, campMinSar:200, cooldownMin:60}
+media: {on:true, everyMin:15}
+meta:  {on:false, days:7}
+```
+Current row: the defaults above with `roas.alarm: 2`; overrides for `3sa3k1k` (ملبي) and `dm1n4an` (ديمان) are empty. Remember the ⚠️ in §26: the threshold boxes on the التنبيهات screen are per-device prefs the engine doesn't read yet.
+
+**Manual run / test** (signed-in or admin): POST `camp-alerts` with `{dry:true}` → evaluate only, no refresh / snapshot / send, and the reply lists every candidate alert with its `skip` reason and an `ev` note per rule; `{force:true}` ignores the throttle and hours; `{only:["spike"]}` runs one rule. A test push from the screen («جرّب تنبيه») goes through `push` `action:"test"` and is logged as kind `test`.
+
+**Status on Nov 10 2026:** the cron runs and succeeds every 5 minutes (last checked 14:40 Riyadh). `alerts_sent` holds 6 rows, all tests (5 sent, 1 failed on a stale subscription); `alert_snap` is still empty because neither client has spent since Oct 19 — the first real `spike`/`norev`/`roas` alerts will appear on the first day with spend. 2 active device subscriptions, both from Nov 10: an iPhone (iOS 18.7) and a Safari "Macintosh" device (the Mac's Safari or the iPad — iPadOS Safari reports itself as Macintosh).
+
+**Open question — live revenue for `norev`/`roas`.** Khzama has no API (confirmed by Mahmoud), so "live" revenue is only as fresh as the last Khzama pull by the scheduled task. Two options are on the table, not chosen yet: (1) Mixpanel site-wide donations for the client-total `norev` only (needs a Mixpanel Service Account; per-campaign UTM attribution is unreliable — 58 % of donations lose `utm_source`); (2) the server uses a Khzama session token (needs consent; the token expires).
+
+**Notifications screen (view `push`) — what's where:**
+- Opened from the 🔔 in the menu sheet's account row (phone/iPad/Mac app layouts) or الإعدادات ← «التنبيهات». It is a full screen (it used to be a sheet; on iOS a ghost tap closed the sheet the moment it opened).
+- Top: «سجل التنبيهات» (§26). Button «تعديل» opens the settings inline: «فعّل التنبيهات» / «جرّب تنبيه» / «وقّف التنبيهات», delivery hours from/to, quiet hours, the four alert types, silent, «حفظ».
+- Bottom: a small diagnostics line `pushDiag()` — `build <id> · app yes/no · push yes/no · perm granted/denied/default · iOS yes/no`. Use it when "notifications don't work": `app no` on iOS = opened in Safari, not from the home-screen icon; `perm denied` = blocked in iPhone Settings ← Notifications ← GADLYTICS; `push no` = browser without Push API.
+- iPhone/iPad setup: iOS 16.4+, install from Safari (Share ⬆️ ← Add to Home Screen), open GADLYTICS **from the icon**, التنبيهات ← تعديل ← «فعّل التنبيهات» ← Allow, then «جرّب تنبيه». The sound can't be chosen for web push; iOS uses the default sound (Settings ← Notifications ← GADLYTICS for banners/sounds/badges).
+
+## 29) Connections, tokens, scheduled tasks — status and renewals (Nov 10 2026)
+**Edge functions** (project `ibpwudzjwjraqhfdmzet`; sources in `supabase/functions/` except `ingest` (holds a server key) and `media-sync` (holds the board's private Airtable share link) — both kept out of the public repo):
+
+| Function | Version | What it does | Called by |
+|---|---|---|---|
+| `camp-apply` | v3 | change ONE field (budget, bid, on/off) on Meta (Graph v21) / Snap (USD account `961fd033-…` budgets ×3.75 SAR↔USD) / TikTok (detects Smart+), read it back, update `camp_struct`, log to `changes/*`. No budget cap. `not_configured` → the request stays ⏳ for the scheduled task | the page (signed-in users only) |
+| `camp-refresh` | v5 | today-only spend (midnight Riyadh → now, per account timezone), `ad_daily` upsert on `client_id,date,platform,level,account_id,ad_id,video_id`, `camp_struct` (paused-parent rule: a child of a paused campaign shows paused), `camp_hourly` 15-min buckets; queues `sys/campreq` with `parts` khzama / conv | the page («تحديث الأرقام»), `camp-alerts`; admin path with `x-ingest-key` checked against a SHA-256 hash (`INGEST_SHA`) |
+| `push` | v5 | Web Push (VAPID keys `VAPID_PUBLIC` / `VAPID_PRIVATE_JWK` in `app_secrets`, RFC 8291 encryption); actions vapid / subscribe / unsubscribe / prefs / mine / test + server `send`; `holdReason` (rule off / outside hours / quiet hours; `force` skips) | the page, `camp-alerts` |
+| `camp-alerts` | v1 | §28 | pg_cron every 5 min |
+| `media-sync` | v1 | Airtable → `media` | `camp-alerts` (every 15 min), the page |
+| `ai` | v1 | the AI assistant | the page |
+| `ingest` | v11 | the Mac's write path for the daily pull; allowed tables include `app_secrets` (by `name`), `camp_struct`, `conv_daily` | scripts in `~/.gadlytics` |
+
+**Platform tokens** (all in `app_secrets`, row security on with no policies → only edge functions read them; scripts never print a secret and the site never sees one):
+
+| Platform | Fast path | Token | Renew |
+|---|---|---|---|
+| Snapchat | ✅ since Nov 8 | `SNAP_CLIENT_ID` / `SNAP_CLIENT_SECRET` / `SNAP_REFRESH_TOKEN` (Snap Marketing API OAuth app); access token cached in `sys_kv.snap_access` | refresh token is long-lived; re-run `python3 ~/.gadlytics/push_snap_secrets.py` only if Snap revokes it |
+| Meta | ✅ since Nov 9 | `META_TOKEN` — 60-day user token from Mahmoud's own developer app «ADS» (he is not Business admin, so no system user) | **before Jan 7 2027**: Graph API Explorer → app ADS → permissions `ads_management` + `ads_read` → Generate Access Token → Access Token Debugger → «Extend Access Token» → copy the green token → in Terminal `python3 ~/.gadlytics/push_meta_token.py` (reads the clipboard, or asks with hidden input; checks `act_312559678073897`; empties the clipboard). The token was pasted in chat once on Nov 9 → rotating it early is recommended |
+| TikTok | ⏳ waiting | `TIKTOK_TOKEN` — needs the Marketing API app «GADLYTICS» (created Nov 9, waiting for TikTok's approval) + Admin/Operator on the advertisers | after approval: open the app's Advertiser authorization URL → pick the Molabi/Deiman accounts → Confirm → copy `auth_code` from the address bar (valid ~1 h, once) → `python3 ~/.gadlytics/push_tiktok_token.py <App ID> <Secret> <auth_code>`. Until then TikTok edits stay ⏳ for the scheduled task and TikTok spend comes from the daily pull |
+
+**Scheduled tasks (Claude desktop app, on the Mac):**
+
+| Task | Schedule (Riyadh) | Job |
+|---|---|---|
+| `gadlytics-daily-pull` | 08:30 daily | full pull for ملبي + ديمان; catches up missed days |
+| `gadlytics-camp-requests` | every minute 08–23 | applies ⏳ `campchg/*` requests that `camp-apply` can't (TikTok). Proposed to slow to every 15 min or hourly — waiting for Mahmoud |
+| `gadlytics-camp-refresh` | every 2 min 08–23 | handles `sys/campreq` `parts` (Khzama for ملبي, AppsFlyer + Salla for ديمان) |
+| `gadlytics-snapshots` | — | disabled |
+
+These tasks stop on a permission prompt when they hit a tool they haven't been allowed yet — open the task in the app and press **Run now** once, approve, and later runs go through.
+
+**Waiting on Mahmoud:** live-revenue source (§28), Khzama bookmarklet vs scheduled task, `camp-requests` frequency, ROAS levels for ديمان, Meta token rotation, Run now on the scheduled tasks, TikTok app approval.
+
+## 30) Rules learned the hard way (Nov 8–10 2026)
+- **Never let an edit change anything but the requested field.** The Meta MCP `ads_update_entity` with draft mode off **force-pauses** entities that were configured ACTIVE; re-activating "paused" ones once turned on campaigns that should have stayed off (re-paused within minutes, 0 spend). Rule: read `status` first and re-activate only what was ACTIVE before. `camp-apply` calls the Graph API directly and does not force-pause — tested: MG-01741 stayed PAUSED.
+- **Testing edits:** only on paused objects, and restore the original value (Snap 300→301→300, Meta 105→100→105).
+- **No budget cap**, ever (season budgets up to 1,000,000 SAR/day per campaign). The page and `camp-apply` never question the size.
+- **Numbers:** spend from the platforms; donations and revenue from Khzama only; platform purchases are never shown; nothing is split by estimate.
+- **Paging must be ordered.** Unordered 1,000-row pages of `camp_struct` returned overlapping/missing rows → random missing statuses. Every paged query has a stable `.order(...)`.
+- **iOS ghost tap:** a sheet opened by a tap received the same tap on its backdrop and closed instantly. Guard: `window.__shAt` is stamped when a sheet opens and `ACT.maClose` / `ACT.mbg` ignore backdrop taps for 600 ms; the menu sheet's links (`.ma-menu [data-a="go"]`, `.ma-acct [data-a="go"]`, `.ma-acct [data-a="profEdit"]`) close the sheet in a capture listener before navigating. The 🔔 in the account row first pointed at «لوحتي»; fixed (Nov 10, build 20261110102900) to open the التنبيهات screen.
+- **Every feature ships with phone (≤ 760), iPad (761–1180) and Mac (> 1180) layouts** and is tested at 390×844, 430×932, 375×667, 820×1180, 1024×1366, 1180×820, 1280, 1440, 1920. Same link on all devices; updates arrive by the build-id check, never by a cache.
+- **GitHub web upload silently drops files** if «Commit changes» is pressed before the upload finishes. Wait until `.js-upload-progress` is hidden **and** `form.js-manifest-commit-form input[name=manifest_id]` has a value, then set `input[name=message]` (dispatch `input`) and click that form's own «Commit changes». Use the Chrome profile signed in to GitHub (other profiles show «Uploads are disabled»). Verify every file afterwards by comparing `git hash-object <file>` with the blob SHA from `api.github.com/repos/mahmoudGadMediaBuyer/gadlytics/git/trees/main?recursive=1`.
+- **Tab suspender** extensions freeze background tabs mid-upload; keep the upload tab in front.
+- **Several tasks at once:** when Mahmoud asks for several things together, they all run in the background in parallel; the chat continues on one of them.
+
+## 31) Changelog
+| Date (2026) | Change |
+|---|---|
+| Nov 8 | `camp-apply` v1–v2: fast edits from the page; Snapchat connected (300→301→300 in 8.6 s / 5.4 s). `app_secrets` + `ingest` path for tokens. |
+| Nov 8 | Budget cap removed everywhere (up to 1,000,000 SAR/day). |
+| Nov 9 | Meta connected (`META_TOKEN`, 60 days, renew before Jan 7 2027); `camp-apply` v3. TikTok Marketing API app «GADLYTICS» created — waiting for approval; `push_tiktok_token.py` ready. |
+| Nov 9 | «تحديث الأرقام» → `camp-refresh`: today only, ~6–10 s, `ad_daily` + `camp_struct`; Khzama / AppsFlyer + Salla via `sys/campreq` parts. Matched the daily pull exactly on test days. |
+| Nov 9 | Phone/iPad home-screen app (manifest, icons, safe areas, no caching service worker, build-id auto-update); same link as desktop. Budget chip on every row; edit sheets with keypad and ±10/20 % chips; pull-to-refresh. `camp_struct` paging fixed with `.order()`. |
+| Nov 10 | Row metrics الصرف · التبرعات · الإيراد · ROAS under every campaign/ad set/ad. 8 KPI tiles. Period control النهارده / امبارح / يوم / 7 أيام / 30 يوم / فترة. iPhone notch / safe-area fixes. App shell (`ap-on`) for every screen on phone/iPad. |
+| Nov 10 | Sidebar regrouped (شغلي · الإدارة والتحليل · المتابعة · أدوات إضافية · الفريق), same list in the phone/iPad menu. |
+| Nov 10 | ROAS verdicts, 4 levels per client (ملبي 2.0 / 2.1 / 2.8). |
+| Nov 10 | Bulk edit, undo («تراجع» toast + «رجّع» in the log), spend pace + full period stats, change logs inline in أداء الحملات (page-wide and per campaign). `camp-refresh` v4–v5 writes `camp_hourly`. |
+| Nov 10 | Push notifications: `sw.js` (push + notificationclick only), `push` v1–v5, `push_subs`, `alerts_sent`; التنبيهات became a full screen with «سجل التنبيهات» first and «تعديل»; diagnostics line; ghost-tap guard; menu 🔔 hotfix. Enabled on Mahmoud's iPhone. |
+| Nov 10 | Alerts engine `camp-alerts` v1 + `alert_snap` + cron `gad-camp-alerts` (every 5 min, 08–24 Riyadh); four alerts only (roas · spike · norev · media); new-media alerts via `media-sync`. |
+| Nov 10 | Mac: «أداء الحملات» uses the iPad two-pane layout full width (list `clamp(520px,42%,820px)`, bigger text), «تفاصيل \| جدول» switch. |
+| Nov 10 | README §20–§31, skill (SKILL.md + runbooks) and repo sources (`supabase/functions/*`, `tools/build.py`) brought up to date. |
