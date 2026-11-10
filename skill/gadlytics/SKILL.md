@@ -65,3 +65,5 @@ Default = calm palette + soft charts. Skin picker: Settings → Display → «ش
 3. `pip3 install mlx-whisper numpy` (Apple Silicon). Model: `mlx-community/whisper-large-v3-turbo` (downloads on first use).
 4. Snap uploads need the Adlytics Snap OAuth app: `~/Desktop/claude/adlytics-connectors/snap/` + `~/.claude/secrets/snap.env` / `snap_token.json` (Mahmoud saves the secret himself with `scripts/save-secret.sh`).
 5. Connectors: Supabase, Meta Ads, TikTok for Business, Mixpanel, Canva, Claude in Chrome (GitHub upload + Khzama).
+
+App rows (Nov 10 2026): campaign/ad set/ad rows on phone/iPad show spend · donations · revenue · ROAS (4 equal columns, separators, delta under the number) — keep this order.
