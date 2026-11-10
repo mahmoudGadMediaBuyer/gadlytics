@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="gad-build" content="20261110085521">
+<meta name="gad-build" content="20261110090902">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -16,7 +16,7 @@
 <script>
 /* تحديث تلقائي للتطبيق على الموبايل/الآيباد: مفيش service worker ولا كاش. كل ما التطبيق يتفتح أو يرجع للواجهة
    بيجيب index.html جديد (no-store) ويقارن رقم البيلد؛ لو فيه نسخة أحدث بيفتحها على طول. */
-(function(){ var B="20261110085521", last=0;
+(function(){ var B="20261110090902", last=0;
   function busy(){ return document.querySelector("#cpIn:focus, .ma-sheet, input:focus, textarea:focus"); }
   function chk(){ var n=Date.now(); if(n-last<20000) return; last=n; if(busy()) return;
     fetch(location.pathname+"?_b="+n,{cache:"no-store"}).then(function(r){ return r.ok? r.text() : ""; }).then(function(t){
@@ -2812,7 +2812,7 @@ function secChangeLog(sec,ctx){
 let _tt;
 function toast(msg,bad){ const t=$("#toast"); t.textContent=msg; t.className="toast on"+(bad?" bad":"");
   clearTimeout(_tt); _tt=setTimeout(()=>{ t.className="toast"+(bad?" bad":""); },2600); }
-function modal(title,body,foot){
+function modal(title,body,foot){ window.__shAt=Date.now();
   $("#modalHost").innerHTML='<div class="modal-bg" data-a="mbg"><div class="modal">'+
     '<div class="card-h"><div style="font-size:15px;font-weight:600">'+esc(title)+"</div>"+
     '<button class="btn btn-s" data-a="mclose">إغلاق</button></div>'+body+
@@ -6120,7 +6120,7 @@ ACT.togKpi=t=>{ const k=kpiKeys().slice(), i=k.indexOf(t.dataset.id);
   i<0? k.push(t.dataset.id) : k.splice(i,1);
   S.cfg.settings.kpis=k.length?k:[t.dataset.id]; saveCfg(); render(); };
 ACT.mclose=closeModal;
-ACT.mbg=(t,e)=>{ if(e.target.classList.contains("modal-bg")) closeModal(); };
+ACT.mbg=(t,e)=>{ if(Date.now()-(window.__shAt||0)<600) return; if(e.target.classList.contains("modal-bg")) closeModal(); };
 
 /* — إدخال — */
 ACT.fillPrev=()=>{ const rf=currentRowFacts(); if(!rf.length) return;
@@ -13919,7 +13919,7 @@ async function pushReg(){ return navigator.serviceWorker.getRegistration("./").t
 async function pushState(){ const s={ok:pushOK(),perm:("Notification" in window)?Notification.permission:"unsupported",sub:null};
   if(s.ok){ try{ const r=await navigator.serviceWorker.getRegistration("./"); s.sub=r? await r.pushManager.getSubscription() : null; }catch(e){} } return s; }
 const pushKeyBytes=k=>{ const s=k.replace(/-/g,"+").replace(/_/g,"/"), p=s+"===".slice((s.length+3)%4); return Uint8Array.from(atob(p),c=>c.charCodeAt(0)); };
-ACT.pushOpen=()=>{ CP.sheet=null; cpPanelOpen({type:"push",st:null,prefs:null,busy:""}); pushLoad(); };
+ACT.pushOpen=()=>{ const was=!!CP.sheet; CP.sheet=null; window.__shK=null; if(was) render(); setTimeout(()=>{ window.__shAt=Date.now(); cpPanelOpen({type:"push",st:null,prefs:null,busy:""}); pushLoad(); }, was?320:0); };
 async function pushLoad(){ const p=CP.panel; if(!p||p.type!=="push") return; p.st=await pushState();
   if(p.st.sub){ try{ const q=await SUPA_DB.client.functions.invoke("push",{body:{action:"mine"}}); const me=(q.data&&q.data.subs||[]).find(x=>x.endpoint===p.st.sub.endpoint); p.prefs=Object.assign({},PUSH_DEF,me&&me.prefs||{}); p.rules=Object.assign({},PUSH_DEF.rules,(me&&me.prefs&&me.prefs.rules)||{}); p.last=me; }catch(e){} }
   if(!p.prefs){ p.prefs=Object.assign({},PUSH_DEF); p.rules=Object.assign({},PUSH_DEF.rules); }
@@ -14138,7 +14138,7 @@ function maSetDetail(m,c,s,pad){ const pl=c.pl, sst=s.st, mode=c.st&&c.st.budget
   if(s.loose.o||s.loose.r) rows.push(maRow({name:L("لينكات على المجموعة كلها","Links for the whole ad set"),v:s.loose,sub:L("الفيديو في أكتر من إعلان أو مش لاقيه","Video in several ads or not found")}));
   h+='<div class="ma-sec">'+esc(L("الإعلانات","Ads"))+' <small>'+all.length+"</small></div>"+(rows.length?'<div class="ma-list">'+rows.join("")+"</div>":'<div class="ma-empty">'+esc(L("مفيش إعلانات صرفت.","No ads spent."))+"</div>");
   return h+"</div>"; }
-function maSheet(){ const sh=CP.sheet; if(!sh) return ""; const C=CURR[S.cfg.settings.currency]||"";
+function maSheet(){ const sh=CP.sheet; if(!sh){ window.__shK=null; return ""; } if(window.__shK!==sh.kind){ window.__shK=sh.kind; window.__shAt=Date.now(); } const C=CURR[S.cfg.settings.currency]||"";
   let b="";
   if(sh.kind==="edit"){ const ttl=sh.f==="bid"? (sh.lb||L("المزايدة","Bid")) : L("الميزانية اليومية","Daily budget"), cur=sh.old===""?null:+sh.old;
     b='<div class="ma-sh-t">'+esc(ttl)+'</div><div class="ma-sh-s">'+esc(sh.n||"")+'</div>'+
@@ -14268,7 +14268,7 @@ ACT.maStf=t=>{ CP.stf=t.dataset.v||""; render(); };
 ACT.maCmp=t=>{ CP.cmp=t.dataset.v||"prev"; render(); };
 ACT.maFilt=()=>{ CP.sheet={kind:"filt"}; render(); };
 ACT.maMenu=()=>{ CP.sheet={kind:"menu"}; render(); };
-ACT.maClose=()=>{ CP.sheet=null; CP.edit=null; CP.panel=null; render(); };
+ACT.maClose=(t,e)=>{ if(t&&t.classList&&t.classList.contains("ma-shbg")&&Date.now()-(window.__shAt||0)<600) return; CP.sheet=null; CP.edit=null; CP.panel=null; render(); };
 ACT.maSwAsk=t=>{ const d=t.dataset; CP.sheet={kind:"sw",pl:d.pl,lvl:d.lvl,id:d.id,n:d.n,to:d.to}; render(); };
 ACT.maEditAsk=t=>{ const d=t.dataset; CP.sheet={kind:"edit",pl:d.pl,lvl:d.lvl,id:d.id,f:d.f,old:d.old,n:d.n,lb:d.lb}; render(); setTimeout(()=>{ const i=$("#cpIn"); if(i){ i.focus(); try{ i.select(); }catch(e){} } },60); };
 ACT.maPct=t=>{ const i=$("#cpIn"); if(!i) return; const b=+t.dataset.b, p=+t.dataset.p; i.value=Math.max(1,Math.round(b*(1+p/100))); };
