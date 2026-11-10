@@ -82,5 +82,5 @@ Bulk edit / undo / pace / log / alerts history (Nov 10 2026, README §26):
 - «سجل التنبيهات» on the push screen reads alerts_sent ordered by sent_at desc, 7 days at a time with «أقدم».
   - Each row shows its delivery on this device: deliveries[].ep = sha256(endpoint)[0..16].
   - Tap opens the client + campaign through `CP.focus`; kind "media" opens the library instead.
-- Rule toggles: cpa, bud, roas, spike, meta, stale, media, dailySummary.
+- Push screen: history first, «تعديل» opens the settings inline. Toggles roas / spike (spikePct, spikeMin) / norev (norevWin 15|30, norevMin) / media; cpa, bud, stale, dailySummary and meta are forced off.
 - The push function, the alerts_sent schema and the camp-alerts cron belong to the server-side alerts agent.
