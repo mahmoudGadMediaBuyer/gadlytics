@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="gad-build" content="20261110104748">
+<meta name="gad-build" content="20261110110502">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -16,7 +16,7 @@
 <script>
 /* تحديث تلقائي للتطبيق على الموبايل/الآيباد: مفيش service worker ولا كاش. كل ما التطبيق يتفتح أو يرجع للواجهة
    بيجيب index.html جديد (no-store) ويقارن رقم البيلد؛ لو فيه نسخة أحدث بيفتحها على طول. */
-(function(){ var B="20261110104748", last=0;
+(function(){ var B="20261110110502", last=0;
   function busy(){ return document.querySelector("#cpIn:focus, .ma-sheet, input:focus, textarea:focus"); }
   function chk(){ var n=Date.now(); if(n-last<20000) return; last=n; if(busy()) return;
     fetch(location.pathname+"?_b="+n,{cache:"no-store"}).then(function(r){ return r.ok? r.text() : ""; }).then(function(t){
@@ -675,9 +675,9 @@ select.xi{appearance:auto;cursor:pointer}
 </style>
 
 <style>/* ══ تطبيق الموبايل / الآيباد (html.ma-on بيتفعّل بس في «أداء الحملات» على شاشة ≤1180px) — الديسكتوب مش متأثر ══ */
-html.ma-on .rail,html.ma-on #topbar,html.ma-on .ai-fab,html.ma-on #aiHost,html.ma-on .fbar-slot{display:none!important}
-html.ma-on .shell{display:block}
-html.ma-on .main{padding:0!important;max-width:none!important;margin:0!important}
+html.ma-on:not(.ma-desk) .rail,html.ma-on:not(.ma-desk) #topbar,html.ma-on:not(.ma-desk) .ai-fab,html.ma-on:not(.ma-desk) #aiHost,html.ma-on .fbar-slot{display:none!important}
+html.ma-on:not(.ma-desk) .shell{display:block}
+html.ma-on:not(.ma-desk) .main{padding:0!important;max-width:none!important;margin:0!important}
 html.ma-on,html.ma-on body{background:var(--ground-0);overscroll-behavior-y:none;-webkit-text-size-adjust:100%}
 html.ma-on .toast{inset-inline:16px!important;bottom:calc(20px + env(safe-area-inset-bottom))!important;text-align:center}
 .ma{--g:8px;--ma-pad:16px;--t-l:28px;--t-h:20px;--t-b:17px;--t-m:15px;--t-s:13px;--rad:14px;--sep:color-mix(in srgb,var(--ink-3) 18%,transparent);
@@ -910,6 +910,24 @@ html.ma-on .ma-k8 .ma-ksub{color:var(--ink-3);font-size:10.5px}
 @media (max-width:760px){html.ma-on .ma-k8 .ma-k b small{display:none}}
 @media (max-width:380px){html.ma-on .ma-k8 .ma-k{padding:7px 6px}html.ma-on .ma-k8 .ma-k b{font-size:14px}html.ma-on .ma-k8 .ma-k b small{display:none}}
 @media (min-width:761px){html.ma-on .ma-ks.ma-k8{gap:10px}html.ma-on .ma-k8 .ma-k{padding:12px 14px;gap:3px}html.ma-on .ma-k8 .ma-k>small{font-size:13px}html.ma-on .ma-k8 .ma-k b{font-size:22px}html.ma-on .ma-k8 .ma-k b small{font-size:12px}html.ma-on .ma-k8 .ma-k em,html.ma-on .ma-k8 .ma-k .ma-dl{font-size:12.5px}}
+
+/* ══ الماك (>1180): «أداء الحملات» بشكل الآيباد جوه الديسكتوب (html.ma-desk) ══ */
+html.ma-desk .main{padding:0 28px 60px}
+html.ma-desk .ma{max-width:1600px;margin:0 auto;padding:0 0 40px;min-height:0;--ma-pad:0px}
+html.ma-desk .ma-nb{position:sticky;top:var(--tbh,62px);z-index:20;margin:0;padding:10px 0;background:var(--ground-0)}
+html.ma-desk .ma-nb-main [data-a="maMenu"],html.ma-desk .ma-nb-main .ma-pill{display:none!important}
+html.ma-desk .ma-ttl b{font-size:22px}
+html.ma-desk .ma-split{grid-template-columns:clamp(400px,30vw,460px) minmax(0,1fr);gap:24px}
+html.ma-desk .ma-dp{top:calc(var(--tbh,62px) + 70px);max-height:calc(100vh - var(--tbh,62px) - 90px)}
+html.ma-desk .ma-ks.ma-k8{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (min-width:1500px){html.ma-desk .ma-ks.ma-k8{grid-template-columns:repeat(8,minmax(0,1fr))}html.ma-desk .ma-k8 .ma-k b{font-size:20px}}
+html.ma-desk .ma-pad .ma-mg{grid-template-columns:repeat(3,minmax(0,1fr))}html.ma-desk .ma-pad .ma-mg>.ma-mc:first-child{grid-column:span 2}
+html.ma-desk .ma-tap{cursor:pointer}html.ma-desk .ma-tap:hover{background:color-mix(in srgb,var(--ground-2) 55%,transparent)}
+html.ma-desk .ma-sheet{bottom:auto;top:50%;inset-inline:0;transform:translateY(-50%);border-radius:16px;max-height:80vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+html.ma-desk .ma-grab{display:none}
+html.ma-desk .toast{inset-inline:auto!important}
+.cp-vseg{flex:none;width:auto;min-width:150px}.cp-vseg button{min-height:34px;padding:0 14px}
+.cp-vrow{display:flex;justify-content:flex-end;margin:0 0 8px}
 html.ma-on .ma-dates button{padding:0 2px}
 @media (max-width:400px){html.ma-on .ma-dates button{font-size:11.5px}}
 
@@ -959,7 +977,7 @@ html.ap-on .fbar-slot{display:flex;flex-wrap:wrap;gap:8px;max-width:100%}
 html.ap-on .fbar-slot *{max-width:100%}
 /* زرار المساعد فوق شريط الهوم */
 html.ap-on .ai-fab{bottom:calc(16px + env(safe-area-inset-bottom))!important;inset-inline-end:calc(16px + env(safe-area-inset-left))!important;width:48px;height:48px}
-html.ma-on .ai-fab{display:none!important}
+html.ma-on:not(.ma-desk) .ai-fab{display:none!important}
 body:has(.ma-sheet) .ai-fab{display:none!important}
 /* صف الحساب في شيت الشاشات (التنبيهات · اللغة · الثيم · الملف الشخصي) */
 .ma-acct{display:flex;align-items:center;gap:8px;padding:4px 4px 10px;border-bottom:1px solid var(--line,rgba(127,127,127,.15));flex-wrap:wrap}
@@ -14144,7 +14162,7 @@ function renderCampPerf(){
   if(maOn()) return renderCampApp();
   const m=cpModel(), a=m.a, b=m.b, cid=m.cid, C=CURR[S.cfg.settings.currency]||""; CP._m=m;
   const T=m.T, tg=m.tg;
-  let h='<div class="cp"><div class="cp-head"><div class="hint">'+
+  let h='<div class="cp">'+(maMQ&&maMQ.matches?"":'<div class="cp-vrow">'+cpViewSeg()+"</div>")+'<div class="cp-head"><div class="hint">'+
     esc(L("الصرف من المنصة · التبرعات والإيراد من خزامى · ROAS = إيراد خزامى ÷ صرف المنصة","Spend from the platform · donations and revenue from Khzama"))+"</div>";
   const rq=CP.req, pend=rq&&rq.status==="pending", fr=cpFast(), fb=CP.fbusy, src=convClient(cid)?L("AppsFlyer + سلة","AppsFlyer + Salla"):L("خزامى","Khzama");
   h+='<div class="cp-rf"><button class="btn'+(fb?"":" btn-p")+'" data-a="cpRefresh"'+(fb?" disabled":"")+'>⟳ '+esc(fb?L("بيتحدث…","Updating…"):L("تحديث الأرقام","Refresh numbers"))+'</button><small class="hint">'+
@@ -14206,8 +14224,13 @@ function renderCampPerf(){
   return h+cpBulkBar()+"</div>"; }
 /* ══ تطبيق الموبايل / الآيباد لـ «أداء الحملات» (≤1180px) — نفس الداتا (cpModel) ونفس أكشنز التعديل والتحديث؛ الديسكتوب زي ما هو ══ */
 const maMQ=window.matchMedia? matchMedia("(max-width:1180px)") : null, maPadMQ=window.matchMedia? matchMedia("(min-width:820px)") : null;
-const maOn=()=>S.view==="campperf"&&!!maMQ&&maMQ.matches;
-const maPad=()=>!!maPadMQ&&maPadMQ.matches;
+/* الماك (>1180): «أداء الحملات» بقت بنفس شكل الآيباد (ليستة + تفاصيل جنبها) جوه شكل الديسكتوب — html.ma-desk. «جدول» = الجدول القديم (localStorage gad.cpView) */
+const cpDeskView=()=>{ try{ return localStorage.getItem("gad.cpView")==="t"?"t":"d"; }catch(e){ return "d"; } };
+const maDesk=()=>S.view==="campperf"&&!(maMQ&&maMQ.matches)&&cpDeskView()==="d";
+const maOn=()=>S.view==="campperf"&&(!!maMQ&&maMQ.matches||maDesk());
+ACT.cpView=t=>{ try{ localStorage.setItem("gad.cpView",t.dataset.v==="t"?"t":"d"); }catch(e){} CP.sheet=null; CP.mnav=[]; render(); };
+function cpViewSeg(){ const v=cpDeskView(); return '<div class="ma-seg cp-vseg" role="group" aria-label="'+esc(L("طريقة العرض","View"))+'"><button class="'+(v==="d"?"on":"")+'" data-a="cpView" data-v="d">'+esc(L("تفاصيل","Details"))+'</button><button class="'+(v==="t"?"on":"")+'" data-a="cpView" data-v="t">'+esc(L("جدول","Table"))+"</button></div>"; }
+const maPad=()=>maDesk()||(!!maPadMQ&&maPadMQ.matches);
 /* ══ شكل التطبيق لكل الشاشات التانية على الموبايل/الآيباد (≤1180) — html.ap-on. «أداء الحملات» ليها شكلها (ma-on). الديسكتوب مش متأثر ══ */
 const apOn=()=>!!maMQ&&maMQ.matches&&!maOn()&&!isPending()&&!isWelcome();
 function apTitle(){ try{ const m=navHTML().match(new RegExp('data-v="'+String(S.view).replace(/[^\w-]/g,"")+'" aria-label="([^"]+)"')); if(m) return m[1]; }catch(e){} return "GADLYTICS"; }
@@ -14383,7 +14406,7 @@ function renderCampApp(){
   const pill= cl.length>1&&!isClient()? '<label class="ma-pill"><select data-c="ws" aria-label="'+esc(L("العميل","Client"))+'">'+cl.map(c=>'<option value="'+c.id+'"'+(cid===c.id?" selected":"")+">"+esc(c.name)+"</option>").join("")+"</select>"+maIco.down+"</label>" : '<span class="ma-pill">'+esc((clientById(cid)||{}).name||"")+"</span>";
   if(!phoneDetail){
     h+='<div class="ma-nb ma-nb-main"><button class="ma-ib" data-a="maMenu" aria-label="'+esc(L("الشاشات","Screens"))+'">'+maIco.menu+'</button>'+
-      '<div class="ma-ttl"><b>'+esc(L("أداء الحملات","Campaigns"))+'</b><small>'+esc(maUpdTxt())+'</small></div>'+maRefBtn()+pill+"</div>";
+      '<div class="ma-ttl"><b>'+esc(L("أداء الحملات","Campaigns"))+'</b><small>'+esc(maUpdTxt())+'</small></div>'+(maDesk()?cpViewSeg():"")+maRefBtn()+pill+"</div>";
     const per=CP.per;
     h+='<div class="ma-filters"><div class="ma-seg ma-dates">'+[["t","النهارده","Today"],["y","امبارح","Yest."],["d","يوم","Day"],["7","7 أيام","7 days"],["30","30 يوم","30 days"],["r","فترة","Range"]].map(x=>'<button class="'+(per===x[0]?"on":"")+'" data-a="maPer" data-v="'+x[0]+'">'+esc(L(x[1],x[2]))+"</button>").join("")+"</div>";
     if(per==="r"||per==="d") h+='<button class="ma-dchip" data-a="maDate"><span>'+(per==="d"?maDLabel(CP.day||m.a,CP.day||m.a):maDLabel(m.a,m.b))+"</span>"+maIco.down+"</button>";
@@ -14880,6 +14903,7 @@ function render(){
   if(!S.wsInit&&S.cfg.clients.length>1){ S.wsInit=1; const r=lsGet("gad.ws",""); if(r!=="*"&&!S.ws) S.ws=(r&&clientById(r))? r : S.cfg.clients[0].id; }
   CONV_WS=!!(S.ws&&convClient(S.ws));
   document.documentElement.classList.toggle("ma-on",maOn());
+  document.documentElement.classList.toggle("ma-desk",maDesk());
   document.documentElement.classList.toggle("ap-on",apOn());
   $("#topbar").innerHTML=(maMQ&&maMQ.matches&&!isPending())? "" : topbarHTML();
   { const m=$("#railMe"); if(m) m.innerHTML=(meVis()&&!isPending())? '<div class="rail-me" data-a="profEdit" title="'+esc(L("ملفي الشخصي","My profile"))+'">'+pav(ME.id,36)+'<div><b>'+esc(pname(ME.id))+"</b><small>"+esc(meSub())+"</small></div></div>" : ""; }
