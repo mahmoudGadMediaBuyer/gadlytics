@@ -3,7 +3,8 @@
 // READ-ONLY on the ad accounts. Writes public.ad_daily (same shape as ~/.gadlytics/platform_rows.py → prep_ad_daily.py)
 // and public.camp_struct (same mapping as ~/.gadlytics/camp_struct_prep.py). Khzama / AppsFlyer / Salla are NOT here.
 // Tokens: Deno.env first, then private table public.app_secrets (META_TOKEN, SNAP_*; TIKTOK_TOKEN → not_configured until set).
-// Auth: a signed-in user of the project, or (scripts / scheduled tasks) header x-ingest-key whose SHA-256 matches INGEST_SHA.
+// Auth: a signed-in user of the project, or (scripts / scheduled tasks) header x-ingest-key whose SHA-256 matches INGEST_SHA,
+// or (camp-alerts) Authorization: Bearer <service-role key>.
 // Input {client, from?, to?, dry?, platforms?}. Default from..to = yesterday..today (Asia/Riyadh). Nothing ever logs a token.
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
@@ -294,6 +295,25 @@ async function writeStruct(sb: any, client: string, pl: string, acc: string, str
   }
 }
 
+// «سرعة الصرف»: per campaign cumulative spend for TODAY (Riyadh) at this moment → public.camp_hourly, one row per
+// 15-minute bucket (a later refresh in the same bucket overwrites it). The page compares with yesterday at the same time.
+async function writeHourly(sb: any, client: string, pl: string, rows: any[]) {
+  const day = riyadhDay(0), nowMs = Date.now();
+  const bucket = new Date(Math.floor(nowMs / 900e3) * 900e3).toISOString();
+  const hour = new Date(nowMs + 3 * 3600e3).getUTCHours();
+  const agg: Record<string, any> = {};
+  for (const r of rows) {
+    if (r.date !== day || !r.campaign_id) continue;
+    const k = String(r.campaign_id);
+    const a = agg[k] || (agg[k] = { client_id: client, platform: pl, campaign_id: k, camp_no: r.camp_no || null, date: day, ts: bucket, hour, spend: 0, impressions: 0, clicks: 0, link_clicks: 0 });
+    a.spend += r.spend || 0; a.impressions += r.impressions || 0; a.clicks += r.clicks || 0; a.link_clicks += r.link_clicks || 0;
+  }
+  const list = Object.values(agg).map((a: any) => ({ ...a, spend: Math.round(a.spend * 100) / 100 }));
+  if (!list.length) return;
+  const { error } = await sb.from("camp_hourly").upsert(list, { onConflict: "client_id,platform,campaign_id,ts" });
+  if (error) console.log("camp_hourly", error.message);
+}
+
 // ───────────── handler ─────────────
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -302,6 +322,9 @@ Deno.serve(async (req: Request) => {
   const ik = req.headers.get("x-ingest-key") || "";
   let admin = false;
   if (ik) admin = (await sha256(ik)) === INGEST_SHA;
+  // server-to-server (camp-alerts every 15 min): the project's own service-role key, which never leaves Supabase
+  const bearer = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
+  if (!admin && bearer && bearer === env("SUPABASE_SERVICE_ROLE_KEY")) admin = true;
   if (!admin) {
     const ua = createClient(env("SUPABASE_URL"), env("SUPABASE_ANON_KEY"), { global: { headers: { Authorization: req.headers.get("authorization") || "" } } });
     const { data: ud } = await ua.auth.getUser().catch(() => ({ data: { user: null } } as any));
@@ -332,7 +355,7 @@ Deno.serve(async (req: Request) => {
         const sp = Math.round(rows.reduce((s: number, r: any) => s + (r.spend || 0), 0) * 100) / 100;
         const byDay: Record<string, number> = {}; rows.forEach((r: any) => (byDay[r.date] = Math.round(((byDay[r.date] || 0) + (r.spend || 0)) * 100) / 100));
         let removed = 0;
-        if (!dry) { removed = await writeAdDaily(sb, client, pl, acc, from, to, rows); await writeStruct(sb, client, pl, acc, struct, now); }
+        if (!dry) { removed = await writeAdDaily(sb, client, pl, acc, from, to, rows); await writeStruct(sb, client, pl, acc, struct, now); await writeHourly(sb, client, pl, rows); }
         res.accounts[acc] = { rows: rows.length, spend: sp, byDay, struct: struct.length, removed };
         res.rows += rows.length; res.spend = Math.round((res.spend + sp) * 100) / 100; out.struct_rows += struct.length;
       } catch (e) {
