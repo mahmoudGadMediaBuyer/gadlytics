@@ -53,9 +53,11 @@ async function encrypt(sub: any, payload: string) {
   const rs = new Uint8Array([0, 0, 16, 0]);
   return cat(salt, rs, new Uint8Array([asPub.length]), asPub, ct);
 }
+// Topic (same tag → the newer notification replaces the older): Apple rejects a Topic that is not valid base64url of length ≤32
+// ("ready" → 400 BadWebPushTopic), so it is always the first 32 hex chars of SHA-256(tag).
 async function sendOne(sb: any, V: any, row: any, msg: any) {
   const sub = row.sub, body = await encrypt(sub, JSON.stringify(msg));
-  const r = await fetch(sub.endpoint, { method: "POST", body, headers: { "Content-Encoding": "aes128gcm", "Content-Type": "application/octet-stream", TTL: "21600", Urgency: msg.urgency || "normal", Authorization: await vapidAuth(sub.endpoint, V), ...(msg.tag ? { Topic: String(msg.tag).replace(/[^A-Za-z0-9_-]/g, "").slice(0, 32) } : {}) } });
+  const r = await fetch(sub.endpoint, { method: "POST", body, headers: { "Content-Encoding": "aes128gcm", "Content-Type": "application/octet-stream", TTL: "21600", Urgency: msg.urgency || "normal", Authorization: await vapidAuth(sub.endpoint, V), ...(msg.tag ? { Topic: (await sha256(String(msg.tag))).slice(0, 32) } : {}) } });
   const txt = r.ok ? "" : (await r.text().catch(() => "")).slice(0, 200);
   const upd: any = r.ok ? { last_ok: new Date().toISOString(), last_err: null } : { last_err: r.status + " " + txt };
   if (r.status === 404 || r.status === 410) upd.active = false;     // subscription gone (app removed / permission revoked)
@@ -64,7 +66,7 @@ async function sendOne(sb: any, V: any, row: any, msg: any) {
 }
 
 // device settings (prefs from the notifications screen): hours are Asia/Riyadh
-const RULE_OF: Record<string, string> = { cpa: "cpa", bud: "bud", budget: "bud", roas: "roas", spike: "spike", meta: "meta", token: "meta", stale: "stale", media: "media", dailySummary: "dailySummary" };
+const RULE_OF: Record<string, string> = { cpa: "cpa", bud: "bud", budget: "bud", roas: "roas", spike: "spike", meta: "meta", token: "meta", stale: "stale", media: "media", norev: "norev", dailySummary: "dailySummary" };
 function holdReason(pr: any, kind: string): string {
   if (!pr) return "";
   const rk = RULE_OF[kind]; if (rk && pr.rules && pr.rules[rk] === false) return "off";
