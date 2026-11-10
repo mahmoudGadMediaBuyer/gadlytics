@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="gad-build" content="20261110103033">
+<meta name="gad-build" content="20261110103323">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -16,7 +16,7 @@
 <script>
 /* تحديث تلقائي للتطبيق على الموبايل/الآيباد: مفيش service worker ولا كاش. كل ما التطبيق يتفتح أو يرجع للواجهة
    بيجيب index.html جديد (no-store) ويقارن رقم البيلد؛ لو فيه نسخة أحدث بيفتحها على طول. */
-(function(){ var B="20261110103033", last=0;
+(function(){ var B="20261110103323", last=0;
   function busy(){ return document.querySelector("#cpIn:focus, .ma-sheet, input:focus, textarea:focus"); }
   function chk(){ var n=Date.now(); if(n-last<20000) return; last=n; if(busy()) return;
     fetch(location.pathname+"?_b="+n,{cache:"no-store"}).then(function(r){ return r.ok? r.text() : ""; }).then(function(t){
@@ -1007,6 +1007,9 @@ body:has(.ma-sheet) .ai-fab{display:none!important}
 .cp-tg2{display:flex;align-items:center;gap:10px;min-height:40px;font-size:14px;cursor:pointer}.cp-tg2 input{width:20px;height:20px;accent-color:var(--cyan)}
 html.ma-on .cp-pan{min-width:0}
 .al-card{margin-top:14px;padding:14px 16px}
+.push-head{display:flex;align-items:center;gap:12px;padding:14px 16px}.push-hl{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.push-hl b{font-size:16px}
+.push-on{color:var(--good)}.push-off{color:var(--ink-3)}.push-set{margin-top:12px}.push-th{margin:-2px 0 8px;padding-inline-start:28px}.push-n{width:78px}
+html.ap-on .push-head{padding:12px}
 .al-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px}.al-h b{font-size:15px}
 .al-empty{padding:14px 2px}
 .al-list{display:flex;flex-direction:column;gap:8px}
@@ -13993,7 +13996,8 @@ function cpRowTools(pl,id,code){ return '<span class="cp-tools"><button class="c
 
 /* ═══ التنبيهات على الموبايل (Web Push) — آيفون/آيباد من التطبيق المثبّت (iOS 16.4+) + Chrome على الماك ═══
    الـ service worker (sw.js) بيعرض التنبيه بس — مفيش كاش. المفاتيح على السيرفر (edge function push). */
-const PUSH_DEF={from:8,to:24,qFrom:"",qTo:"",rules:{cpa:true,bud:true,roas:true,spike:true,meta:true,stale:true,media:true,dailySummary:true},summary:"23:30",silent:false};
+const PUSH_DEF={from:8,to:24,qFrom:"",qTo:"",rules:{roas:true,spike:true,norev:true,media:true,cpa:false,bud:false,stale:false,dailySummary:false,meta:false},spikePct:40,spikeMin:150,norevWin:30,norevMin:200,silent:false};
+const PUSH_OFF={cpa:false,bud:false,stale:false,dailySummary:false,meta:false};
 const pushOK=()=>"serviceWorker" in navigator&&"PushManager" in window&&"Notification" in window;
 const pushIOS=()=>/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
 const pushStandalone=()=>(window.matchMedia&&matchMedia("(display-mode: standalone)").matches)||navigator.standalone===true;
@@ -14001,12 +14005,18 @@ async function pushReg(){ return navigator.serviceWorker.getRegistration("./").t
 async function pushState(){ const s={ok:pushOK(),perm:("Notification" in window)?Notification.permission:"unsupported",sub:null};
   if(s.ok){ try{ const r=await navigator.serviceWorker.getRegistration("./"); s.sub=r? await r.pushManager.getSubscription() : null; }catch(e){} } return s; }
 const pushKeyBytes=k=>{ const s=k.replace(/-/g,"+").replace(/_/g,"/"), p=s+"===".slice((s.length+3)%4); return Uint8Array.from(atob(p),c=>c.charCodeAt(0)); };
-ACT.pushOpen=()=>{ if(S.view!=="push") CP.pushBack=S.view; CP.sheet=null; CP.mnav=[]; window.__shK=null; ACT.go({dataset:{v:"push"}}); };
+ACT.pushOpen=()=>{ if(S.view!=="push") CP.pushBack=S.view; if(CP.panel&&CP.panel.type==="push"){ CP.panel.edit=false; CP.panel.hist=null; } CP.sheet=null; CP.mnav=[]; window.__shK=null; ACT.go({dataset:{v:"push"}}); };
 function renderPushPage(){ if(!CP.panel||CP.panel.type!=="push"){ CP.panel={type:"push",st:null,prefs:null,busy:""}; setTimeout(pushLoad,0); }
-  const P=pushHTML(CP.panel); return '<div class="card push-page"><div class="cp-pan">'+P.b+"</div>"+(P.f?'<div class="cp-pf">'+P.f+"</div>":"")+pushDiag()+"</div>"+alHistHTML(CP.panel); }
+  const p=CP.panel, st=p.st, on=!!(st&&st.sub&&st.perm==="granted");
+  const head='<div class="card push-head"><div class="push-hl"><b>'+esc(L("التنبيهات","Notifications"))+'</b><small class="'+(on?"push-on":"push-off")+'">'+esc(!st?L("بيحمّل…","Loading…"):on?L("شغالة على الجهاز ده ✓","On for this device ✓"):st.perm==="denied"?L("مقفولة من إعدادات الجهاز","Blocked in device settings"):L("مش متفعّلة على الجهاز ده — دوس «تعديل»","Off on this device — tap Edit"))+"</small></div>"+
+    '<button class="btn'+(p.edit?" btn-p":"")+'" data-a="pushEdit" aria-expanded="'+(p.edit?"true":"false")+'">'+esc(p.edit?L("خلّصت","Done"):L("تعديل","Edit"))+"</button></div>";
+  let set="";
+  if(p.edit){ const P=pushHTML(p); set='<div class="card push-page push-set"><div class="cp-pan">'+P.b+"</div>"+(P.f?'<div class="cp-pf">'+P.f+"</div>":"")+pushDiag()+"</div>"; }
+  return head+set+alHistHTML(p); }
+ACT.pushEdit=()=>{ const p=CP.panel; if(!p) return; p.edit=!p.edit; render(); if(p.edit) setTimeout(()=>{ const el=document.querySelector(".push-set"); if(el&&el.scrollIntoView) el.scrollIntoView({block:"start",behavior:"smooth"}); },30); };
 /* ═══ «سجل التنبيهات» — من public.alerts_sent (كل تنبيه اتبعت أو اتأجّل، مع حالته على الجهاز ده). أحدث الأول، آخر 7 أيام و«أقدم» بيجيب 7 كمان ═══ */
 const AL_KIND={cpa:["تكلفة التبرع","Cost / donation","bad"],bud:["الميزانية","Budget","amber"],budget:["الميزانية","Budget","amber"],roas:["ROAS إنذار","ROAS alarm","bad"],spike:["زيادة صرف","Spend spike","violet"],
-  meta:["توكن ميتا","Meta token","cyan"],token:["توكن ميتا","Meta token","cyan"],stale:["الأرقام وقفت","Data stale","warn"],test:["تجربة","Test","good"],summary:["ملخص يومي","Daily summary","teal"],dailySummary:["ملخص يومي","Daily summary","teal"],media:["🎬 ميديا جديدة","🎬 New media","violet"]};
+  meta:["توكن ميتا","Meta token","cyan"],token:["توكن ميتا","Meta token","cyan"],stale:["الأرقام وقفت","Data stale","warn"],test:["تجربة","Test","good"],summary:["ملخص يومي","Daily summary","teal"],dailySummary:["ملخص يومي","Daily summary","teal"],media:["🎬 ميديا جديدة","🎬 New media","violet"],norev:["صرف من غير إيراد","Spend, no revenue","bad"]};
 async function alEp(p){ if(p.alEp!==undefined) return p.alEp; const e=p.st&&p.st.sub&&p.st.sub.endpoint; if(!e||!(window.crypto&&crypto.subtle)){ p.alEp=null; return null; }
   const h=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(e)); p.alEp=[...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,"0")).join("").slice(0,16); return p.alEp; }
 async function alLoad(older){ const p=CP.panel; if(!p||p.type!=="push") return; const H=p.hist=p.hist||{rows:[],since:null,busy:false,err:"",empty:0};
@@ -14069,7 +14079,7 @@ ACT.pushEnable=async()=>{ const p=CP.panel; if(!pushOK()){ toast(L("الجهاز
     const reg=await pushReg(); await navigator.serviceWorker.ready;
     const k=await SUPA_DB.client.functions.invoke("push",{body:{action:"vapid"}}); const key=k.data&&k.data.key; if(!key) throw new Error((k.error&&k.error.message)||"vapid");
     let sub=await reg.pushManager.getSubscription(); if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:pushKeyBytes(key)});
-    const r=await SUPA_DB.client.functions.invoke("push",{body:{action:"subscribe",sub:sub.toJSON(),ua:navigator.userAgent,prefs:Object.assign({},p.prefs||PUSH_DEF,{rules:p.rules||PUSH_DEF.rules})}});
+    const r=await SUPA_DB.client.functions.invoke("push",{body:{action:"subscribe",sub:sub.toJSON(),ua:navigator.userAgent,prefs:Object.assign({},p.prefs||PUSH_DEF,{rules:Object.assign({},p.rules||PUSH_DEF.rules,PUSH_OFF)})}});
     if(!(r.data&&r.data.ok)) throw new Error((r.data&&r.data.error)||(r.error&&r.error.message)||"subscribe");
     p.busy=""; toast(L("التنبيهات اتفعّلت على الجهاز ده ✓","Notifications on ✓")); pushLoad();
   }catch(e){ p.busy=""; toast(L("مااتفعّلتش: ","Failed: ")+((e&&e.message)||e),true); pushLoad(); } };
@@ -14080,7 +14090,7 @@ ACT.pushTest=async()=>{ const p=CP.panel; p.busy="test"; cpPanelDraw();
 ACT.pushOff=async()=>{ const p=CP.panel; try{ const s=p.st&&p.st.sub; if(s){ await SUPA_DB.client.functions.invoke("push",{body:{action:"unsubscribe",endpoint:s.endpoint}}); await s.unsubscribe(); } toast(L("التنبيهات اتقفلت على الجهاز ده","Notifications off")); }catch(e){} pushLoad(); };
 CHG.pushPref=(v,el)=>{ const p=CP.panel; if(!p) return; const k=el.dataset.k; p.prefs[k]= el.type==="checkbox"? el.checked : el.type==="number"? +v : v; };
 CHG.pushRule=(v,el)=>{ const p=CP.panel; if(!p) return; p.rules[el.dataset.k]=el.checked; };
-ACT.pushSave=async()=>{ const p=CP.panel; if(!(p&&p.st&&p.st.sub)) return; const prefs=Object.assign({},p.prefs,{rules:p.rules});
+ACT.pushSave=async()=>{ const p=CP.panel; if(!(p&&p.st&&p.st.sub)) return; const prefs=Object.assign({},p.prefs,{rules:Object.assign({},p.rules,PUSH_OFF)}); ["spikePct","spikeMin","norevWin","norevMin"].forEach(k=>{ prefs[k]=+prefs[k]||PUSH_DEF[k]; }); delete prefs.summary;
   const q=await SUPA_DB.client.functions.invoke("push",{body:{action:"prefs",endpoint:p.st.sub.endpoint,prefs:prefs}}); toast(q.data&&q.data.ok? L("اتحفظ ✓","Saved ✓") : L("مااتحفظش","Not saved"),!(q.data&&q.data.ok)); };
 function pushDiag(){ const bd=(document.querySelector('meta[name="gad-build"]')||{}).content||"?";
   return '<small class="hint push-diag" style="display:block;margin-top:14px;direction:ltr;text-align:left">build '+esc(bd)+" · app "+(pushStandalone()?"yes":"no")+" · push "+(pushOK()?"yes":"no")+" · perm "+esc(("Notification" in window)?Notification.permission:"none")+" · iOS "+(pushIOS()?"yes":"no")+"</small>"; }
@@ -14099,13 +14109,16 @@ function pushHTML(p){ const st=p.st; let b="";
       '<div class="cp-prow">'+esc(L("ساعات هادية (اختياري)","Quiet hours (optional)"))+' <input class="sel" type="time" data-c="pushPref" data-k="qFrom" value="'+esc(pr.qFrom||"")+'"> – <input class="sel" type="time" data-c="pushPref" data-k="qTo" value="'+esc(pr.qTo||"")+'"></div>'+
       '<div class="hint">'+esc(L("التنبيه اللي يحصل برّه المواعيد دي بيستنى ويوصلك أول ما المواعيد تبدأ — ولو مبقاش صحيح ساعتها مش هيتبعت.","Alerts outside the window are held until it opens."))+"</div>"+
       '<div class="cp-psec">'+esc(L("أنواع التنبيهات","Alert types"))+"</div>"+
-      rule("cpa",L("تكلفة التبرع عدّت الحد","Cost per donation over the limit"))+rule("bud",L("الميزانية قربت تخلص (85%) قبل 8 بالليل","Budget 85% spent before 20:00"))+
-      rule("roas",L("ROAS إنذار (تحت 2.0)","ROAS alarm (below 2.0)"))+rule("spike",L("الصرف زاد فجأة (+40% عن نفس الساعة امبارح)","Spend spike vs same hour yesterday"))+
-      rule("meta",L("توكن ميتا قرب يخلص","Meta token expiring"))+rule("stale",L("الأرقام مش بتتحدث","Data is stale"))+rule("media",L("🎬 ميديا جديدة على Airtable","🎬 New media on Airtable"))+
-      '<div class="cp-psec">'+esc(L("ملخص اليوم","Daily summary"))+"</div>"+rule("dailySummary",L("ابعتلي ملخص اليوم","Send me the daily summary"))+'<div class="cp-prow"><input class="sel" type="time" data-c="pushPref" data-k="summary" value="'+esc(pr.summary||"")+'"> <small class="hint">'+esc(L("سيبه فاضي لو مش عايزه","Leave empty for none"))+"</small></div>"+
+      rule("roas",L("إنذار ROAS أقل من 2 (لكل حملة وللإجمالي)","ROAS alarm below 2 (per campaign and total)"))+
+      '<div class="hint push-th">'+esc(L("الحد لكل عميل من لوحة التحكم ← العملاء: ","Per-client limit from settings → clients: "))+esc((S.cfg.clients||[]).map(c=>c.name+" "+(+(c.roasAlarm||c.roasMin||2)).toFixed(2)+"x").join(" · "))+"</div>"+
+      rule("spike",L("زيادة مفاجئة في الصرف","Sudden spend spike"))+
+      '<div class="cp-prow push-th">'+esc(L("أكتر من","More than"))+' <input class="sel push-n" type="number" min="1" step="1" inputmode="numeric" data-c="pushPref" data-k="spikePct" value="'+esc(String(pr.spikePct??40))+'">% '+esc(L("عن نفس الساعة امبارح، ولما الصرف يعدّي","vs same hour yesterday, once spend passes"))+' <input class="sel push-n" type="number" min="0" step="10" inputmode="numeric" data-c="pushPref" data-k="spikeMin" value="'+esc(String(pr.spikeMin??150))+'"> '+esc(L("ريال","SAR"))+"</div>"+
+      rule("norev",L("صرف من غير إيراد (ربع ساعة / نص ساعة)","Spend with no revenue (15 / 30 min)"))+
+      '<div class="cp-prow push-th">'+esc(L("لو مفيش تبرع خلال","If no donation within"))+' <select class="sel" data-c="pushPref" data-k="norevWin">'+[15,30].map(x=>'<option value="'+x+'"'+(+(pr.norevWin||30)===x?" selected":"")+">"+x+" "+esc(L("دقيقة","min"))+"</option>").join("")+"</select> "+esc(L("والصرف فيها","and spend in it ≥"))+' <input class="sel push-n" type="number" min="0" step="10" inputmode="numeric" data-c="pushPref" data-k="norevMin" value="'+esc(String(pr.norevMin??200))+'"> '+esc(L("ريال أو أكتر","SAR"))+"</div>"+
+      rule("media",L("ميديا جديدة على Airtable","New media on Airtable"))+
       '<label class="cp-tg2"><input type="checkbox" data-c="pushPref" data-k="silent"'+(pr.silent?" checked":"")+"><span>"+esc(L("صامت (من غير صوت)","Silent (no sound)"))+"</span></label>"+
       '<div class="hint">'+esc(L("الصوت نفسه بيتظبط من إعدادات الآيفون ← الإشعارات ← GADLYTICS (الآيفون مبيسمحش بصوت مخصص للتنبيهات دي).","Sound is set in iPhone Settings → Notifications → GADLYTICS."))+"</div>"; }
-  return {t:L("التنبيهات","Notifications"),b:b,f:(on?'<button class="btn btn-p" data-a="pushSave">'+esc(L("حفظ الإعدادات","Save settings"))+"</button>":"")+'<button class="btn" data-a="cpPanelClose">'+esc(L("قفل","Close"))+"</button>"}; }
+  return {t:L("التنبيهات","Notifications"),b:b,f:(on?'<button class="btn btn-p" data-a="pushSave">'+esc(L("حفظ الإعدادات","Save settings"))+"</button>":"")+'<button class="btn" data-a="pushEdit">'+esc(L("خلّصت","Done"))+"</button>"}; }
 
 function renderCampPerf(){
   if(!(window.SUPA_DB&&SUPA_DB.client)) return emptyBox(L("الصفحة دي محتاجة الموقع الأونلاين (الداتا بيز).","This page needs the online site (database)."));
