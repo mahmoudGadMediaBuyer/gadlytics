@@ -5,6 +5,7 @@
 // secrets (Deno.env) first, then from the private table public.app_secrets (RLS on, no policies → service role only,
 // loaded from the Mac). public.sys_kv caches the Snap access token. Nothing here ever logs or returns a token.
 // A platform without its secret answers {ok:false, code:"not_configured"} so the page falls back to the campchg queue.
+// Callers: the site's «أداء الحملات» (signed-in user) and gad-api POST /edit/apply (service role + a queued campchg docId, by "api:<key>").
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type", "Access-Control-Allow-Methods": "POST, OPTIONS" };
@@ -167,20 +168,27 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ ok: false, error: "method" }, 405);
   const t0 = Date.now();
-  // 1) who is calling — a real signed-in user of this project (the gateway JWT check alone would also pass the public anon key)
-  const auth = req.headers.get("authorization") || "";
-  const ua = createClient(env("SUPABASE_URL"), env("SUPABASE_ANON_KEY"), { global: { headers: { Authorization: auth } } });
-  const { data: ud } = await ua.auth.getUser().catch(() => ({ data: { user: null } } as any));
-  const user = ud?.user;
-  if (!user) return json({ ok: false, code: "unauthorized", error: "لازم تسجّل دخول" }, 401);
-  const allow = env("CAMP_APPLY_EMAILS").toLowerCase().split(",").map((s) => s.trim()).filter(Boolean);
-  if (allow.length && !allow.includes(String(user.email || "").toLowerCase())) return json({ ok: false, code: "forbidden", error: "الحساب ده مش مسموحله يعدّل" }, 403);
+  // 1) who is calling — a real signed-in user of this project (the gateway JWT check alone would also pass the public anon key),
+  //    or gad-api's /edit/apply (server to server: the project's own service-role key, which never leaves Supabase). The server
+  //    caller must name a queued campchg doc (docId) — that doc carries who asked (by: "api:<key name>").
+  const auth = req.headers.get("authorization") || "", bearer = auth.replace(/^Bearer\s+/i, "").trim();
+  const server = !!bearer && bearer === env("SUPABASE_SERVICE_ROLE_KEY");
+  let user: any = server ? { email: "" } : null;
+  if (!server) {
+    const ua = createClient(env("SUPABASE_URL"), env("SUPABASE_ANON_KEY"), { global: { headers: { Authorization: auth } } });
+    const { data: ud } = await ua.auth.getUser().catch(() => ({ data: { user: null } } as any));
+    user = ud?.user;
+    if (!user) return json({ ok: false, code: "unauthorized", error: "لازم تسجّل دخول" }, 401);
+    const allow = env("CAMP_APPLY_EMAILS").toLowerCase().split(",").map((s) => s.trim()).filter(Boolean);
+    if (allow.length && !allow.includes(String(user.email || "").toLowerCase())) return json({ ok: false, code: "forbidden", error: "الحساب ده مش مسموحله يعدّل" }, 403);
+  }
 
   // 2) validate input
   let b: any;
   try { b = await req.json(); } catch { return json({ ok: false, code: "bad", error: "طلب غلط" }, 400); }
   const client = String(b?.client || ""), platform = String(b?.platform || ""), level = String(b?.level || ""), objId = String(b?.objId || ""), field = String(b?.field || "");
   let to: any = b?.to; const docId = b?.docId ? String(b.docId) : "";
+  if (server && !docId) return json({ ok: false, code: "bad", error: "الطلب لازم يبقى متسجل الأول (docId)" }, 400);
   if (!/^[A-Za-z0-9_-]{2,40}$/.test(client) || !["meta", "tiktok", "snap"].includes(platform) || !["campaign", "adset", "ad"].includes(level) ||
       !/^[A-Za-z0-9_-]{4,64}$/.test(objId) || !["budget", "bid", "status"].includes(field) || (docId && !/^[A-Za-z0-9_-]{2,80}$/.test(docId)))
     return json({ ok: false, code: "bad", error: "طلب غلط" }, 400);
