@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="gad-build" content="20261110073559">
+<meta name="gad-build" content="20261110074000">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -16,7 +16,7 @@
 <script>
 /* تحديث تلقائي للتطبيق على الموبايل/الآيباد: مفيش service worker ولا كاش. كل ما التطبيق يتفتح أو يرجع للواجهة
    بيجيب index.html جديد (no-store) ويقارن رقم البيلد؛ لو فيه نسخة أحدث بيفتحها على طول. */
-(function(){ var B="20261110073559", last=0;
+(function(){ var B="20261110074000", last=0;
   function busy(){ return document.querySelector("#cpIn:focus, .ma-sheet, input:focus, textarea:focus"); }
   function chk(){ var n=Date.now(); if(n-last<20000) return; last=n; if(busy()) return;
     fetch(location.pathname+"?_b="+n,{cache:"no-store"}).then(function(r){ return r.ok? r.text() : ""; }).then(function(t){
@@ -223,7 +223,7 @@ a{color:var(--cyan)}
 .cp{max-width:1440px;font-size:16px}.cp .cp-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:12px}.cp .hint{font-size:14px}
 .cp-rf{display:flex;flex-direction:column;align-items:flex-end;gap:4px}.cp-bar{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;margin:0 0 10px}.cp-bar .flab{font-size:14.5px}.cp-bar .sel,.cp-bar .chip{font-size:15px;min-height:36px}.cp-rf .btn{font-size:15px;padding:9px 18px}
 .cp-note{margin:0 0 10px;color:var(--amber)}
-.cp-tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin:8px 0 6px}.cp-tile{background:var(--ground-1);border:1px solid var(--line);border-radius:var(--r-s);padding:16px 18px}
+.cp-tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin:8px 0 6px}.cp-tiles.cp-t8{grid-template-columns:repeat(4,minmax(0,1fr))}.cp-tile{background:var(--ground-1);border:1px solid var(--line);border-radius:var(--r-s);padding:16px 18px}
 .cp-tile small{display:block;color:var(--ink-3);font-size:15px;margin-bottom:4px}.cp-tile b{font-family:var(--f-num);font-size:32px;line-height:1.2}.cp-tile b small{display:inline;font-size:14px;font-weight:400}.cp-tile .cp-ar{font-size:13.5px}
 .cp-ph{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px;margin:26px 0 8px}.cp-ph .hint{font-size:14px;font-weight:400}
 .cp-tbl{width:100%;table-layout:fixed;border-collapse:collapse}.cp-tbl th{font-size:14px;color:var(--ink-3);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line)}
@@ -896,6 +896,19 @@ html.ma-on .ma-r2.ma-r4>span .ma-md{display:block;font-size:11.5px;line-height:1
 html.ma-on .ma-vrow{margin-top:8px}
 @media (min-width:761px){html.ma-on .ma-r2.ma-r4>span b{font-size:17px}}
 @media (max-width:380px){html.ma-on .ma-r2.ma-r4>span{padding:2px 5px}html.ma-on .ma-r2.ma-r4>span b{font-size:14.5px}}
+
+/* 8 كروت فوق — موبايل: 4×2 مضغوطة · آيباد: 4×2 */
+html.ma-on .ma-ks.ma-k8{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;overflow:visible;margin:0 0 var(--g);padding:0;scroll-snap-type:none}
+html.ma-on .ma-k8 .ma-k{flex:none;min-height:0;padding:8px 8px 7px;gap:1px;border-radius:12px}
+html.ma-on .ma-k8 .ma-k>small{font-size:11px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink-3);font-weight:600}
+html.ma-on .ma-k8 .ma-k b{font-size:15.5px;line-height:1.25;font-variant-numeric:tabular-nums;gap:2px}
+html.ma-on .ma-k8 .ma-k b small{font-size:10px;font-weight:600;color:var(--ink-3)}
+html.ma-on .ma-k8 .ma-k .ma-dl,html.ma-on .ma-k8 .ma-k em{font-size:11px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-style:normal}
+html.ma-on .ma-k8 .ma-ksub{color:var(--ink-3);font-size:10.5px}
+@media (max-width:380px){html.ma-on .ma-k8 .ma-k{padding:7px 6px}html.ma-on .ma-k8 .ma-k b{font-size:14px}html.ma-on .ma-k8 .ma-k b small{display:none}}
+@media (min-width:761px){html.ma-on .ma-ks.ma-k8{gap:10px}html.ma-on .ma-k8 .ma-k{padding:12px 14px;gap:3px}html.ma-on .ma-k8 .ma-k>small{font-size:13px}html.ma-on .ma-k8 .ma-k b{font-size:22px}html.ma-on .ma-k8 .ma-k b small{font-size:12px}html.ma-on .ma-k8 .ma-k em,html.ma-on .ma-k8 .ma-k .ma-dl{font-size:12.5px}}
+html.ma-on .ma-dates button{padding:0 2px}
+@media (max-width:400px){html.ma-on .ma-dates button{font-size:11.5px}}
 </style>
 <div dir="rtl" lang="ar" class="shell">
   <aside class="rail">
@@ -13633,6 +13646,17 @@ function cpModel(){
   const setsOf=(c,pl)=>Object.values(c.sets).map(s=>{ s.st=cpStatus("adset",s.id,pl); return s; }).filter(s=>s.v.s||s.v.o||cpActive(s.st)).sort((x,y)=>y.v.s-x.v.s);
   return Object.assign(m,{M:M,PV:PV,pvIdx:pvIdx,haveStruct:haveStruct,next:next,projs:projs,camps:camps,campBudget:campBudget,tot:tot,ptot:ptot,bud:bud,tr:tr,tc:tc,cpaRef:tc,
     nOn:camps.filter(c=>c.ds==="on").length, nOff:camps.filter(c=>c.ds==="off").length, setsOf:setsOf}); }
+/* الكروت اللي فوق (اللاب توب + الآيباد + الموبايل) — ترتيب Mahmoud: الصرف · التبرعات · الإيراد · ROAS · عدد الحملات · إجمالي الميزانية · متوسط التبرع · تكلفة التبرع */
+function cpKpis(m){ const t=m.tot, p=m.ptot, conv=convClient(m.cid), av=v=>v.o? v.r/v.o : null;
+  return [
+    {k:"s",lb:L("الصرف","Spend"),cur:t.s,prev:p.s,fmt:v=>fnum(v,0),cur$:1},
+    {k:"o",lb:conv?L("الطلبات","Orders"):L("التبرعات","Donations"),cur:t.o,prev:p.o,fmt:v=>fnum(Math.round(v),0)},
+    {k:"r",lb:L("الإيراد","Revenue"),cur:t.r,prev:p.r,fmt:v=>fnum(v,0),cur$:1},
+    {k:"roas",lb:"ROAS",cur:m.tr,prev:cpRoas(p),fmt:v=>v.toFixed(2)+"x"},
+    {k:"n",lb:L("عدد الحملات","Campaigns"),cur:m.camps.length,fmt:v=>fnum(v,0),sub:m.nOn+" "+L("شغالة","on")+" · "+m.nOff+" "+L("موقفة","off")},
+    {k:"b",lb:L("إجمالي الميزانية","Total budget"),cur:m.haveStruct?m.bud:null,fmt:v=>fnum(v,0),cur$:1,sub:L("الحملات الشغالة","active campaigns")},
+    {k:"aov",lb:conv?L("متوسط الطلب","Avg order"):L("متوسط التبرع","Avg donation"),cur:av(t),prev:av(p),fmt:v=>fnum(v,0),cur$:1},
+    {k:"cpa",lb:conv?L("تكلفة الطلب","Cost / order"):L("تكلفة التبرع","Cost / donation"),cur:m.tc,prev:cpCpa(p),fmt:v=>fnum(v,0),low:1}]; }
 function renderCampPerf(){
   if(!(window.SUPA_DB&&SUPA_DB.client)) return emptyBox(L("الصفحة دي محتاجة الموقع الأونلاين (الداتا بيز).","This page needs the online site (database)."));
   if(maOn()) return renderCampApp();
@@ -13660,9 +13684,8 @@ function renderCampPerf(){
   const camps=m.camps, tot=m.tot, ptot=m.ptot, bud=m.bud, campBudget=m.campBudget;
   const tile=(lb,val,ar)=>'<div class="cp-tile"><small>'+esc(lb)+"</small><b>"+val+"</b>"+(ar||"")+"</div>";
   const tr=m.tr, tc=m.tc, cpaRef=m.cpaRef, nOn=m.nOn, nOff=m.nOff;
-  h+='<div class="cp-tiles cp-t7">'+tile(L("عدد الحملات","Campaigns"),fnum(camps.length,0),'<small class="cp-ar" style="color:var(--ink-3)">'+nOn+" "+esc(L("شغالة","on"))+" · "+nOff+" "+esc(L("موقفة","off"))+"</small>")+tile(L("الصرف","Spend"),fnum(tot.s,0)+" <small>"+esc(C)+"</small>")+tile(L("التبرعات","Donations"),fnum(tot.o,0))+tile(L("الإيراد","Revenue"),fnum(tot.r,0)+" <small>"+esc(C)+"</small>")+
-    tile("ROAS",tr==null?"—":tr.toFixed(2)+"x",cpArrow(tr,cpRoas(ptot),false))+tile(L("تكلفة التبرع","Cost / donation"),tc==null?"—":fnum(tc,0),cpArrow(tc,cpCpa(ptot),true))+
-    tile(L("الميزانية الحالية","Current budget"),haveStruct?fnum(bud,0)+" <small>"+esc(C)+"</small>":"—")+"</div>";
+  h+='<div class="cp-tiles cp-t8">'+cpKpis(Object.assign({},m,{tot:tot,ptot:ptot,tr:tr,tc:tc,camps:camps,nOn:nOn,nOff:nOff,bud:bud,haveStruct:haveStruct})).map(x=>
+    tile(x.lb, x.cur==null?"—":x.fmt(x.cur)+(x.cur$?" <small>"+esc(C)+"</small>":""), x.sub?'<small class="cp-ar" style="color:var(--ink-3)">'+esc(x.sub)+"</small>":(x.prev!==undefined?cpArrow(x.cur,x.prev,!!x.low):""))).join("")+"</div>";
   const head='<tr><th style="width:30%">'+esc(L("الحملة","Campaign"))+'</th><th class="num">'+esc(L("الصرف","Spend"))+'</th><th class="num">'+esc(L("التبرعات","Donations"))+'</th><th class="num">'+esc(L("الإيراد","Revenue"))+'</th><th class="num">ROAS</th><th class="num">'+esc(L("تكلفة التبرع","Cost / don."))+'</th><th class="num" style="width:19%">'+esc(L("الميزانية الحالية","Current budget"))+"</th></tr>";
   PAIDP().forEach(pl=>{ const cs=camps.filter(c=>c.pl===pl).sort((x,y)=>y.v.s-x.v.s); if(!cs.length) return;
     const pp=platById(pl)||{name:pl};
@@ -13818,6 +13841,9 @@ function maSheet(){ const sh=CP.sheet; if(!sh) return ""; const C=CURR[S.cfg.set
     b='<div class="ma-sh-t">'+esc(L("فترة مخصصة","Custom range"))+"</div>"+
       '<div class="ma-range"><label><small>'+esc(L("من","From"))+'</small><input type="date" data-c="maFrom" value="'+esc(a||"")+'" max="'+todayISO()+'"></label><label><small>'+esc(L("لـ","To"))+'</small><input type="date" data-c="maTo" value="'+esc(b2||"")+'" max="'+todayISO()+'"></label></div>'+
       '<button class="ma-btn ma-btn-p" data-a="maClose">'+esc(L("تمام","Done"))+"</button>"; }
+  else if(sh.kind==="day"){ b='<div class="ma-sh-t">'+esc(L("يوم معين","Pick a day"))+"</div>"+
+      '<div class="ma-range"><label><small>'+esc(L("اليوم","Day"))+'</small><input type="date" data-c="maDay" value="'+esc(CP.day||addDays(todayISO(),-1))+'" max="'+todayISO()+'"></label></div>'+
+      '<button class="ma-btn ma-btn-p" data-a="maClose">'+esc(L("تمام","Done"))+"</button>"; }
   else if(sh.kind==="menu"){ b='<div class="ma-sh-t">'+esc(L("الشاشات","Screens"))+'</div><nav class="nav ma-menu">'+navHTML()+"</nav>"; }
   else if(sh.kind==="filt"){ const projs=Object.keys((CP._m&&CP._m.projs)||{}).sort();
     b='<div class="ma-sh-t">'+esc(L("فلاتر","Filters"))+"</div>"+
@@ -13833,9 +13859,9 @@ function maDLabel(a,b){ const p=x=>{ const d=new Date(x+"T00:00:00Z"); return [d
 function maPerLabel(){ return CP.per==="t"?L("النهارده","today"):CP.per==="y"?L("امبارح","yesterday"):CP.per==="7"?L("في آخر 7 أيام","in the last 7 days"):CP.per==="30"?L("في آخر 30 يوم","in the last 30 days"):L("في الفترة دي","in this period"); }
 /* إعدادات الجهاز: الفترة والمنصة والترتيب بتتفتكر على كل جهاز لوحده (العميل محفوظ أصلاً في gad.ws). أول مرة: النهارده */
 function maPrefsInit(){ if(CP.mInit) return; CP.mInit=1; let p={}; try{ p=JSON.parse(localStorage.getItem("gad.ma")||"{}")||{}; }catch(e){}
-  if(!CP.urlPer){ CP.per=p.per||"t"; if(CP.per==="r"){ if(p.from&&p.to){ CP.from=p.from; CP.to=p.to; } else CP.per="t"; } CP.key=""; }
+  if(!CP.urlPer){ CP.per=p.per||"t"; if(CP.per==="r"){ if(p.from&&p.to){ CP.from=p.from; CP.to=p.to; } else CP.per="t"; } if(CP.per==="d"){ if(p.day) CP.day=p.day; else CP.per="t"; } CP.key=""; }
   if(Array.isArray(p.plats)) CP.plats=p.plats; CP.msort=p.sort||"s"; CP.mq=""; }
-function maPrefsSave(){ try{ localStorage.setItem("gad.ma",JSON.stringify({per:CP.per==="d"?"r":CP.per,from:CP.per==="d"?CP.day:CP.from,to:CP.per==="d"?CP.day:CP.to,plats:CP.plats,sort:CP.msort})); }catch(e){} }
+function maPrefsSave(){ try{ localStorage.setItem("gad.ma",JSON.stringify({per:CP.per,day:CP.day,from:CP.from,to:CP.to,plats:CP.plats,sort:CP.msort})); }catch(e){} }
 function maRefBtn(){ const fb=CP.fbusy; return '<button class="ma-ib ma-rfb'+(fb?" busy":"")+'" data-a="cpRefresh"'+(fb?" disabled":"")+' aria-label="'+esc(L("تحديث الأرقام","Refresh numbers"))+'">'+maIco.ref+"</button>"; }
 function maUpdTxt(){ const fr=cpFast(), rq=CP.req, pend=rq&&rq.status==="pending", conv=convClient(cpCid()), src=conv?L("AppsFlyer","AppsFlyer"):L("خزامى","Khzama");
   if(CP.fbusy) return L("بيتحدث…","Updating…");
@@ -13857,9 +13883,9 @@ function renderCampApp(){
   if(!phoneDetail){
     h+='<div class="ma-nb ma-nb-main"><button class="ma-ib" data-a="maMenu" aria-label="'+esc(L("الشاشات","Screens"))+'">'+maIco.menu+'</button>'+
       '<div class="ma-ttl"><b>'+esc(L("أداء الحملات","Campaigns"))+'</b><small>'+esc(maUpdTxt())+'</small></div>'+maRefBtn()+pill+"</div>";
-    const per=CP.per==="d"?"r":CP.per;
-    h+='<div class="ma-filters"><div class="ma-seg ma-dates">'+[["t","النهارده","Today"],["y","امبارح","Yesterday"],["7","7 أيام","7 days"],["30","30 يوم","30 days"],["r","مخصص","Custom"]].map(x=>'<button class="'+(per===x[0]?"on":"")+'" data-a="maPer" data-v="'+x[0]+'">'+esc(L(x[1],x[2]))+"</button>").join("")+"</div>";
-    if(per==="r") h+='<button class="ma-dchip" data-a="maDate"><span>'+maDLabel(m.a,m.b)+"</span>"+maIco.down+"</button>";
+    const per=CP.per;
+    h+='<div class="ma-filters"><div class="ma-seg ma-dates">'+[["t","النهارده","Today"],["y","امبارح","Yest."],["d","يوم","Day"],["7","7 أيام","7 days"],["30","30 يوم","30 days"],["r","فترة","Range"]].map(x=>'<button class="'+(per===x[0]?"on":"")+'" data-a="maPer" data-v="'+x[0]+'">'+esc(L(x[1],x[2]))+"</button>").join("")+"</div>";
+    if(per==="r"||per==="d") h+='<button class="ma-dchip" data-a="maDate"><span>'+(per==="d"?maDLabel(CP.day||m.a,CP.day||m.a):maDLabel(m.a,m.b))+"</span>"+maIco.down+"</button>";
     const plats=PAIDP().filter(pl=>m.M&&m.M[pl]&&Object.keys(m.M[pl].camps||{}).length||CP.plats.indexOf(pl)>=0);
     const nf=(CP.stf?1:0)+(CP.proj?1:0)+(CP.cmp!=="prev"?1:0);
     h+='<div class="ma-tabs"><div class="ma-seg ma-plats"><button class="'+(!CP.plats.length?"on":"")+'" data-a="maPlat" data-v="">'+esc(L("الكل","All"))+"</button>"+plats.map(pl=>'<button class="'+(CP.plats.length===1&&CP.plats[0]===pl?"on":"")+'" data-a="maPlat" data-v="'+pl+'"><i class="ma-pl" style="background:'+((platById(pl)||{}).color||"#888")+'"></i>'+esc((platById(pl)||{}).name||pl)+"</button>").join("")+"</div>"+
@@ -13880,15 +13906,9 @@ function renderCampApp(){
     if(!tot.s&&!tot.r&&!tot.o){
       h+='<div class="ma-nospend">'+esc(L("مفيش صرف","No spend")+(plName?L(" على "," on ")+plName:"")+" "+maPerLabel())+"</div>";
     } else {
-      const k=(lb,val,dl)=>'<div class="ma-k"><small>'+esc(lb)+"</small><b>"+val+"</b>"+dl+"</div>";
-      h+='<div class="ma-ks">'+k(L("الصرف","Spend"),maN(fnum(tot.s,0))+"<small>"+esc(C)+"</small>",maDelta(tot.s,ptot.s,false))+
-        k(L("الإيراد","Revenue"),maN(fnum(tot.r,0))+"<small>"+esc(C)+"</small>",maDelta(tot.r,ptot.r,false))+
-        k("ROAS",maN(tr==null?"—":tr.toFixed(2)+"x"),maDelta(tr,cpRoas(ptot),false))+
-        k(L("تكلفة التبرع","Cost / donation"),maN(tc==null?"—":fnum(tc,0)),maDelta(tc,cpCpa(ptot),true))+"</div>";
+      h+='<div class="ma-ks ma-k8">'+cpKpis(m).map(x=>'<div class="ma-k"><small>'+esc(x.lb)+"</small><b>"+maN(x.cur==null?"—":x.fmt(x.cur))+(x.cur$&&x.cur!=null?"<small>"+esc(C)+"</small>":"")+"</b>"+
+        (x.sub?'<em class="ma-ksub">'+esc(x.sub)+"</em>":(x.prev!==undefined?maDelta(x.cur,x.prev,!!x.low):""))+"</div>").join("")+"</div>";
     }
-    h+='<div class="ma-line">'+maN(fnum(m.camps.length,0))+" "+esc(L("حملة","campaigns"))+' <span>('+maN(m.nOn)+" "+esc(L("شغالة","on"))+" · "+maN(m.nOff)+" "+esc(L("موقفة","off"))+")</span>"+
-      " · "+maN(fnum(tot.o,0))+" "+esc(conv?L("طلب","orders"):L("تبرع","donations"))+
-      (m.haveStruct?" · "+esc(L("الميزانية ","Budget "))+maN(fnum(m.bud,0))+" "+esc(C):"")+"</div>";
     if(conv) h+='<div class="ma-note">'+esc(L("الطلبات والإيراد من AppsFlyer وسلة على مستوى الحملة بس — المجموعات والإعلانات بالصرف بس.","Orders per campaign only; ad sets and ads show spend."))+"</div>";
     const q=(CP.mq||"").trim().toLowerCase();
     let camps=maSortCamps(m.camps); const all=camps.length; if(q) camps=camps.filter(c=>String(c.code).toLowerCase().indexOf(q)>=0||String(c.proj||"").toLowerCase().indexOf(q)>=0);
@@ -13916,9 +13936,10 @@ ACT.maOpen=t=>{ const k=t.dataset.k||""; if(k.indexOf("s|")===0){ const p=k.spli
   maPush({t:"camp",k:k}); };
 ACT.maBack=()=>{ if(maPad()){ CP.mnav=CP.mnav.slice(0,1); CP.manim="fade"; CP.manimWas=1; render(); return; } try{ history.back(); }catch(x){ CP.mnav.pop(); render(); } };
 window.addEventListener("popstate",()=>{ if(S.view!=="campperf"||!CP.mnav.length) return; CP.mnav.pop(); CP.sheet=null; CP.manim="pop"; render(); const y=CP.mnav.length?0:(CP.mscroll||0); setTimeout(()=>window.scrollTo(0,y),0); });
-ACT.maPer=t=>{ const v=t.dataset.v; if(v==="r"){ const T=todayISO(), m=CP._m||{}; if(CP.per!=="r"&&CP.per!=="d"){ CP.from=m.a||addDays(T,-6); CP.to=m.b||T; } else if(CP.per==="d"){ CP.from=CP.to=CP.day; } CP.per="r"; CP.sheet={kind:"date"}; }
+ACT.maPer=t=>{ const v=t.dataset.v; if(v==="d"){ CP.day=CP.day||addDays(todayISO(),-1); CP.per="d"; CP.sheet={kind:"day"}; CP.mnav=[]; maPrefsSave(); render(); return; } if(v==="r"){ const T=todayISO(), m=CP._m||{}; if(CP.per!=="r"&&CP.per!=="d"){ CP.from=m.a||addDays(T,-6); CP.to=m.b||T; } else if(CP.per==="d"){ CP.from=CP.to=CP.day; } CP.per="r"; CP.sheet={kind:"date"}; }
   else { CP.per=v; } CP.mnav=[]; maPrefsSave(); render(); };
-ACT.maDate=()=>{ CP.sheet={kind:"date"}; render(); };
+ACT.maDate=()=>{ CP.sheet={kind:CP.per==="d"?"day":"date"}; render(); };
+CHG.maDay=v=>{ if(!v) return; CP.per="d"; CP.day=v; CP.key=""; maPrefsSave(); render(); };
 CHG.maFrom=v=>{ if(!v) return; CP.per="r"; CP.from=v; if(!CP.to||CP.to<v) CP.to=v; maPrefsSave(); render(); };
 CHG.maTo=v=>{ if(!v) return; CP.per="r"; CP.to=v; if(!CP.from||CP.from>v) CP.from=v; maPrefsSave(); render(); };
 ACT.maPlat=t=>{ const v=t.dataset.v; CP.plats=v?[v]:[]; CP.mnav=[]; maPrefsSave(); render(); };
