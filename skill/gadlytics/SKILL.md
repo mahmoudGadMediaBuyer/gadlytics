@@ -77,7 +77,7 @@ Bulk edit / undo / pace / log / alerts history (Nov 10 2026, README §26):
 - «تراجع» shows as a 10-second toast, and «آخر التعديلات» lists each change with «رجّع».
 - `cpUndoWhy` refuses to undo when the live camp_struct value changed since, or a later change exists.
 - 📊 «سرعة الصرف والتقييم الكامل» compares today with yesterday at the same hour (camp_hourly, written by camp-refresh v4 every refresh in 15-minute buckets), plus full stats for the period.
-- 🕒 «سجل التعديلات» shows the log per campaign.
+- «سجل التعديلات» opens inline, never on another screen. Whole page: the toolbar button `cpLogAll`, with a platform filter. One campaign: the 🕒 icon on desktop or the button in the campaign screen (`CP.logCamp`). Edits also reach «سجل التغييرات» through changes/*, written by camp-apply.
 - On phone/iPad the panels open as a full screen (view `cppanel`), never pop-up sheets; pace is inline.
 - «سجل التنبيهات» on the push screen reads alerts_sent ordered by sent_at desc, 7 days at a time with «أقدم».
   - Each row shows its delivery on this device: deliveries[].ep = sha256(endpoint)[0..16].
