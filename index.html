@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="gad-build" content="20261110103323">
+<meta name="gad-build" content="20261110103811">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -16,7 +16,7 @@
 <script>
 /* تحديث تلقائي للتطبيق على الموبايل/الآيباد: مفيش service worker ولا كاش. كل ما التطبيق يتفتح أو يرجع للواجهة
    بيجيب index.html جديد (no-store) ويقارن رقم البيلد؛ لو فيه نسخة أحدث بيفتحها على طول. */
-(function(){ var B="20261110103323", last=0;
+(function(){ var B="20261110103811", last=0;
   function busy(){ return document.querySelector("#cpIn:focus, .ma-sheet, input:focus, textarea:focus"); }
   function chk(){ var n=Date.now(); if(n-last<20000) return; last=n; if(busy()) return;
     fetch(location.pathname+"?_b="+n,{cache:"no-store"}).then(function(r){ return r.ok? r.text() : ""; }).then(function(t){
@@ -13888,7 +13888,8 @@ ACT.cpBApply=async()=>{ const p=CP.panel; if(!p||p.busy) return; const items=Obj
   for(const it of items){ const nv=cpBNew(it,p), k=cpBKey(it.pl,it.lvl,it.id);
     if(nv==null||(it.old!=null&&Math.round(it.old)===nv)){ p.res[k]={ok:true,skip:true}; continue; }
     p.res[k]=await cpDo({pl:it.pl,lvl:it.lvl,id:it.id,name:it.name,field:"budget",from:it.old,to:nv,batch:p.batch}); cpPanelDraw(); }
-  p.busy=false; CP.lastBatch=p.batch; cpPanelDraw(); render(); if(!maOn()) cpPanelDraw(); };
+  p.busy=false; CP.lastBatch=p.batch; cpPanelDraw(); render(); if(!maOn()) cpPanelDraw();
+  const nOk=Object.values(p.res).filter(x=>x&&x.ok&&!x.skip).length; if(nOk) cpUndoToast(null,L("اتطبق على "+nOk+" ✓","Applied to "+nOk+" ✓"),p.batch); };
 ACT.cpBDone=()=>{ CP.bsel={}; CP.bulk=false; ACT.cpPanelClose(); render(); };
 /* ── تراجع ── */
 function cpUndoWhy(c){ if(!c) return L("مش لاقي التعديل","Change not found");
@@ -13902,15 +13903,15 @@ function cpUndoWhy(c){ if(!c) return L("مش لاقي التعديل","Change no
     if(cur!=null&&String(c.field==="status"?cur:Math.round(+cur))!==String(c.field==="status"?want:Math.round(+want))) return L("القيمة على المنصة اتغيّرت بعده","The platform value changed since"); }
   return ""; }
 function cpUndoable(c){ return !cpUndoWhy(c); }
-function cpUndoToast(id,msg){ let el=$("#toastAct"); if(!el){ el=document.createElement("div"); el.id="toastAct"; document.body.appendChild(el); }
-  el.innerHTML='<span>'+esc(msg)+'</span><button data-a="cpUndo" data-id="'+esc(id)+'">'+cpIco.undo+" "+esc(L("تراجع","Undo"))+'</button><button class="x" data-a="cpUndoHide">✕</button>';
+function cpUndoToast(id,msg,batch){ let el=$("#toastAct"); if(!el){ el=document.createElement("div"); el.id="toastAct"; document.body.appendChild(el); }
+  el.innerHTML='<span>'+esc(msg)+'</span><button '+(batch?'data-a="cpUndoBatch" data-b="'+esc(batch)+'"':'data-a="cpUndo" data-id="'+esc(id)+'"')+'>'+cpIco.undo+" "+esc(L("تراجع","Undo"))+'</button><button class="x" data-a="cpUndoHide">✕</button>';
   el.className="toast-act on"; clearTimeout(CP._ut); CP._ut=setTimeout(()=>{ el.className="toast-act"; },10000); }
 ACT.cpUndoHide=()=>{ const el=$("#toastAct"); if(el) el.className="toast-act"; };
 async function cpUndoOne(id){ const c=CP.chg.find(x=>x._id===id), why=cpUndoWhy(c); if(why) return {ok:false,error:why};
   return cpDo({pl:c.platform,lvl:c.level,id:c.objId,name:c.name,field:c.field,bidType:c.bidType,from:c.field==="status"?c.to:(c.applied!=null?c.applied:c.to),to:c.from,undoOf:id}); }
 ACT.cpUndo=async t=>{ ACT.cpUndoHide(); const r=await cpUndoOne(t.dataset.id); toast(r.ok? (r.queued?L("اتبعت التراجع — مستني المنصة","Undo queued"):L("رجعت زي ما كانت ✓","Reverted ✓")) : L("مارجعتش: ","Not reverted: ")+(r.error||""),!r.ok);
   if(CP.panel) cpPanelDraw(); render(); };
-ACT.cpUndoBatch=async t=>{ const b=t.dataset.b, list=CP.chg.filter(x=>x.batch===b&&cpUndoable(x)); let ok=0;
+ACT.cpUndoBatch=async t=>{ ACT.cpUndoHide(); const b=t.dataset.b, list=CP.chg.filter(x=>x.batch===b&&cpUndoable(x)); let ok=0;
   for(const c of list){ const r=await cpUndoOne(c._id); if(r.ok) ok++; }
   toast(L("رجعت ","Reverted ")+ok+" / "+list.length,ok<list.length); ACT.cpBDone(); };
 ACT.cpUndoList=()=>cpPanelOpen({type:"undo"});
@@ -14123,7 +14124,7 @@ function pushHTML(p){ const st=p.st; let b="";
 function renderCampPerf(){
   if(!(window.SUPA_DB&&SUPA_DB.client)) return emptyBox(L("الصفحة دي محتاجة الموقع الأونلاين (الداتا بيز).","This page needs the online site (database)."));
   if(maOn()) return renderCampApp();
-  const m=cpModel(), a=m.a, b=m.b, cid=m.cid, C=CURR[S.cfg.settings.currency]||"";
+  const m=cpModel(), a=m.a, b=m.b, cid=m.cid, C=CURR[S.cfg.settings.currency]||""; CP._m=m;
   const T=m.T, tg=m.tg;
   let h='<div class="cp"><div class="cp-head"><div class="hint">'+
     esc(L("الصرف من المنصة · التبرعات والإيراد من خزامى · ROAS = إيراد خزامى ÷ صرف المنصة","Spend from the platform · donations and revenue from Khzama"))+"</div>";
