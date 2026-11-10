@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="gad-build" content="20261109190108">
+<meta name="gad-build" content="20261110064704">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -16,7 +16,7 @@
 <script>
 /* تحديث تلقائي للتطبيق على الموبايل/الآيباد: مفيش service worker ولا كاش. كل ما التطبيق يتفتح أو يرجع للواجهة
    بيجيب index.html جديد (no-store) ويقارن رقم البيلد؛ لو فيه نسخة أحدث بيفتحها على طول. */
-(function(){ var B="20261109190108", last=0;
+(function(){ var B="20261110064704", last=0;
   function busy(){ return document.querySelector("#cpIn:focus, .ma-sheet, input:focus, textarea:focus"); }
   function chk(){ var n=Date.now(); if(n-last<20000) return; last=n; if(busy()) return;
     fetch(location.pathname+"?_b="+n,{cache:"no-store"}).then(function(r){ return r.ok? r.text() : ""; }).then(function(t){
@@ -838,7 +838,7 @@ html.ma-on .toast{inset-inline:16px!important;bottom:calc(20px + env(safe-area-i
 .ma-nospend{background:var(--ground-1);border-radius:var(--rad);padding:16px;text-align:center;color:var(--ink-2);font-size:var(--t-m);font-weight:700;margin-bottom:var(--g)}
 .ma-lh{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:16px 2px 8px}.ma-lh .ma-sec{margin:0}
 .ma-sort{position:relative;display:inline-flex;align-items:center;height:36px;border-radius:18px;background:var(--ground-2);padding:0 12px;flex:none}
-.ma-sort select{appearance:none;-webkit-appearance:none;border:0;background:transparent;color:var(--ink-2);font:inherit;font-size:13px;font-weight:700;padding-inline-end:18px}
+.ma-sort select{appearance:none;-webkit-appearance:none;border:0;background:transparent;color:var(--ink-2);font:inherit;font-size:16px;font-weight:700;padding-inline-end:18px}
 .ma-sort svg{width:14px;height:14px;position:absolute;inset-inline-end:10px;pointer-events:none;color:var(--ink-3)}
 .ma-q{display:flex;align-items:center;gap:8px;height:40px;border-radius:12px;background:var(--ground-2);padding:0 12px;margin-bottom:var(--g)}
 .ma-q svg{width:18px;height:18px;color:var(--ink-3);flex:none}
@@ -13887,10 +13887,10 @@ function renderCampApp(){
 /* الأكشنز */
 const maPush=e=>{ CP.mscroll=window.scrollY; CP.mnav.push(e); CP.manim="push"; try{ history.pushState({ma:CP.mnav.length},""); }catch(x){} render(); window.scrollTo(0,0); };
 ACT.maOpen=t=>{ const k=t.dataset.k||""; if(k.indexOf("s|")===0){ const p=k.split("|"); const e={t:"set",pl:p[1],cid:p[2],sid:p[3],k:p[1]+"|"+p[2]};
-    if(maPad()){ CP.mnav=[{t:"camp",k:e.k},e]; CP.manim="fade"; render(); const dp=document.querySelector(".ma-dp"); if(dp) dp.scrollTop=0; } else maPush(e); return; }
-  if(maPad()){ CP.mnav=[{t:"camp",k:k}]; CP.manim="fade"; render(); const dp=document.querySelector(".ma-dp"); if(dp) dp.scrollTop=0; return; }
+    if(maPad()){ CP.mnav=[{t:"camp",k:e.k},e]; CP.manim="fade"; CP.manimWas=1; render(); const dp=document.querySelector(".ma-dp"); if(dp) dp.scrollTop=0; } else maPush(e); return; }
+  if(maPad()){ CP.mnav=[{t:"camp",k:k}]; CP.manim="fade"; CP.manimWas=1; render(); const dp=document.querySelector(".ma-dp"); if(dp) dp.scrollTop=0; return; }
   maPush({t:"camp",k:k}); };
-ACT.maBack=()=>{ if(maPad()){ CP.mnav=CP.mnav.slice(0,1); CP.manim="fade"; render(); return; } try{ history.back(); }catch(x){ CP.mnav.pop(); render(); } };
+ACT.maBack=()=>{ if(maPad()){ CP.mnav=CP.mnav.slice(0,1); CP.manim="fade"; CP.manimWas=1; render(); return; } try{ history.back(); }catch(x){ CP.mnav.pop(); render(); } };
 window.addEventListener("popstate",()=>{ if(S.view!=="campperf"||!CP.mnav.length) return; CP.mnav.pop(); CP.sheet=null; CP.manim="pop"; render(); const y=CP.mnav.length?0:(CP.mscroll||0); setTimeout(()=>window.scrollTo(0,y),0); });
 ACT.maPer=t=>{ const v=t.dataset.v; if(v==="r"){ const T=todayISO(), m=CP._m||{}; if(CP.per!=="r"&&CP.per!=="d"){ CP.from=m.a||addDays(T,-6); CP.to=m.b||T; } else if(CP.per==="d"){ CP.from=CP.to=CP.day; } CP.per="r"; CP.sheet={kind:"date"}; }
   else { CP.per=v; } CP.mnav=[]; maPrefsSave(); render(); };
@@ -13914,15 +13914,15 @@ document.addEventListener("click",e=>{ if(e.target.closest&&e.target.closest('.m
 document.addEventListener("keydown",e=>{ if(e.key==="Enter"&&e.target&&e.target.id==="cpIn"&&CP.sheet&&CP.sheet.kind==="edit"){ e.preventDefault(); const b=document.querySelector('.ma-sheet [data-a="cpSave"]'); if(b) b.click(); } });
 /* رجوع بالسحب من طرف الشاشة (زي iOS) — في شاشات التفاصيل على الموبايل */
 (function(){ let x0=null, y0=0, side=0;
-  document.addEventListener("touchstart",e=>{ x0=null; if(!maOn()||maPad()||CP.sheet||!CP.mnav.length) return; const t=e.touches[0], w=window.innerWidth;
+  document.addEventListener("touchstart",e=>{ x0=null; if(!maOn()||maPad()||CP.sheet||!CP.mnav.length||e.touches.length!==1||(window.visualViewport&&visualViewport.scale>1.01)) return; const t=e.touches[0], w=window.innerWidth;
     if(t.clientX>w-28){ side=-1; } else if(t.clientX<28){ side=1; } else return; x0=t.clientX; y0=t.clientY; },{passive:true});
   document.addEventListener("touchend",e=>{ if(x0==null) return; const t=e.changedTouches[0], dx=t.clientX-x0, dy=Math.abs(t.clientY-y0); x0=null;
     if(dy<60&&dx*side>70) ACT.maBack(); },{passive:true}); })();
 /* العنوان الكبير بيتلم في شريط صغير مع السكرول + اسحب لتحت للتحديث */
 window.addEventListener("scroll",()=>{ const r=document.getElementById("maRoot"); if(r) r.classList.toggle("ma-sc",window.scrollY>36); },{passive:true});
 (function(){ let y0=null, dy=0; const ptr=()=>document.getElementById("maPtr");
-  document.addEventListener("touchstart",e=>{ if(!maOn()||CP.sheet||window.scrollY>0||CP.fbusy){ y0=null; return; } y0=e.touches[0].clientY; dy=0; },{passive:true});
-  document.addEventListener("touchmove",e=>{ if(y0==null) return; dy=e.touches[0].clientY-y0; const p=ptr(); if(p){ const v=Math.max(0,Math.min(90,dy*.5)); p.style.transform="translate(-50%,"+v+"px) rotate("+(v*4)+"deg)"; p.style.opacity=Math.min(1,v/60); } },{passive:true});
+  document.addEventListener("touchstart",e=>{ if(!maOn()||CP.sheet||window.scrollY>0||CP.fbusy||e.touches.length!==1||(window.visualViewport&&visualViewport.scale>1.01)){ y0=null; return; } y0=e.touches[0].clientY; dy=0; },{passive:true});
+  document.addEventListener("touchmove",e=>{ if(y0==null) return; if(e.touches.length!==1){ y0=null; const q=ptr(); if(q){ q.style.transform=""; q.style.opacity=""; } return; } dy=e.touches[0].clientY-y0; const p=ptr(); if(p){ const v=Math.max(0,Math.min(90,dy*.5)); p.style.transform="translate(-50%,"+v+"px) rotate("+(v*4)+"deg)"; p.style.opacity=Math.min(1,v/60); } },{passive:true});
   document.addEventListener("touchend",()=>{ const p=ptr(); if(p){ p.style.transform=""; p.style.opacity=""; } if(y0!=null&&dy>140&&window.scrollY<=0&&maOn()) ACT.cpRefresh(); y0=null; dy=0; },{passive:true}); })();
 
 CHG.cpPer=v=>{ CP.per=v; if(v==="d"&&!CP.day) CP.day=addDays(todayISO(),-1); render(); };
@@ -14338,8 +14338,10 @@ function render(){
   document.querySelectorAll("#nav .nav-i[data-v]").forEach(b=>{ const k=(b.dataset.v.indexOf("scr_")===0?"v:screen":"v:"+b.dataset.v); const t=helpWhat(k); if(t) b.title=t; });
   renderFBar();
   { const fb=$("#fbar"); if(fb&&fb.innerHTML) try{ fb.innerHTML=addHelp(fb.innerHTML); }catch(e){} }
+  const _maKeep=maOn()? [["#maDp","scrollTop"],[".ma-ks","scrollLeft"],[".ma-plats","scrollLeft"]].map(x=>{ const el=document.querySelector(x[0]); return el?[x[0],x[1],el[x[1]]]:null; }).filter(Boolean) : [];
   $("#view").innerHTML=(lsGet("mbc.pmDemo",false)?'<div class="pm-demo pm-demo-g"><span>'+esc(L("وضع البيانات التجريبية: الأرقام في كل الشاشات عشوائية للمعاينة، مش أرقامك ومش متسجلة في أي مكان.","Demo mode: numbers on every screen are random previews — not yours, not saved."))+'</span><button class="btn btn-s" data-a="pmDemo">'+esc(L("اقفله","Turn off"))+"</button></div>":"")+(READONLY?'<div class="ro-bar">'+esc(L("👁 وضع المشاهدة — بتشوف كل حاجة لحظياً، بس التعديل وإدخال البيانات مقفولين.","👁 View-only — you see everything live, but editing and data entry are locked."))+"</div>":"")+
     (maOn()?"":wsBar()+headerFor())+renderView();
+  _maKeep.forEach(x=>{ const el=document.querySelector(x[0]); if(el&&!(x[0]==="#maDp"&&CP.manimWas)) el[x[1]]=x[2]; }); CP.manimWas=0;
   const host=$("#aiHost");
   if(host&&(!$("#aiPanel")||host.dataset.lang!==LANG())){
     host.dataset.lang=LANG(); host.innerHTML=aiPanel();
