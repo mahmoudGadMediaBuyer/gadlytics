@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="gad-build" content="20261110100352">
+<meta name="gad-build" content="20261110102900">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -16,7 +16,7 @@
 <script>
 /* تحديث تلقائي للتطبيق على الموبايل/الآيباد: مفيش service worker ولا كاش. كل ما التطبيق يتفتح أو يرجع للواجهة
    بيجيب index.html جديد (no-store) ويقارن رقم البيلد؛ لو فيه نسخة أحدث بيفتحها على طول. */
-(function(){ var B="20261110100352", last=0;
+(function(){ var B="20261110102900", last=0;
   function busy(){ return document.querySelector("#cpIn:focus, .ma-sheet, input:focus, textarea:focus"); }
   function chk(){ var n=Date.now(); if(n-last<20000) return; last=n; if(busy()) return;
     fetch(location.pathname+"?_b="+n,{cache:"no-store"}).then(function(r){ return r.ok? r.text() : ""; }).then(function(t){
@@ -14168,7 +14168,7 @@ function maSheet(){ const sh=CP.sheet; if(!sh){ window.__shK=null; return ""; } 
       '<div class="ma-range"><label><small>'+esc(L("اليوم","Day"))+'</small><input type="date" data-c="maDay" value="'+esc(CP.day||addDays(todayISO(),-1))+'" max="'+todayISO()+'"></label></div>'+
       '<button class="ma-btn ma-btn-p" data-a="maClose">'+esc(L("تمام","Done"))+"</button>"; }
   else if(sh.kind==="panel"){ const P=cpPanelHTML(); b='<div class="ma-sh-t">'+esc(P.t)+'</div><div class="cp-pan">'+P.b+"</div>"+(P.f?'<div class="cp-pf">'+P.f+"</div>":""); }
-  else if(sh.kind==="menu"){ b='<div class="ma-sh-t">'+esc(L("الشاشات","Screens"))+'</div><div class="ma-acct">'+tbRight()+'</div><nav class="nav ma-menu">'+navHTML()+"</nav>"; }
+  else if(sh.kind==="menu"){ b='<div class="ma-sh-t">'+esc(L("الشاشات","Screens"))+'</div><div class="ma-acct">'+tbRight().replace('data-a="go" data-v="me"','data-a="go" data-v="push"')+'</div><nav class="nav ma-menu">'+navHTML()+"</nav>"; }
   else if(sh.kind==="filt"){ const projs=Object.keys((CP._m&&CP._m.projs)||{}).sort();
     b='<div class="ma-sh-t">'+esc(L("فلاتر","Filters"))+"</div>"+
       '<div class="ma-fl"><span>'+esc(L("الحالة","Status"))+'</span><div class="ma-seg">'+[["","الكل","All"],["on","الشغالة","On"],["off","الموقفة","Off"]].map(x=>'<button class="'+(CP.stf===x[0]?"on":"")+'" data-a="maStf" data-v="'+x[0]+'">'+esc(L(x[1],x[2]))+"</button>").join("")+"</div></div>"+
@@ -14279,7 +14279,7 @@ ACT.maClose=(t,e)=>{ if(t&&t.classList&&t.classList.contains("ma-shbg")&&Date.no
 ACT.maSwAsk=t=>{ const d=t.dataset; CP.sheet={kind:"sw",pl:d.pl,lvl:d.lvl,id:d.id,n:d.n,to:d.to}; render(); };
 ACT.maEditAsk=t=>{ const d=t.dataset; CP.sheet={kind:"edit",pl:d.pl,lvl:d.lvl,id:d.id,f:d.f,old:d.old,n:d.n,lb:d.lb}; render(); setTimeout(()=>{ const i=$("#cpIn"); if(i){ i.focus(); try{ i.select(); }catch(e){} } },60); };
 ACT.maPct=t=>{ const i=$("#cpIn"); if(!i) return; const b=+t.dataset.b, p=+t.dataset.p; i.value=Math.max(1,Math.round(b*(1+p/100))); };
-document.addEventListener("click",e=>{ if(e.target.closest&&e.target.closest('.ma-menu [data-a="go"]')){ CP.sheet=null; CP.mnav=[]; } },true);
+document.addEventListener("click",e=>{ if(e.target.closest&&e.target.closest('.ma-menu [data-a="go"], .ma-acct [data-a="go"], .ma-acct [data-a="profEdit"]')){ CP.sheet=null; CP.mnav=[]; } },true);
 document.addEventListener("keydown",e=>{ if(e.key==="Enter"&&e.target&&e.target.id==="cpIn"&&CP.sheet&&CP.sheet.kind==="edit"){ e.preventDefault(); const b=document.querySelector('.ma-sheet [data-a="cpSave"]'); if(b) b.click(); } });
 /* رجوع بالسحب من طرف الشاشة (زي iOS) — في شاشات التفاصيل على الموبايل */
 (function(){ let x0=null, y0=0, side=0;
