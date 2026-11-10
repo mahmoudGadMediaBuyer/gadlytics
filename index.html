@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="gad-build" content="20261110074908">
+<meta name="gad-build" content="20261110075447">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -16,7 +16,7 @@
 <script>
 /* تحديث تلقائي للتطبيق على الموبايل/الآيباد: مفيش service worker ولا كاش. كل ما التطبيق يتفتح أو يرجع للواجهة
    بيجيب index.html جديد (no-store) ويقارن رقم البيلد؛ لو فيه نسخة أحدث بيفتحها على طول. */
-(function(){ var B="20261110074908", last=0;
+(function(){ var B="20261110075447", last=0;
   function busy(){ return document.querySelector("#cpIn:focus, .ma-sheet, input:focus, textarea:focus"); }
   function chk(){ var n=Date.now(); if(n-last<20000) return; last=n; if(busy()) return;
     fetch(location.pathname+"?_b="+n,{cache:"no-store"}).then(function(r){ return r.ok? r.text() : ""; }).then(function(t){
@@ -958,6 +958,7 @@ html.ap-on .fbar-slot *{max-width:100%}
 /* زرار المساعد فوق شريط الهوم */
 html.ap-on .ai-fab{bottom:calc(16px + env(safe-area-inset-bottom))!important;inset-inline-end:calc(16px + env(safe-area-inset-left))!important;width:48px;height:48px}
 html.ma-on .ai-fab{display:none!important}
+body:has(.ma-sheet) .ai-fab{display:none!important}
 /* صف الحساب في شيت الشاشات (التنبيهات · اللغة · الثيم · الملف الشخصي) */
 .ma-acct{display:flex;align-items:center;gap:8px;padding:4px 4px 10px;border-bottom:1px solid var(--line,rgba(127,127,127,.15));flex-wrap:wrap}
 .ma-acct .tb-ib{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;border:0;background:var(--ground-2);color:var(--ink);position:relative}
