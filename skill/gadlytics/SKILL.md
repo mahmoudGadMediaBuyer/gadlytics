@@ -69,3 +69,5 @@ Default = calm palette + soft charts. Skin picker: Settings → Display → «ش
 App rows (Nov 10 2026): campaign/ad set/ad rows on phone/iPad show spend · donations · revenue · ROAS (4 equal columns, separators, delta under the number) — keep this order.
 
 App shell for every screen (Nov 10 2026): `html.ap-on` (≤1180, not campperf) hides rail/topbar, renders `apBar()` (☰ menu · title · client) + `maSheet()` around wsBar/headerFor/view, safe-area insets, phone grids → 1 column, tables scroll in their card. The menu sheet has an account row (`tbRight()`); the desktop #topbar is emptied at ≤1180 so its ids live in the sheet. Test all nav screens at 390 and 820 before deploying any UI change.
+
+Verdicts (Nov 10 2026): per-client roasAlarm/roasMin/roasGood in config/app (ملبي 2.0/2.1/2.8 → إنذار/راقب/كويس/زوّد). Push: sw.js (push+click only, NO caching) + edge fn `push` (VAPID in app_secrets, WebCrypto aes128gcm) + table push_subs; menu ← «التنبيهات». iPhone needs the home-screen app and a tap on «فعّل التنبيهات».
