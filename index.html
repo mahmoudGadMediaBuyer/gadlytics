@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="gad-build" content="20261110064704">
+<meta name="gad-build" content="20261110064929">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -16,7 +16,7 @@
 <script>
 /* تحديث تلقائي للتطبيق على الموبايل/الآيباد: مفيش service worker ولا كاش. كل ما التطبيق يتفتح أو يرجع للواجهة
    بيجيب index.html جديد (no-store) ويقارن رقم البيلد؛ لو فيه نسخة أحدث بيفتحها على طول. */
-(function(){ var B="20261110064704", last=0;
+(function(){ var B="20261110064929", last=0;
   function busy(){ return document.querySelector("#cpIn:focus, .ma-sheet, input:focus, textarea:focus"); }
   function chk(){ var n=Date.now(); if(n-last<20000) return; last=n; if(busy()) return;
     fetch(location.pathname+"?_b="+n,{cache:"no-store"}).then(function(r){ return r.ok? r.text() : ""; }).then(function(t){
@@ -13726,7 +13726,7 @@ function maRow(o){ const v=o.v, ro=cpRoas(v), cp=cpCpa(v), pv=o.pv;
     '<div class="ma-r2">'+mt+(o.verdict?'<span class="ma-vc">'+o.verdict+"</span>":"")+"</div>"+(o.chips?'<div class="ma-r3">'+o.chips+"</div>":"")+(o.sub?'<div class="ma-sub">'+esc(o.sub)+"</div>":"")+"</div>"; }
 /* chips الصف: الحملة (CBO = ميزانية، ABO = على الـ Ad sets) — الـ Ad set (ABO = ميزانية + المزايدة) */
 function maCampChips(c){ const st=c.st, mode=st&&st.budget_mode||""; if(!st) return "";
-  if(mode==="ABO") return '<span class="ma-bc is-ro"><small>ABO</small>'+esc(L("الميزانية على الـ Ad sets","Budget on the ad sets"))+"</span>";
+  if(mode==="ABO") return '<span class="ma-bc is-ro"><small>ABO</small>'+esc(L("الميزانية على المجموعات","Budget on the ad sets"))+"</span>";
   return maChipEd(c.pl,"campaign",c.id,"budget",st.daily_budget,"",c.code); }
 function maSetChips(c,s){ const sst=s.st, mode=c.st&&c.st.budget_mode||""; if(!sst) return ""; let h="";
   if(mode==="ABO"||(mode!=="CBO"&&sst.daily_budget!=null)) h+=maChipEd(c.pl,"adset",s.id,"budget",sst.daily_budget,"",s.name);
@@ -13804,8 +13804,9 @@ function maSheet(){ const sh=CP.sheet; if(!sh) return ""; const C=CURR[S.cfg.set
       '<button class="ma-btn ma-btn-p" data-a="maClose">'+esc(L("تمام","Done"))+"</button>"; }
   return '<div class="ma-shbg" data-a="maClose"></div><div class="ma-sheet'+(sh.kind==="menu"?" ma-sheet-tall":"")+'" role="dialog"><i class="ma-grab"></i>'+b+"</div>"; }
 const MA_MON=["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
-function maDLabel(a,b){ const p=x=>{ const d=new Date(x+"T00:00:00Z"); return [d.getUTCDate(),d.getUTCMonth()]; }; const x=p(a), y=p(b);
-  if(a===b) return x[0]+" "+MA_MON[x[1]]; if(x[1]===y[1]) return x[0]+"–"+y[0]+" "+MA_MON[y[1]]; return x[0]+" "+MA_MON[x[1]]+" – "+y[0]+" "+MA_MON[y[1]]; }
+/* «13–19 أكتوبر» — الأرقام في span معزول عشان الترتيب يفضل صح في RTL */
+function maDLabel(a,b){ const p=x=>{ const d=new Date(x+"T00:00:00Z"); return [d.getUTCDate(),d.getUTCMonth()]; }; const x=p(a), y=p(b), n=v=>'<span class="num">'+v+"</span>";
+  if(a===b) return n(x[0])+" "+MA_MON[x[1]]; if(x[1]===y[1]) return n(x[0]+"–"+y[0])+" "+MA_MON[y[1]]; return n(x[0])+" "+MA_MON[x[1]]+" – "+n(y[0])+" "+MA_MON[y[1]]; }
 function maPerLabel(){ return CP.per==="t"?L("النهارده","today"):CP.per==="y"?L("امبارح","yesterday"):CP.per==="7"?L("في آخر 7 أيام","in the last 7 days"):CP.per==="30"?L("في آخر 30 يوم","in the last 30 days"):L("في الفترة دي","in this period"); }
 /* إعدادات الجهاز: الفترة والمنصة والترتيب بتتفتكر على كل جهاز لوحده (العميل محفوظ أصلاً في gad.ws). أول مرة: النهارده */
 function maPrefsInit(){ if(CP.mInit) return; CP.mInit=1; let p={}; try{ p=JSON.parse(localStorage.getItem("gad.ma")||"{}")||{}; }catch(e){}
@@ -13835,7 +13836,7 @@ function renderCampApp(){
       '<div class="ma-ttl"><b>'+esc(L("أداء الحملات","Campaigns"))+'</b><small>'+esc(maUpdTxt())+'</small></div>'+maRefBtn()+pill+"</div>";
     const per=CP.per==="d"?"r":CP.per;
     h+='<div class="ma-filters"><div class="ma-seg ma-dates">'+[["t","النهارده","Today"],["y","امبارح","Yesterday"],["7","7 أيام","7 days"],["30","30 يوم","30 days"],["r","مخصص","Custom"]].map(x=>'<button class="'+(per===x[0]?"on":"")+'" data-a="maPer" data-v="'+x[0]+'">'+esc(L(x[1],x[2]))+"</button>").join("")+"</div>";
-    if(per==="r") h+='<button class="ma-dchip" data-a="maDate">'+maN(maDLabel(m.a,m.b))+maIco.down+"</button>";
+    if(per==="r") h+='<button class="ma-dchip" data-a="maDate"><span>'+maDLabel(m.a,m.b)+"</span>"+maIco.down+"</button>";
     const plats=PAIDP().filter(pl=>m.M&&m.M[pl]&&Object.keys(m.M[pl].camps||{}).length||CP.plats.indexOf(pl)>=0);
     const nf=(CP.stf?1:0)+(CP.proj?1:0)+(CP.cmp!=="prev"?1:0);
     h+='<div class="ma-tabs"><div class="ma-seg ma-plats"><button class="'+(!CP.plats.length?"on":"")+'" data-a="maPlat" data-v="">'+esc(L("الكل","All"))+"</button>"+plats.map(pl=>'<button class="'+(CP.plats.length===1&&CP.plats[0]===pl?"on":"")+'" data-a="maPlat" data-v="'+pl+'"><i class="ma-pl" style="background:'+((platById(pl)||{}).color||"#888")+'"></i>'+esc((platById(pl)||{}).name||pl)+"</button>").join("")+"</div>"+
