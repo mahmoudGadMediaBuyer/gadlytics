@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="gad-build" content="20261110074518">
+<meta name="gad-build" content="20261110074908">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -16,7 +16,7 @@
 <script>
 /* تحديث تلقائي للتطبيق على الموبايل/الآيباد: مفيش service worker ولا كاش. كل ما التطبيق يتفتح أو يرجع للواجهة
    بيجيب index.html جديد (no-store) ويقارن رقم البيلد؛ لو فيه نسخة أحدث بيفتحها على طول. */
-(function(){ var B="20261110074518", last=0;
+(function(){ var B="20261110074908", last=0;
   function busy(){ return document.querySelector("#cpIn:focus, .ma-sheet, input:focus, textarea:focus"); }
   function chk(){ var n=Date.now(); if(n-last<20000) return; last=n; if(busy()) return;
     fetch(location.pathname+"?_b="+n,{cache:"no-store"}).then(function(r){ return r.ok? r.text() : ""; }).then(function(t){
@@ -932,7 +932,26 @@ html.ap-on .ap-pg table{display:block;overflow-x:auto;-webkit-overflow-scrolling
 html.ap-on .ap-pg table td,html.ap-on .ap-pg table th{max-width:none}
 /* صفوف التابات والشيبس والأزرار: تلف أو تسكرول جوه نفسها */
 html.ap-on .ap-pg .tabs,html.ap-on .ap-pg .seg,html.ap-on .ap-pg .set-tabs,html.ap-on .ap-pg .chips,html.ap-on .ap-pg .tb-actions,html.ap-on .ap-pg .ph-act,html.ap-on .ap-pg .cp-bar{flex-wrap:wrap}
-html.ap-on .ap-pg [class*="grid"],html.ap-on .ap-pg .kpis,html.ap-on .ap-pg .cards,html.ap-on .ap-pg .cp-tiles{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))!important}
+/* الشبكات: موبايل = عمود واحد للكروت، عمودين للأرقام · آيباد = عمودين */
+@media (max-width:760px){
+  html.ap-on .ap-pg .secs{grid-template-columns:minmax(0,1fr)!important}
+  html.ap-on .ap-pg .secs>*{grid-column:1/-1!important}
+  html.ap-on .ap-pg .ac-grid,html.ap-on .ap-pg .rf-grid,html.ap-on .ap-pg .pm-grid,html.ap-on .ap-pg .me-grid,html.ap-on .ap-pg .rp-grid,html.ap-on .ap-pg .grid{grid-template-columns:minmax(0,1fr)!important}
+  html.ap-on .ap-pg .pm-kpis,html.ap-on .ap-pg .rp-kpis,html.ap-on .ap-pg .md-sum,html.ap-on .ap-pg .kpis,html.ap-on .ap-pg .cp-tiles{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  /* العنوان الكبير مكرر في الشريط اللي فوق — بنسيب السطر الشارح بس، والأزرار الثانوية في الشيت */
+  html.ap-on .ap-pg .hdr h1{display:none}
+  html.ap-on .ap-pg .hdr{gap:8px;margin-bottom:10px}
+  html.ap-on .ap-pg .hdr p{font-size:13px;margin:0}
+  html.ap-on .ap-pg .hdr [data-a="snapNew"],html.ap-on .ap-pg .hdr [data-a="editOn"],html.ap-on .ap-pg .hdr [data-a="go"][data-v="entry"],html.ap-on .ap-pg .hdr [data-a="repNew"]{display:none}
+  html.ap-on .ap-pg .hdr .sy-b{width:100%;justify-content:center;min-height:44px}
+  /* شريط العميل: العميل في الشريط اللي فوق، هنا الأرقام بس */
+  html.ap-on .ap-pg .wsbar{padding:10px 12px;gap:8px;flex-wrap:wrap}
+  html.ap-on .ap-pg .wsbar .wsname,html.ap-on .ap-pg .wsbar .dot,html.ap-on .ap-pg .wsbar>.btn{display:none}
+  html.ap-on .ap-pg .wsbar .wsmeta{flex:1 1 100%;justify-content:space-between}
+}
+@media (min-width:761px){
+  html.ap-on .ap-pg .ac-grid,html.ap-on .ap-pg .rp-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
 /* الفلاتر العامة والهيدر */
 html.ap-on .fbar-slot{display:flex;flex-wrap:wrap;gap:8px;max-width:100%}
 html.ap-on .fbar-slot *{max-width:100%}
