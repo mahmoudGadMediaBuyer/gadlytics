@@ -83,13 +83,13 @@ Bulk edit / undo / pace / log / alerts history (Nov 10 2026, README §26):
   - Each row shows its delivery on this device: deliveries[].ep = sha256(endpoint)[0..16].
   - Tap opens the client + campaign through `CP.focus`; kind "media" opens the library instead.
 - Push screen: history first, «تعديل» opens the settings inline. Toggles roas / spike (spikePct, spikeMin) / norev (norevWin 15|30, norevMin) / media; cpa, bud, stale, dailySummary and meta are forced off.
-- ⚠️ Those threshold boxes are saved per device in push_subs.prefs but the server engine reads thresholds from docs `config/alerts` (README §28). Device prefs only switch rules on/off and set delivery hours, quiet hours, silent (applied by `push` → `holdReason`). Change a threshold = edit `config/alerts`.
+- Those threshold boxes are saved per device in push_subs.prefs and camp-alerts v2 **uses them**: devices with the same spikePct/spikeMin/norevWin/norevMin form a profile, spike/norev are evaluated per profile and sent only to its devices (obj suffix `~a/b/c/d` when >1 profile). Missing values → `config/alerts` → built-in defaults (40 % / 150 SAR; norev 30 min / 200 SAR). ROAS uses the client's `roasAlarm`. On/off, delivery hours, quiet hours, silent are applied by `push` → `holdReason`.
 
 Mac (>1180): «أداء الحملات» renders the iPad two-pane app layout inside the desktop shell (html.ma-desk; maDesk()/maOn()/maPad()); «تفاصيل | جدول» switch (localStorage gad.cpView) restores the old table. Any campperf UI change must now be checked at desktop width in BOTH modes plus 820 and 390.
 Mac sizes (final, Nov 10): `html.ma-desk .ma{max-width:none;margin:0}`; `.ma-split` list `clamp(520px,42%,820px)` + detail `minmax(0,1fr)`, gap 24px; list text name 19px / numbers 21px / labels 13.5px.
 
 ## Server alerts engine (Nov 10 2026, README §28)
-- Edge fn `camp-alerts` v1 (`supabase/functions/camp-alerts/index.ts`), pg_cron job `gad-camp-alerts` `*/5 5-20 * * *` UTC (08:00–23:55 Riyadh) via `net.http_post` with the public anon key. Self-throttle 4 min (`sys_kv.alerts_last`).
+- Edge fn `camp-alerts` v2 (`supabase/functions/camp-alerts/index.ts`), pg_cron job `gad-camp-alerts` `*/5 5-20 * * *` UTC (08:00–23:55 Riyadh) via `net.http_post` with the public anon key. Self-throttle 4 min (`sys_kv.alerts_last`).
 - Run: camp-refresh → `alert_snap` (scope acct/camp/rev, pruned 3 days) → rules → `push` send → `alerts_sent`. Input `{dry, force, only:[...]}`; `dry:true` returns every candidate with its skip reason — use it to debug.
 - Four rules only (Mahmoud): `roas` (< client roasAlarm, ملبي 2.0, spend ≥ 300; per campaign + total), `spike` (15-min spend ≥ 150 and > 40 % over yesterday-same-window and today's pace; cooldown 60), `norev` (≥ 200 SAR in 15/30 min with zero new Khzama revenue; total then ≤ 3 campaigns; cooldown 60), `media` (new `media` rows past `sys_kv.media_wm`; media-sync every 15 min). `meta` token alert exists but is off.
 - Revenue = Khzama only; roas skipped if Khzama > 180 min old, norev skipped unless Khzama updated inside the window; ديمان (no Khzama) skips both.
@@ -98,7 +98,7 @@ Mac sizes (final, Nov 10): `html.ma-desk .ma{max-width:none;margin:0}`; `.ma-spl
 - Notifications screen = view `push` (`renderPushPage`), opened by the 🔔 in the menu sheet's account row; history first, «تعديل» inline; `pushDiag()` line at the bottom (build · app · push · perm · iOS). iOS ghost-tap guard `window.__shAt` 600 ms in `ACT.maClose`/`ACT.mbg`.
 
 ## Functions, tokens, tasks (Nov 10 2026, README §29)
-- Deployed: ingest v11 and media-sync v1 (NOT in the repo — a key / the private Airtable link), camp-apply v3, camp-refresh v5, push v5, camp-alerts v1, media-sync v1, ai v1. Repo `supabase/functions/<name>/index.ts` must equal what's deployed — redeploy and re-upload together.
+- Deployed: ingest v11 and media-sync v1 (NOT in the repo — a key / the private Airtable link), camp-apply v3, camp-refresh v5, push v5 (Topic = sha256(tag)[0..32] — Apple 400 BadWebPushTopic otherwise), camp-alerts v2, media-sync v1, ai v1. Repo `supabase/functions/<name>/index.ts` must equal what's deployed — redeploy and re-upload together.
 - Tokens in `app_secrets` (no policies): Snap ✅ (`push_snap_secrets.py`), Meta ✅ `META_TOKEN` renew before 2027-01-07 (`push_meta_token.py`, Mahmoud runs it in Terminal himself; the Nov 9 token was pasted in chat → suggest rotating), TikTok ⏳ app «GADLYTICS» awaiting approval → `push_tiktok_token.py <App ID> <Secret> <auth_code>`. Claude never types or stores a token.
 - Scheduled tasks: gadlytics-daily-pull 08:30 · gadlytics-camp-requests every minute 08–23 (slow-down proposed) · gadlytics-camp-refresh every 2 min 08–23 · gadlytics-snapshots disabled. A task stuck on a permission prompt needs Mahmoud's «Run now» once.
 - Several requests at once from Mahmoud → run them all in the background in parallel.
