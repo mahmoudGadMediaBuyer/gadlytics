@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="gad-build" content="20261110074158">
+<meta name="gad-build" content="20261110074518">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -16,7 +16,7 @@
 <script>
 /* تحديث تلقائي للتطبيق على الموبايل/الآيباد: مفيش service worker ولا كاش. كل ما التطبيق يتفتح أو يرجع للواجهة
    بيجيب index.html جديد (no-store) ويقارن رقم البيلد؛ لو فيه نسخة أحدث بيفتحها على طول. */
-(function(){ var B="20261110074158", last=0;
+(function(){ var B="20261110074518", last=0;
   function busy(){ return document.querySelector("#cpIn:focus, .ma-sheet, input:focus, textarea:focus"); }
   function chk(){ var n=Date.now(); if(n-last<20000) return; last=n; if(busy()) return;
     fetch(location.pathname+"?_b="+n,{cache:"no-store"}).then(function(r){ return r.ok? r.text() : ""; }).then(function(t){
@@ -910,6 +910,42 @@ html.ma-on .ma-k8 .ma-ksub{color:var(--ink-3);font-size:10.5px}
 @media (min-width:761px){html.ma-on .ma-ks.ma-k8{gap:10px}html.ma-on .ma-k8 .ma-k{padding:12px 14px;gap:3px}html.ma-on .ma-k8 .ma-k>small{font-size:13px}html.ma-on .ma-k8 .ma-k b{font-size:22px}html.ma-on .ma-k8 .ma-k b small{font-size:12px}html.ma-on .ma-k8 .ma-k em,html.ma-on .ma-k8 .ma-k .ma-dl{font-size:12.5px}}
 html.ma-on .ma-dates button{padding:0 2px}
 @media (max-width:400px){html.ma-on .ma-dates button{font-size:11.5px}}
+
+/* ══ html.ap-on — كل الشاشات التانية على الموبايل/الآيباد: شريط علوي واحد (☰ · العنوان · العميل) + شيت الشاشات، مفيش سكرول جانبي ══ */
+html.ap-on .rail,html.ap-on #topbar{display:none!important}
+html.ap-on .shell{display:block}
+html.ap-on .main{padding:0!important;max-width:none!important;margin:0!important;min-width:0}
+html.ap-on,html.ap-on body{background:var(--ground-0);-webkit-text-size-adjust:100%;overflow-x:hidden}
+html.ap-on .ap{min-height:100vh;padding-bottom:calc(88px + env(safe-area-inset-bottom))}
+html.ap-on .ap .ma-nb{margin:0 calc(-1*max(var(--ma-pad),env(safe-area-inset-right))) 8px calc(-1*max(var(--ma-pad),env(safe-area-inset-left)));padding-inline:max(var(--ma-pad),env(safe-area-inset-right)) max(var(--ma-pad),env(safe-area-inset-left));box-shadow:0 1px 0 var(--sep)}
+html.ap-on .ap .ma-ttl{flex:1;min-width:0}
+html.ap-on .ap .ma-ttl b{display:block;font-size:var(--t-b);font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html.ap-on .ap-pg{min-width:0}
+/* الصفحة نفسها: كل حاجة جوه العرض */
+html.ap-on .ap-pg *{min-width:0;max-width:100%;box-sizing:border-box}
+html.ap-on .ap-pg img,html.ap-on .ap-pg video,html.ap-on .ap-pg canvas,html.ap-on .ap-pg svg{max-width:100%;height:auto}
+html.ap-on .ap-pg p,html.ap-on .ap-pg .hint,html.ap-on .ap-pg .sub,html.ap-on .ap-pg td,html.ap-on .ap-pg small{overflow-wrap:anywhere}
+/* الجداول بتعمل سكرول جوه نفسها */
+html.ap-on .ap-pg table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%;width:100%!important;white-space:nowrap;
+  background:linear-gradient(to left,var(--ground-1) 30%,transparent),linear-gradient(to right,var(--ground-1) 30%,transparent) 100% 0,radial-gradient(farthest-side at 0 50%,rgba(0,0,0,.35),transparent),radial-gradient(farthest-side at 100% 50%,rgba(0,0,0,.35),transparent) 100% 0;
+  background-repeat:no-repeat;background-size:40px 100%,40px 100%,14px 100%,14px 100%;background-attachment:local,local,scroll,scroll}
+html.ap-on .ap-pg table td,html.ap-on .ap-pg table th{max-width:none}
+/* صفوف التابات والشيبس والأزرار: تلف أو تسكرول جوه نفسها */
+html.ap-on .ap-pg .tabs,html.ap-on .ap-pg .seg,html.ap-on .ap-pg .set-tabs,html.ap-on .ap-pg .chips,html.ap-on .ap-pg .tb-actions,html.ap-on .ap-pg .ph-act,html.ap-on .ap-pg .cp-bar{flex-wrap:wrap}
+html.ap-on .ap-pg [class*="grid"],html.ap-on .ap-pg .kpis,html.ap-on .ap-pg .cards,html.ap-on .ap-pg .cp-tiles{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))!important}
+/* الفلاتر العامة والهيدر */
+html.ap-on .fbar-slot{display:flex;flex-wrap:wrap;gap:8px;max-width:100%}
+html.ap-on .fbar-slot *{max-width:100%}
+/* زرار المساعد فوق شريط الهوم */
+html.ap-on .ai-fab{bottom:calc(16px + env(safe-area-inset-bottom))!important;inset-inline-end:calc(16px + env(safe-area-inset-left))!important;width:48px;height:48px}
+html.ma-on .ai-fab{display:none!important}
+/* صف الحساب في شيت الشاشات (التنبيهات · اللغة · الثيم · الملف الشخصي) */
+.ma-acct{display:flex;align-items:center;gap:8px;padding:4px 4px 10px;border-bottom:1px solid var(--line,rgba(127,127,127,.15));flex-wrap:wrap}
+.ma-acct .tb-ib{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;border:0;background:var(--ground-2);color:var(--ink);position:relative}
+.ma-acct .tb-ib svg{width:20px;height:20px}
+.ma-acct .tb-me{display:flex;align-items:center;gap:8px;margin-inline-start:auto;min-width:0;cursor:pointer}
+.ma-acct .tb-me b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40vw}.ma-acct .tb-me small{font-size:12px;color:var(--ink-3)}
+.ma-acct .dotn{position:absolute;top:4px;inset-inline-end:4px;min-width:16px;height:16px;border-radius:8px;background:var(--bad);color:#fff;font-size:10px;display:grid;place-items:center;padding:0 3px}
 </style>
 <div dir="rtl" lang="ar" class="shell">
   <aside class="rail">
@@ -13722,6 +13758,12 @@ function renderCampPerf(){
 const maMQ=window.matchMedia? matchMedia("(max-width:1180px)") : null, maPadMQ=window.matchMedia? matchMedia("(min-width:820px)") : null;
 const maOn=()=>S.view==="campperf"&&!!maMQ&&maMQ.matches;
 const maPad=()=>!!maPadMQ&&maPadMQ.matches;
+/* ══ شكل التطبيق لكل الشاشات التانية على الموبايل/الآيباد (≤1180) — html.ap-on. «أداء الحملات» ليها شكلها (ma-on). الديسكتوب مش متأثر ══ */
+const apOn=()=>!!maMQ&&maMQ.matches&&!maOn()&&!isPending()&&!isWelcome();
+function apTitle(){ try{ const m=navHTML().match(new RegExp('data-v="'+String(S.view).replace(/[^\w-]/g,"")+'" aria-label="([^"]+)"')); if(m) return m[1]; }catch(e){} return "GADLYTICS"; }
+function apBar(){ const cl=S.cfg.clients||[];
+  const pill= cl.length&&!isClient()? '<label class="ma-pill"><select data-c="ws" aria-label="'+esc(L("العميل","Client"))+'"><option value="">'+esc(L("كل العملاء","All clients"))+"</option>"+cl.map(c=>'<option value="'+c.id+'"'+(S.ws===c.id?" selected":"")+">"+esc(c.name)+"</option>").join("")+"</select>"+maIco.down+"</label>" : "";
+  return '<div class="ma-nb ma-nb-main ap-nb"><button class="ma-ib" data-a="maMenu" aria-label="'+esc(L("الشاشات","Screens"))+'">'+maIco.menu+'</button><div class="ma-ttl"><b>'+apTitle()+"</b></div>"+pill+"</div>"; }
 if(maMQ&&maMQ.addEventListener){ const rr=()=>{ try{ if(S.view==="campperf") render(); }catch(e){} }; maMQ.addEventListener("change",rr); if(maPadMQ) maPadMQ.addEventListener("change",rr); }
 CP.mnav=CP.mnav||[]; CP.sheet=null; CP.menu=false;
 const maIco={
@@ -13845,7 +13887,7 @@ function maSheet(){ const sh=CP.sheet; if(!sh) return ""; const C=CURR[S.cfg.set
   else if(sh.kind==="day"){ b='<div class="ma-sh-t">'+esc(L("يوم معين","Pick a day"))+"</div>"+
       '<div class="ma-range"><label><small>'+esc(L("اليوم","Day"))+'</small><input type="date" data-c="maDay" value="'+esc(CP.day||addDays(todayISO(),-1))+'" max="'+todayISO()+'"></label></div>'+
       '<button class="ma-btn ma-btn-p" data-a="maClose">'+esc(L("تمام","Done"))+"</button>"; }
-  else if(sh.kind==="menu"){ b='<div class="ma-sh-t">'+esc(L("الشاشات","Screens"))+'</div><nav class="nav ma-menu">'+navHTML()+"</nav>"; }
+  else if(sh.kind==="menu"){ b='<div class="ma-sh-t">'+esc(L("الشاشات","Screens"))+'</div><div class="ma-acct">'+tbRight()+'</div><nav class="nav ma-menu">'+navHTML()+"</nav>"; }
   else if(sh.kind==="filt"){ const projs=Object.keys((CP._m&&CP._m.projs)||{}).sort();
     b='<div class="ma-sh-t">'+esc(L("فلاتر","Filters"))+"</div>"+
       '<div class="ma-fl"><span>'+esc(L("الحالة","Status"))+'</span><div class="ma-seg">'+[["","الكل","All"],["on","الشغالة","On"],["off","الموقفة","Off"]].map(x=>'<button class="'+(CP.stf===x[0]?"on":"")+'" data-a="maStf" data-v="'+x[0]+'">'+esc(L(x[1],x[2]))+"</button>").join("")+"</div></div>"+
@@ -14377,7 +14419,8 @@ function render(){
   if(!S.wsInit&&S.cfg.clients.length>1){ S.wsInit=1; const r=lsGet("gad.ws",""); if(r!=="*"&&!S.ws) S.ws=(r&&clientById(r))? r : S.cfg.clients[0].id; }
   CONV_WS=!!(S.ws&&convClient(S.ws));
   document.documentElement.classList.toggle("ma-on",maOn());
-  $("#topbar").innerHTML=topbarHTML();
+  document.documentElement.classList.toggle("ap-on",apOn());
+  $("#topbar").innerHTML=(maMQ&&maMQ.matches&&!isPending())? "" : topbarHTML();
   { const m=$("#railMe"); if(m) m.innerHTML=(meVis()&&!isPending())? '<div class="rail-me" data-a="profEdit" title="'+esc(L("ملفي الشخصي","My profile"))+'">'+pav(ME.id,36)+'<div><b>'+esc(pname(ME.id))+"</b><small>"+esc(meSub())+"</small></div></div>" : ""; }
   const cs=(S.cfg.screens||[]);
   $("#nav").innerHTML=navHTML();
@@ -14386,7 +14429,7 @@ function render(){
   { const fb=$("#fbar"); if(fb&&fb.innerHTML) try{ fb.innerHTML=addHelp(fb.innerHTML); }catch(e){} }
   const _maKeep=maOn()? [["#maDp","scrollTop"],[".ma-ks","scrollLeft"],[".ma-plats","scrollLeft"]].map(x=>{ const el=document.querySelector(x[0]); return el?[x[0],x[1],el[x[1]]]:null; }).filter(Boolean) : [];
   $("#view").innerHTML=(lsGet("mbc.pmDemo",false)?'<div class="pm-demo pm-demo-g"><span>'+esc(L("وضع البيانات التجريبية: الأرقام في كل الشاشات عشوائية للمعاينة، مش أرقامك ومش متسجلة في أي مكان.","Demo mode: numbers on every screen are random previews — not yours, not saved."))+'</span><button class="btn btn-s" data-a="pmDemo">'+esc(L("اقفله","Turn off"))+"</button></div>":"")+(READONLY?'<div class="ro-bar">'+esc(L("👁 وضع المشاهدة — بتشوف كل حاجة لحظياً، بس التعديل وإدخال البيانات مقفولين.","👁 View-only — you see everything live, but editing and data entry are locked."))+"</div>":"")+
-    (maOn()?"":wsBar()+headerFor())+renderView();
+    (maOn()? renderView() : apOn()? '<div class="ap ma" id="apRoot">'+apBar()+'<div class="ap-pg">'+wsBar()+headerFor()+renderView()+"</div>"+maSheet()+"</div>" : wsBar()+headerFor()+renderView());
   _maKeep.forEach(x=>{ const el=document.querySelector(x[0]); if(el&&!(x[0]==="#maDp"&&CP.manimWas)) el[x[1]]=x[2]; }); CP.manimWas=0;
   const host=$("#aiHost");
   if(host&&(!$("#aiPanel")||host.dataset.lang!==LANG())){
