@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="gad-build" content="20261110085240">
+<meta name="gad-build" content="20261110085521">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -16,7 +16,7 @@
 <script>
 /* تحديث تلقائي للتطبيق على الموبايل/الآيباد: مفيش service worker ولا كاش. كل ما التطبيق يتفتح أو يرجع للواجهة
    بيجيب index.html جديد (no-store) ويقارن رقم البيلد؛ لو فيه نسخة أحدث بيفتحها على طول. */
-(function(){ var B="20261110085240", last=0;
+(function(){ var B="20261110085521", last=0;
   function busy(){ return document.querySelector("#cpIn:focus, .ma-sheet, input:focus, textarea:focus"); }
   function chk(){ var n=Date.now(); if(n-last<20000) return; last=n; if(busy()) return;
     fetch(location.pathname+"?_b="+n,{cache:"no-store"}).then(function(r){ return r.ok? r.text() : ""; }).then(function(t){
@@ -895,7 +895,8 @@ html.ma-on .ma-r2.ma-r4>span b{display:block;font-size:16px;font-weight:800;line
 html.ma-on .ma-r2.ma-r4>span .ma-md{display:block;font-size:11.5px;line-height:1.3;font-style:normal;white-space:nowrap;min-height:15px}
 html.ma-on .ma-vrow{margin-top:8px}
 @media (min-width:761px){html.ma-on .ma-r2.ma-r4>span b{font-size:17px}}
-@media (max-width:380px){html.ma-on .ma-r2.ma-r4>span{padding:2px 5px}html.ma-on .ma-r2.ma-r4>span b{font-size:14.5px}}
+@media (max-width:440px){html.ma-on .ma-r2.ma-r4>span{padding:2px 5px}html.ma-on .ma-r2.ma-r4>span b{font-size:clamp(13px,3.75vw,15.5px);text-overflow:clip}}
+@media (max-width:380px){html.ma-on .ma-r2.ma-r4>span{padding:2px 5px}html.ma-on .ma-r2.ma-r4>span b{font-size:13px}}
 
 /* 8 كروت فوق — موبايل: 4×2 مضغوطة · آيباد: 4×2 */
 html.ma-on .ma-ks.ma-k8{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;overflow:visible;margin:0 0 var(--g);padding:0;scroll-snap-type:none}
