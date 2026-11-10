@@ -1045,3 +1045,5 @@ GADLYTICS works as an app on Mahmoud's iPhone and iPad (a home-screen web app �
 **Rule — every new screen or feature ships with its phone (≤ 760 px) and iPad (761–1180 px) layout before deploy.** Test it at 390×844, 430×932, 375×667, 820×1180, 1024×1366 and 1180×820 (no horizontal scroll, no clipped Arabic, touch targets ≥ 44 px, sticky bars never covering content) — e.g. same-origin iframes of the live site inside a tab on `manifest.webmanifest` (a page without the app script) so they share the signed-in session.
 
 Also fixed while building this: `camp_struct` (2,450 rows for ملبي) was read in unordered 1,000-row pages, so campaigns randomly lost their status/budget on desktop too — every paged query now has a stable `order(...)`.
+
+- Rows in the app (Nov 10 2026): every campaign / ad set / ad row shows **الصرف · التبرعات · الإيراد · ROAS** in four equal columns with thin separators, the number on top and the ▲▼ comparison under it (Mahmoud's choice); the budget chip sits under them. Checked at 375 / 390 / 820 with 7-digit values — nothing clipped.
