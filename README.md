@@ -1060,4 +1060,37 @@ Also fixed while building this: `camp_struct` (2,450 rows for ملبي) was read
 ## 25) ROAS verdicts per client + phone notifications (Nov 10 2026)
 - **Verdicts, 4 levels, per client** (لوحة التحكم ← العملاء ← تعديل: «ROAS الإنذار» · «أقل ROAS مقبول» · «ROAS الكويس»). ملبي: ≥ 2.8 «زوّد» (green) · 2.1–2.8 «كويس» (teal) · 2.0–2.1 «راقب» (amber) · < 2.0 «إنذار» (red); «لسه بدري» for low data. Stored as `roasAlarm / roasMin / roasGood` on the client in `config/app`. A client without them (ديمان) shows no verdicts and a hint where to set them.
 - **Push notifications** (iPhone/iPad installed app on iOS 16.4+, and Chrome on the Mac): menu ← الإعدادات ← «التنبيهات» → «فعّل التنبيهات» (needs a tap; on iPhone only from the home-screen app) → «جرّب تنبيه». `sw.js` handles only `push` + `notificationclick` — no fetch handler, no caching, so the app always loads the latest build. Edge function `push` (source `supabase/functions/push/index.ts`): VAPID keys generated once and kept in `app_secrets` (never printed), RFC 8291 encryption with WebCrypto, actions vapid / subscribe / unsubscribe / prefs / mine / test, plus a server-only `send` (x-ingest-key). Subscriptions in `push_subs` (row security: each user sees only their own). Per-device settings in the same sheet: delivery hours (default 8–24), quiet hours, alert types on/off, daily summary time, silent. Sound can't be customised for web push on iOS — set it in iPhone Settings ← Notifications ← GADLYTICS.
-- Tables added: `camp_hourly` (intraday spend snapshots for «نفس الساعة امبارح»), `push_subs`, `alerts_sent`. The alert rules + 15-minute cron (`camp-alerts`) and the bulk edit / undo / intraday stats / per-campaign log UI come next.
+- Tables added: `camp_hourly` (intraday spend snapshots for «نفس الساعة امبارح»), `push_subs`, `alerts_sent`. The alert rules + 15-minute cron (`camp-alerts`) come next; bulk edit / undo / intraday stats / per-campaign log are in §26.
+
+## 26) أداء الحملات — bulk edit, undo, spend pace, change log, alerts history (Nov 10 2026)
+Where each button is:
+
+| Feature | Desktop (>1180 px) | iPad (761–1180) | iPhone (≤760) |
+|---|---|---|---|
+| **«تعديل جماعي»** | toolbar above the campaigns table → checkboxes appear on CBO campaigns and on ABO ad sets with an editable budget → bar at the bottom «عدّل N» | «تعديل جماعي» chip under the list header → a select circle on each eligible row (tap the row to select) → bottom bar | same as iPad |
+| **«آخر التعديلات» / «رجّع»** | toolbar button next to «تعديل جماعي» (modal) | chip next to «تعديل جماعي» (full screen with «رجوع») | same as iPad |
+| **«تراجع» toast** | 10 s after any applied change (single edit, switch, bulk) | same | same |
+| **«سرعة الصرف والتقييم الكامل»** | 📊 icon after the campaign code (modal) | campaign screen → «سرعة الصرف والتقييم الكامل» (opens inline, tap again to close) | same as iPad |
+| **«سجل التعديلات» per campaign** | 🕒 icon after the campaign code (modal) | campaign screen → «سجل التعديلات» (full screen) | same as iPad |
+| **«سجل التنبيهات»** | التنبيهات screen, card under the settings | same | same |
+
+- **Bulk edit**: options ±10 / ±20 %, a custom %, or a fixed value; the preview shows old → new for each item (rounded to whole SAR, no budget cap). Apply goes item by item through `campchg` + `camp-apply`: Meta and Snap apply instantly, TikTok is queued ⏳ (applied by the scheduled task). Each item gets ✓ / ✗.
+- **Undo**: `cpUndoWhy(c)` refuses, and the list shows why, when any of these is true:
+  - the change wasn't applied, or there's no previous value;
+  - it was already reverted;
+  - a later change touched the same platform / object / field;
+  - the live value (`camp_struct`) no longer equals the applied value, meaning it changed since.
+- **Spend pace** (hidden until asked):
+  - today so far vs yesterday at the same Riyadh hour, from `camp_hourly`;
+  - budget % used and the projected end-of-day spend;
+  - «التقييم الكامل للفترة» for the selected period: spend + Khzama donations / revenue / ROAS / CPA / AOV, plus impressions, reach, clicks, CTR, CPC, CPM, link clicks, LPV, video plays, ThruPlays, ATC and checkout (never platform purchases).
+  - `camp-refresh` (v4) writes `camp_hourly` on every refresh, one row per campaign per 15-minute bucket (upsert on `client_id,platform,campaign_id,ts`, plus `hour`). The same-hour comparison only works from the day after the first snapshots: «المقارنة بالساعة بتبدأ من بكره — بنسجّل من النهارده».
+- **On phone/iPad** every panel is a full screen (`S.view="cppanel"`, `renderCpPanelPage`, «رجوع» returns to the same scroll spot), never a pop-up sheet (iOS flicker). Pace is an inline expander.
+- **Alerts history** («سجل التنبيهات», `alHistHTML` / `alLoad`):
+  - reads `alerts_sent` (row security: `user_id` null or = me), ordered by `sent_at` desc, the last 7 days; «أقدم» loads 7 more, up to 90.
+  - each row shows the type label (تكلفة التبرع / الميزانية / ROAS إنذار / زيادة صرف / توكن ميتا / الأرقام وقفت / تجربة / ملخص يومي / ميديا جديدة), client, campaign code, relative + exact Riyadh time, and the message.
+  - each row also shows the delivery status on *this* device: `deliveries[].ep` = first 16 hex of SHA-256 of the push endpoint, matched in the browser.
+  - tapping a row opens that client + campaign in «أداء الحملات» (`CP.focus` → `cpFocusApply`): the campaign screen on phone/iPad, the row expanded and highlighted on desktop. A «media» row opens مكتبة الكريتيف.
+  - test pushes are logged too.
+- Alert-type toggles on the push screen (`prefs.rules`): cpa, bud, roas, spike, meta, stale, media («ميديا جديدة على Airtable»), dailySummary — all on by default. The `push` function / `alerts_sent` schema / `camp-alerts` cron are owned by the server-side alerts work.
+

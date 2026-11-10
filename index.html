@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="gad-build" content="20261110102900">
+<meta name="gad-build" content="20261110103033">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -16,7 +16,7 @@
 <script>
 /* تحديث تلقائي للتطبيق على الموبايل/الآيباد: مفيش service worker ولا كاش. كل ما التطبيق يتفتح أو يرجع للواجهة
    بيجيب index.html جديد (no-store) ويقارن رقم البيلد؛ لو فيه نسخة أحدث بيفتحها على طول. */
-(function(){ var B="20261110102900", last=0;
+(function(){ var B="20261110103033", last=0;
   function busy(){ return document.querySelector("#cpIn:focus, .ma-sheet, input:focus, textarea:focus"); }
   function chk(){ var n=Date.now(); if(n-last<20000) return; last=n; if(busy()) return;
     fetch(location.pathname+"?_b="+n,{cache:"no-store"}).then(function(r){ return r.ok? r.text() : ""; }).then(function(t){
@@ -1006,6 +1006,51 @@ body:has(.ma-sheet) .ai-fab{display:none!important}
 .cp-psec{font-weight:800;margin-top:6px}.cp-prow{display:flex;flex-wrap:wrap;align-items:center;gap:6px}.cp-prow .sel{min-height:40px}
 .cp-tg2{display:flex;align-items:center;gap:10px;min-height:40px;font-size:14px;cursor:pointer}.cp-tg2 input{width:20px;height:20px;accent-color:var(--cyan)}
 html.ma-on .cp-pan{min-width:0}
+.al-card{margin-top:14px;padding:14px 16px}
+.al-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px}.al-h b{font-size:15px}
+.al-empty{padding:14px 2px}
+.al-list{display:flex;flex-direction:column;gap:8px}
+.al-row{display:block;width:100%;text-align:start;font:inherit;color:inherit;background:var(--ground-1);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.al-go{cursor:pointer}.al-go:hover{border-color:var(--cyan)}.al-go:active{transform:scale(.995)}
+.al-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.al-k{font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--ground-2);color:var(--ink-2)}
+.al-k.al-bad{color:var(--bad)}.al-k.al-amber{color:var(--amber)}.al-k.al-violet{color:var(--violet)}.al-k.al-cyan{color:var(--cyan)}.al-k.al-warn{color:var(--warn)}.al-k.al-good{color:var(--good)}.al-k.al-teal{color:var(--teal)}
+.al-cl{font-size:12.5px;color:var(--ink-2)}.al-cp{font-size:12.5px}
+.al-t{margin-inline-start:auto;font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+.al-msg{margin-top:6px;font-size:13px;line-height:1.55;color:var(--ink)}
+.al-ft{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:11.5px}
+.al-d{color:var(--ink-3)}.al-d.al-good{color:var(--good)}.al-d.al-bad{color:var(--bad)}.al-d.al-amber{color:var(--amber)}
+.al-open{margin-inline-start:auto;color:var(--cyan)}
+.al-more{display:flex;justify-content:center;padding:12px 0 2px}
+html.ma-on .al-card,html.ap-on .al-card{margin-top:12px;padding:12px}
+html.ap-on .al-t{margin-inline-start:0;width:100%}
+@media (max-width:760px){.al-t{margin-inline-start:0;width:100%}}
+tr.cp-flash>td{background:color-mix(in srgb,var(--cyan) 14%,transparent);transition:background .4s}
+
+
+/* تعديل جماعي · آخر التعديلات · سرعة الصرف · سجل التعديلات — أزرار الصفحة (ديسكتوب + آيباد + موبايل) */
+.cp-bulkt{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:4px 0 2px}.cp-bulkt .btn{display:inline-flex;align-items:center;gap:6px}.cp-bulkt .btn svg{width:16px;height:16px}
+.cp-uw{flex-basis:100%}
+.cp-page{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:12px;padding-bottom:calc(90px + env(safe-area-inset-bottom))}
+.cp-page-h{display:flex;align-items:center;gap:10px}.cp-page-h b{font-size:18px;font-weight:800;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cp-back{display:inline-flex;align-items:center;gap:4px;min-height:44px}.cp-back svg{width:18px;height:18px}
+.cp-pan-page{max-height:none;overflow:visible;padding:14px}
+.cp-pf-page{position:sticky;bottom:0;padding:10px 0 calc(10px + env(safe-area-inset-bottom));background:var(--ground-0,var(--bg));z-index:5}.cp-pf-page .btn{min-height:46px;flex:1 1 140px;font-size:15px;justify-content:center}
+.ma-tools{display:flex;gap:8px;margin:0 0 10px}
+.ma-tbtn{flex:1 1 0;min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:12px;border:1px solid var(--line);background:var(--ground-1);color:var(--ink);font-weight:700;font-size:14px;cursor:pointer;padding:0 10px}
+.ma-tbtn svg{width:17px;height:17px;flex:none}.ma-tbtn.on{background:var(--cyan);border-color:var(--cyan);color:#fff}
+.ma-bhint{font-size:13px;color:var(--ink-2);margin:-2px 2px 10px;line-height:1.6}
+.ma-bsel{flex:none;width:24px;height:24px;border-radius:50%;border:2px solid var(--ink-3);display:inline-grid;place-items:center;font-style:normal;font-size:14px;font-weight:900;color:#fff;margin-inline-end:4px}
+.ma-bsel.on{background:var(--cyan);border-color:var(--cyan)}
+.ma-row.ma-bon{outline:2px solid color-mix(in srgb,var(--cyan) 60%,transparent);outline-offset:-2px}
+.ma-xrow{display:flex;gap:8px;margin:10px 0}
+.ma-xbtn{flex:1 1 0;min-height:46px;display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:12px;border:1px solid var(--line);background:var(--ground-1);color:var(--ink);font-weight:700;font-size:14px;cursor:pointer;padding:0 10px;min-width:0}
+.ma-xbtn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ma-xbtn svg{width:17px;height:17px;flex:none}.ma-xbtn i{font-style:normal;color:var(--ink-3)}.ma-xbtn.on{border-color:var(--cyan)}
+.ma-pace{background:var(--ground-1);border-radius:14px;padding:10px 12px;margin-bottom:12px}
+.ma-pace .cp-sh,.ma-pace .cp-sr{grid-template-columns:1.25fr 1fr 1fr}
+html.ma-on .cp-bbar{bottom:calc(10px + env(safe-area-inset-bottom));inset-inline:10px;border-radius:16px}
+html.ma-on #maRoot{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+@media (max-width:400px){.ma-tbtn,.ma-xbtn{font-size:12.5px;padding:0 6px}}
 </style>
 <div dir="rtl" lang="ar" class="shell">
   <aside class="rail">
@@ -1352,7 +1397,7 @@ function defaultConfig(){
 
 /* ── الوضع البسيط: نفس السيستم بشاشات وأقسام أقل — التبديل بيرجّع كل حاجة زي ما هي ── */
 const SIMPLE = () => ((S.cfg.settings&&S.cfg.settings.mode)||"simple")!=="pro";
-const SIMPLE_VIEWS={push:1,campperf:1,snapboard:1,explorer:1,analyze:1,overview:1,live:1,entry:1,tasks:1,admin:1,me:1,chat:1,team:1,pending:1,plans:1,creatives:1,library:1,approvals:1,perf:1,reports:1,portal:1};
+const SIMPLE_VIEWS={cppanel:1,push:1,campperf:1,snapboard:1,explorer:1,analyze:1,overview:1,live:1,entry:1,tasks:1,admin:1,me:1,chat:1,team:1,pending:1,plans:1,creatives:1,library:1,approvals:1,perf:1,reports:1,portal:1};
 const SIMPLE_SEC_ID={s_kpi:1,s_health:1,s_trend:1,s_bspend:1,s_broas:1,s_sheet:1,s_lkpi:1,s_lcurve:1,s_lcmp:1};
 const SIMPLE_SEC_TYPE={brief:1,eod:1};
 let _defIds=null;   // أقسام السيستم الافتراضية — أي قسم تاني إنت اللي ضايفه فبيفضل ظاهر
@@ -2885,7 +2930,7 @@ const CMPS=[["prev","الفترة السابقة","Previous period"],["prevmonth
 function renderFBar(){
   const host=$("#fbar");
   if(isWelcome()){ host.innerHTML=""; return; }
-  if(["push","campperf","entry","admin","actions","roster","creatives","changes","experiments","brief","me","chat","team","pending","tasks","plans","approvals","perf","reports","portal","library","site"].indexOf(S.view)>=0||isPending()||isClient()){ host.innerHTML=""; return; }
+  if(["cppanel","push","campperf","entry","admin","actions","roster","creatives","changes","experiments","brief","me","chat","team","pending","tasks","plans","approvals","perf","reports","portal","library","site"].indexOf(S.view)>=0||isPending()||isClient()){ host.innerHTML=""; return; }
   if(S.view==="live"){
     host.innerHTML='<div class="fbar"><div class="fgrp"><span class="flab">'+esc(L("اليوم","Day"))+'</span>'+
       '<input class="inp" type="date" data-c="liveDate" value="'+S.liveDate+'" max="'+todayISO()+'"></div>'+
@@ -12625,6 +12670,7 @@ function renderViewRaw(){
       case "explorer": return renderExplorer();
       case "campperf": return renderCampPerf();
       case "push": return renderPushPage();
+      case "cppanel": return renderCpPanelPage();
       case "snapboard": return renderSnapSheet();
       case "insights": return renderInsights();
       case "entry":    return renderEntry();
@@ -12684,6 +12730,7 @@ function headerFor(){
     compare:[L("مقارنة الفترات","Compare periods"),L("قارن أي فترتين ببعض","Compare any two periods")],
     snapboard:[L("اللقطات","Snapshots"),L("كل لقطة سطر: صرف كل منصة وإيراد خزامى بالأكواد — شوف الفرق بين كل ساعة واللي بعدها، وقارن ساعة على كل الأيام","Each snapshot is a row: spend per platform and Khzama revenue by code")],
     site:[L("الموقع والقمع","Site & funnel"),L("سلوك الزوار على الموقع من ميكس بانل: القمع والمصادر والحملات والأجهزة وطرق الدفع والساعات","How visitors behave on the site (Mixpanel): funnel, sources, campaigns, devices, payments, hours")],
+    cppanel:[L("أداء الحملات","Campaign performance"),""],
     push:[L("التنبيهات","Notifications"),L("إشعارات الحملات على الجهاز ده — وقتها وأنواعها","Campaign alerts on this device — when and which")],
     campperf:[L("أداء الحملات","Campaign performance"),L("كل حملة ← Ad Set ← إعلان: الصرف من المنصة والتبرعات من خزامى، والميزانية والمزايدة تتعدل من هنا","Campaign → ad set → ad: spend from the platform, donations from Khzama; edit budgets and bids here")],
     explorer:[L("المحلل","Analyzer"),L("كل إعلان وفيديو ومشهور على كل المنصات — قسّم وقارن ودوس على أي سطر للتفاصيل","Every ad, video and influencer across platforms — break down, compare, drill in")],
@@ -13793,9 +13840,14 @@ function cpBulkBar(){ if(!CP.bulk) return ""; const n=cpBCount();
     '<button class="btn btn-s" data-a="cpBulk">'+esc(L("خروج","Done"))+"</button>"+
     '<button class="btn btn-p" data-a="cpBOpen"'+(n?"":" disabled")+">"+esc(L("تعديل الميزانية","Edit budgets"))+"</button></div>"; }
 /* ── لوحة واحدة للديسكتوب (modal) والموبايل/الآيباد (شيت) ── */
-function cpPanelOpen(p){ CP.panel=p; if(maOn()){ CP.sheet={kind:"panel"}; render(); } else cpPanelDraw(); }
-function cpPanelDraw(){ if(!CP.panel) return; if(CP.panel.type==="push"&&S.view==="push"){ render(); return; } if(maOn()){ render(); return; } const P=cpPanelHTML(); modal(P.t,'<div class="cp-pan">'+P.b+"</div>",P.f||""); }
-ACT.cpPanelClose=()=>{ if(S.view==="push"){ CP.panel=null; S.view=CP.pushBack||"campperf"; render(); return; } CP.panel=null; if(maOn()){ CP.sheet=null; render(); } else closeModal(); };
+function cpPanelOpen(p){ CP.panel=p;
+  if(maOn()||S.view==="cppanel"){ if(S.view!=="cppanel"){ CP.panelBack=S.view; CP.panelScroll=window.scrollY||0; } CP.sheet=null; window.__shK=null; S.view="cppanel"; try{ window.scrollTo(0,0); }catch(e){} refresh(); }
+  else cpPanelDraw(); }
+function renderCpPanelPage(){ if(!CP.panel){ setTimeout(()=>{ S.view="campperf"; refresh(); },0); return ""; } const P=cpPanelHTML();
+  return '<div class="cp-page"><div class="cp-page-h"><button class="btn cp-back" data-a="cpPanelClose">'+(maIco&&maIco.back||"‹")+'<span>'+esc(L("رجوع","Back"))+'</span></button><b>'+esc(P.t||"")+'</b></div>'+
+    '<div class="card cp-pan cp-pan-page">'+P.b+"</div>"+(P.f?'<div class="cp-pf cp-pf-page">'+P.f+"</div>":"")+"</div>"; }
+function cpPanelDraw(){ if(!CP.panel) return; if(CP.panel.type==="push"&&S.view==="push"){ render(); return; } if(S.view==="cppanel"){ render(); return; } if(maOn()){ render(); return; } const P=cpPanelHTML(); modal(P.t,'<div class="cp-pan">'+P.b+"</div>",P.f||""); }
+ACT.cpPanelClose=()=>{ if(S.view==="cppanel"){ CP.panel=null; S.view=CP.panelBack||"campperf"; refresh(); const y=CP.panelScroll||0; setTimeout(()=>{ try{ window.scrollTo(0,y); }catch(e){} },60); return; } if(S.view==="push"){ CP.panel=null; S.view=CP.pushBack||"campperf"; render(); return; } CP.panel=null; if(maOn()){ CP.sheet=null; render(); } else closeModal(); };
 function cpPanelHTML(){ const p=CP.panel||{}; return p.type==="bulk"? cpBulkHTML(p) : p.type==="undo"? cpUndoHTML(p) : p.type==="log"? cpLogHTML(p) : p.type==="pace"? cpPaceHTML(p) : p.type==="push"? pushHTML(p) : {t:"",b:""}; }
 /* ── التعديل نفسه (من غير توستات) ── */
 async function cpDo(p){ const id=sid(), doc={client:cpCid(),platform:p.pl,level:p.lvl,objId:String(p.id),name:p.name||"",field:p.field,bidType:p.bidType||null,from:p.from,to:p.to,status:"pending",at:Date.now(),by:ME.email||"",undoOf:p.undoOf||null,batch:p.batch||null};
@@ -13836,12 +13888,22 @@ ACT.cpBApply=async()=>{ const p=CP.panel; if(!p||p.busy) return; const items=Obj
   p.busy=false; CP.lastBatch=p.batch; cpPanelDraw(); render(); if(!maOn()) cpPanelDraw(); };
 ACT.cpBDone=()=>{ CP.bsel={}; CP.bulk=false; ACT.cpPanelClose(); render(); };
 /* ── تراجع ── */
-function cpUndoable(c){ return c&&(c.status==="done"||c.status==="pending"||c.status==="applying")&&c.from!=null&&c.from!==""&&!CP.chg.some(x=>x.undoOf===c._id); }
+function cpUndoWhy(c){ if(!c) return L("مش لاقي التعديل","Change not found");
+  if(!(c.status==="done"||c.status==="pending"||c.status==="applying")) return L("التعديل ده مااتطبقش","Not applied");
+  if(c.from==null||c.from==="") return L("مفيش قيمة قديمة نرجعلها","No previous value");
+  if(CP.chg.some(x=>x.undoOf===c._id)) return L("اترجع قبل كده","Already reverted");
+  if(CP.chg.some(x=>x._id!==c._id&&x.platform===c.platform&&String(x.objId)===String(c.objId)&&x.field===c.field&&(x.at||0)>(c.at||0)&&x.status!=="failed"&&!x.undoOf))
+    return L("اتعدّل تاني بعده — رجّع آخر تعديل","Changed again since — revert the latest one");
+  const row=(CP.struct||[]).find(x=>x.platform===c.platform&&String(x.id)===String(c.objId)), want=c.applied!=null?c.applied:c.to;
+  if(row&&c.status==="done"){ const cur= c.field==="status"? (row.status==="active"?"ACTIVE":row.status==="paused"?"PAUSED":null) : c.field==="bid"? row.bid : row.daily_budget;
+    if(cur!=null&&String(c.field==="status"?cur:Math.round(+cur))!==String(c.field==="status"?want:Math.round(+want))) return L("القيمة على المنصة اتغيّرت بعده","The platform value changed since"); }
+  return ""; }
+function cpUndoable(c){ return !cpUndoWhy(c); }
 function cpUndoToast(id,msg){ let el=$("#toastAct"); if(!el){ el=document.createElement("div"); el.id="toastAct"; document.body.appendChild(el); }
   el.innerHTML='<span>'+esc(msg)+'</span><button data-a="cpUndo" data-id="'+esc(id)+'">'+cpIco.undo+" "+esc(L("تراجع","Undo"))+'</button><button class="x" data-a="cpUndoHide">✕</button>';
   el.className="toast-act on"; clearTimeout(CP._ut); CP._ut=setTimeout(()=>{ el.className="toast-act"; },10000); }
 ACT.cpUndoHide=()=>{ const el=$("#toastAct"); if(el) el.className="toast-act"; };
-async function cpUndoOne(id){ const c=CP.chg.find(x=>x._id===id); if(!cpUndoable(c)) return {ok:false,error:L("التعديل ده مينفعش يترجع","Can't undo this")};
+async function cpUndoOne(id){ const c=CP.chg.find(x=>x._id===id), why=cpUndoWhy(c); if(why) return {ok:false,error:why};
   return cpDo({pl:c.platform,lvl:c.level,id:c.objId,name:c.name,field:c.field,bidType:c.bidType,from:c.field==="status"?c.to:(c.applied!=null?c.applied:c.to),to:c.from,undoOf:id}); }
 ACT.cpUndo=async t=>{ ACT.cpUndoHide(); const r=await cpUndoOne(t.dataset.id); toast(r.ok? (r.queued?L("اتبعت التراجع — مستني المنصة","Undo queued"):L("رجعت زي ما كانت ✓","Reverted ✓")) : L("مارجعتش: ","Not reverted: ")+(r.error||""),!r.ok);
   if(CP.panel) cpPanelDraw(); render(); };
@@ -13855,7 +13917,8 @@ function cpChgRow(c,canUndo){ const fl=c.field==="status"?L("الحالة","Stat
   const st=c.status==="done"?"✓":c.status==="failed"?'<span class="cp-bad" title="'+esc(c.error||"")+'">✗</span>':"⏳";
   return '<div class="cp-lr"><div class="cp-lt"><b>'+esc(c.name||c.objId)+"</b><small>"+esc(cpWhen(c.at))+" · "+esc((c.by||"").split("@")[0])+(c.undoOf?" · "+esc(L("تراجع","undo")):"")+(c.batch?" · "+esc(L("جماعي","bulk")):"")+"</small></div>"+
     '<div class="cp-lv">'+esc(fl)+": "+esc(cpChgVal(c,c.from))+" → <b>"+esc(cpChgVal(c,c.to))+"</b> "+st+"</div>"+
-    (canUndo&&cpUndoable(c)?'<button class="btn btn-s" data-a="cpUndo" data-id="'+esc(c._id)+'">'+cpIco.undo+" "+esc(L("رجّع","Revert"))+"</button>":"")+"</div>"; }
+    (canUndo? (cpUndoable(c)?'<button class="btn btn-s" data-a="cpUndo" data-id="'+esc(c._id)+'">'+cpIco.undo+" "+esc(L("رجّع","Revert"))+"</button>"
+      : (c.from!=null&&c.status==="done"&&!c.undoOf?'<small class="hint cp-uw">'+esc(cpUndoWhy(c))+"</small>":"")) : "")+"</div>"; }
 function cpUndoHTML(){ const list=(CP.chg||[]).filter(x=>x.status!=="failed"||Date.now()-(x.at||0)<864e5).sort((a,b)=>(b.at||0)-(a.at||0)).slice(0,40);
   return {t:L("آخر التعديلات","Recent changes"),b: list.length? '<div class="cp-ll">'+list.map(c=>cpChgRow(c,true)).join("")+"</div>" : '<div class="hint">'+esc(L("لسه مفيش تعديلات من الصفحة دي.","No changes yet."))+"</div>",
     f:'<button class="btn" data-a="cpPanelClose">'+esc(L("قفل","Close"))+"</button>"}; }
@@ -13876,18 +13939,26 @@ function cpLogHTML(p){ let b;
 /* ── النهارده لحد دلوقتي مقارنة بامبارح نفس الساعة + الإحصائيات الكاملة ── */
 ACT.cpPace=t=>{ const [pl,id]=String(t.dataset.k).split("|"); cpPanelOpen({type:"pace",pl:pl,id:id,code:t.dataset.code||"",d:null}); cpPaceLoad(); };
 const cpRiy=()=>{ const n=new Date(Date.now()+3*3600e3); return {day:n.toISOString().slice(0,10),frac:(n.getUTCHours()*60+n.getUTCMinutes())/1440,hm:n.toISOString().slice(11,16)}; };
-async function cpPaceLoad(){ const p=CP.panel; if(!p||p.type!=="pace") return; const sb=SUPA_DB.client, cid=cpCid(), R=cpRiy(), y=addDays(R.day,-1);
+async function cpPaceLoad(){ const p=CP.panel; if(!p||p.type!=="pace") return; await cpPaceFetch(p); if(CP.panel===p) cpPanelDraw(); }
+ACT.cpPaceIn=t=>{ const k=String(t.dataset.k), [pl,id]=k.split("|");
+  if(CP.paceIn&&CP.paceIn.k===k){ CP.paceIn=null; render(); return; }
+  CP.paceIn={k:k,pl:pl,id:id,code:t.dataset.code||"",d:null}; render(); const me=CP.paceIn; cpPaceFetch(me).then(()=>{ if(CP.paceIn===me) render(); }); };
+async function cpPaceFetch(p){ const sb=SUPA_DB.client, cid=cpCid(), R=cpRiy(), y=addDays(R.day,-1);
   const sum=(rows,f)=>rows.reduce((a,r)=>a+(+r[f]||0),0);
-  const [ad,hT,hY,kz,kzY]=await Promise.all([
+  const M=CP._m||{}, pa=M.a||R.day, pb=M.b||R.day;
+  const [ad,hT,hY,kz,kzY,per]=await Promise.all([
     sb.from("ad_daily").select("spend,impressions,clicks,link_clicks,landing_page_views,date").eq("client_id",cid).eq("platform",p.pl).eq("campaign_id",String(p.id)).in("date",[R.day,y]).then(r=>r.data||[]),
     sb.from("camp_hourly").select("ts,spend,impressions,clicks").eq("client_id",cid).eq("platform",p.pl).eq("campaign_id",String(p.id)).eq("date",R.day).order("ts",{ascending:false}).limit(1).then(r=>r.data||[]),
     sb.from("camp_hourly").select("ts,spend,impressions,clicks").eq("client_id",cid).eq("platform",p.pl).eq("campaign_id",String(p.id)).eq("date",y).lte("ts",new Date(Date.now()-864e5).toISOString()).order("ts",{ascending:false}).limit(1).then(r=>r.data||[]),
     p.code? sb.from("khzama_link_daily").select("donations,amount,pulled_at").eq("client_id",cid).eq("camp_no",p.code).eq("date",R.day).then(r=>r.data||[]) : Promise.resolve([]),
-    p.code? sb.from("khzama_link_daily").select("donations,amount").eq("client_id",cid).eq("camp_no",p.code).eq("date",y).then(r=>r.data||[]) : Promise.resolve([])]);
+    p.code? sb.from("khzama_link_daily").select("donations,amount").eq("client_id",cid).eq("camp_no",p.code).eq("date",y).then(r=>r.data||[]) : Promise.resolve([]),
+    sb.from("ad_daily").select("spend,impressions,reach,clicks,link_clicks,landing_page_views,video_plays,thruplays,add_to_cart,initiate_checkout").eq("client_id",cid).eq("platform",p.pl).eq("campaign_id",String(p.id)).gte("date",pa).lte("date",pb).limit(5000).then(r=>r.data||[])]);
   const t=ad.filter(r=>r.date===R.day), yd=ad.filter(r=>r.date===y), c=(CP._m&&CP._m.camps||[]).find(x=>x.pl===p.pl&&String(x.id)===String(p.id));
   p.d={R:R,t:{s:sum(t,"spend"),imp:sum(t,"impressions"),clk:sum(t,"clicks"),lc:sum(t,"link_clicks"),lpv:sum(t,"landing_page_views"),o:sum(kz,"donations"),r:sum(kz,"amount"),kzAt:kz.reduce((a,r)=>r.pulled_at>a?r.pulled_at:a,"")},
-    yh:hY[0]||null, yFull:{s:sum(yd,"spend"),o:sum(kzY,"donations"),r:sum(kzY,"amount")}, bud:c&&CP._m.campBudget? CP._m.campBudget(c) : null};
-  cpPanelDraw(); }
+    yh:hY[0]||null, yFull:{s:sum(yd,"spend"),o:sum(kzY,"donations"),r:sum(kzY,"amount")}, bud:c&&CP._m.campBudget? CP._m.campBudget(c) : null,
+    per:{a:pa,b:pb,n:per.length,s:sum(per,"spend"),imp:sum(per,"impressions"),reach:sum(per,"reach"),clk:sum(per,"clicks"),lc:sum(per,"link_clicks"),lpv:sum(per,"landing_page_views"),vp:sum(per,"video_plays"),tp:sum(per,"thruplays"),atc:sum(per,"add_to_cart"),ic:sum(per,"initiate_checkout"),
+      o:c&&c.v?c.v.o:null,r:c&&c.v?c.v.r:null,conv:!!(c&&c.conv)}};
+  return p; }
 function cpPaceHTML(p){ const C=CURR[S.cfg.settings.currency]||"";
   if(!p.d) return {t:L("النهارده لحد دلوقتي · ","Today so far · ")+(p.code||""),b:'<div class="hint">'+esc(L("بيحمّل…","Loading…"))+"</div>"};
   const d=p.d, t=d.t, n=(v,dg)=>v==null||!isFinite(v)?"—":fnum(v,dg||0), ro=t.s?t.r/t.s:null, cpa=t.o?t.s/t.o:null, aov=t.o?t.r/t.o:null;
@@ -13895,7 +13966,7 @@ function cpPaceHTML(p){ const C=CURR[S.cfg.settings.currency]||"";
   const proj=d.R.frac>0.05? t.s/d.R.frac : null, used=d.bud? t.s/d.bud*100 : null;
   const row=(lb,a,b,extra)=>'<div class="cp-sr"><span>'+esc(lb)+"</span><b>"+a+"</b><i>"+(b==null?"":b)+"</i>"+(extra||"")+"</div>";
   let b='<div class="cp-sh"><span></span><b>'+esc(L("النهارده لحد ","Today to "))+d.R.hm+"</b><i>"+esc(L("امبارح لحد نفس الساعة","Yesterday same hour"))+"</i></div>";
-  b+=row(L("الصرف","Spend"),n(t.s)+" <small>"+esc(C)+"</small>", d.yh? n(+d.yh.spend)+dl(t.s,+d.yh.spend,false) : '<small class="hint">'+esc(L("بيتجمع من النهارده","collecting from today"))+"</small>");
+  b+=row(L("الصرف","Spend"),n(t.s)+" <small>"+esc(C)+"</small>", d.yh? n(+d.yh.spend)+dl(t.s,+d.yh.spend,false) : '<small class="hint">'+esc(L("المقارنة بالساعة بتبدأ من بكره — بنسجّل من النهارده","Hourly comparison starts tomorrow — recording from today"))+"</small>");
   b+=row(L("الميزانية المستخدمة","Budget used"), used==null?"—":n(used)+"%", d.bud?'<small class="hint">'+esc(L("من ","of "))+n(d.bud)+" "+esc(C)+"</small>":"");
   b+=row(L("الصرف المتوقع آخر اليوم","Projected end-of-day spend"), proj==null?"—":n(proj)+" <small>"+esc(C)+"</small>", d.yFull.s?'<small class="hint">'+esc(L("امبارح كله ","yesterday total "))+n(d.yFull.s)+"</small>":"");
   b+='<div class="cp-sh cp-sh2"><span></span><b>'+esc(L("النهارده","Today"))+"</b><i>"+esc(L("امبارح (اليوم كله)","Yesterday (full day)"))+"</i></div>";
@@ -13907,6 +13978,14 @@ function cpPaceHTML(p){ const C=CURR[S.cfg.settings.currency]||"";
   b+=row(L("الظهور","Impressions"),n(t.imp))+row(L("الضغطات","Clicks"),n(t.clk))+row("CTR",ctr==null?"—":ctr.toFixed(2)+"%")+row("CPC",cpc==null?"—":cpc.toFixed(2))+row("CPM",cpm==null?"—":cpm.toFixed(1))+
     row(L("ضغطات اللينك","Link clicks"),n(t.lc))+row(L("زيارات الصفحة","Landing page views"),n(t.lpv),lpvR==null?"":'<small class="hint">'+lpvR.toFixed(0)+"% "+esc(L("من الضغطات","of clicks"))+"</small>")+
     row(L("التبرعات ÷ الزيارات","Donations ÷ visits"),cvr==null?"—":cvr.toFixed(2)+"%");
+  const P=d.per; if(P){ const pc=P.imp?P.clk/P.imp*100:null, pcpc=P.clk?P.s/P.clk:null, pcpm=P.imp?P.s/P.imp*1000:null, pro=P.s&&P.r!=null?P.r/P.s:null, pcpa=P.o?P.s/P.o:null, pav=P.o?P.r/P.o:null;
+    const lbl=P.a===P.b? P.a.slice(5) : P.a.slice(5)+" → "+P.b.slice(5);
+    b+='<div class="cp-sh cp-sh2"><span></span><b>'+esc(L("التقييم الكامل للفترة ","Full stats for "))+'<span class="num" dir="ltr">'+esc(lbl)+"</span></b><i></i></div>";
+    b+=row(L("الصرف","Spend"),n(P.s)+" <small>"+esc(C)+"</small>")+
+      (P.conv?"":row(L("التبرعات (خزامى)","Donations (Khzama)"),n(P.o))+row(L("الإيراد (خزامى)","Revenue (Khzama)"),n(P.r))+row("ROAS",pro==null?"—":pro.toFixed(2)+"x")+row(L("تكلفة التبرع","Cost / donation"),n(pcpa))+row(L("متوسط التبرع","Avg donation"),n(pav)))+
+      row(L("الظهور","Impressions"),n(P.imp))+(P.reach?row(L("الوصول","Reach"),n(P.reach)):"")+row(L("الضغطات","Clicks"),n(P.clk))+row("CTR",pc==null?"—":pc.toFixed(2)+"%")+row("CPC",pcpc==null?"—":pcpc.toFixed(2))+row("CPM",pcpm==null?"—":pcpm.toFixed(1))+
+      row(L("ضغطات اللينك","Link clicks"),n(P.lc))+row(L("زيارات الصفحة","Landing page views"),n(P.lpv))+
+      (P.vp?row(L("مشاهدات الفيديو","Video plays"),n(P.vp)):"")+(P.tp?row("ThruPlays",n(P.tp)):"")+(P.atc?row(L("إضافة للسلة","Add to cart"),n(P.atc)):"")+(P.ic?row(L("بدأ الدفع","Checkout started"),n(P.ic)):""); }
   b+='<div class="hint cp-pnote">'+esc(L("الصرف والظهور من المنصة (آخر «تحديث الأرقام»)، التبرعات والإيراد من خزامى","Spend from the platform, donations/revenue from Khzama"))+(t.kzAt?" · "+esc(L("خزامى اتحدّث ","Khzama updated "))+cpHM(t.kzAt):"")+
     esc(L(" · خزامى بيتسجل باليوم بس، فمقارنة التبرعات مع امبارح كله.",""))+"</div>";
   return {t:L("النهارده لحد دلوقتي · ","Today so far · ")+(p.code||""),b:b,f:'<button class="btn" data-a="cpPanelClose">'+esc(L("قفل","Close"))+"</button>"}; }
@@ -13914,7 +13993,7 @@ function cpRowTools(pl,id,code){ return '<span class="cp-tools"><button class="c
 
 /* ═══ التنبيهات على الموبايل (Web Push) — آيفون/آيباد من التطبيق المثبّت (iOS 16.4+) + Chrome على الماك ═══
    الـ service worker (sw.js) بيعرض التنبيه بس — مفيش كاش. المفاتيح على السيرفر (edge function push). */
-const PUSH_DEF={from:8,to:24,qFrom:"",qTo:"",rules:{cpa:true,bud:true,roas:true,spike:true,meta:true,stale:true},summary:"23:30",silent:false};
+const PUSH_DEF={from:8,to:24,qFrom:"",qTo:"",rules:{cpa:true,bud:true,roas:true,spike:true,meta:true,stale:true,media:true,dailySummary:true},summary:"23:30",silent:false};
 const pushOK=()=>"serviceWorker" in navigator&&"PushManager" in window&&"Notification" in window;
 const pushIOS=()=>/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
 const pushStandalone=()=>(window.matchMedia&&matchMedia("(display-mode: standalone)").matches)||navigator.standalone===true;
@@ -13924,8 +14003,63 @@ async function pushState(){ const s={ok:pushOK(),perm:("Notification" in window)
 const pushKeyBytes=k=>{ const s=k.replace(/-/g,"+").replace(/_/g,"/"), p=s+"===".slice((s.length+3)%4); return Uint8Array.from(atob(p),c=>c.charCodeAt(0)); };
 ACT.pushOpen=()=>{ if(S.view!=="push") CP.pushBack=S.view; CP.sheet=null; CP.mnav=[]; window.__shK=null; ACT.go({dataset:{v:"push"}}); };
 function renderPushPage(){ if(!CP.panel||CP.panel.type!=="push"){ CP.panel={type:"push",st:null,prefs:null,busy:""}; setTimeout(pushLoad,0); }
-  const P=pushHTML(CP.panel); return '<div class="card push-page"><div class="cp-pan">'+P.b+"</div>"+(P.f?'<div class="cp-pf">'+P.f+"</div>":"")+pushDiag()+"</div>"; }
-async function pushLoad(){ const p=CP.panel; if(!p||p.type!=="push") return; p.st=await pushState();
+  const P=pushHTML(CP.panel); return '<div class="card push-page"><div class="cp-pan">'+P.b+"</div>"+(P.f?'<div class="cp-pf">'+P.f+"</div>":"")+pushDiag()+"</div>"+alHistHTML(CP.panel); }
+/* ═══ «سجل التنبيهات» — من public.alerts_sent (كل تنبيه اتبعت أو اتأجّل، مع حالته على الجهاز ده). أحدث الأول، آخر 7 أيام و«أقدم» بيجيب 7 كمان ═══ */
+const AL_KIND={cpa:["تكلفة التبرع","Cost / donation","bad"],bud:["الميزانية","Budget","amber"],budget:["الميزانية","Budget","amber"],roas:["ROAS إنذار","ROAS alarm","bad"],spike:["زيادة صرف","Spend spike","violet"],
+  meta:["توكن ميتا","Meta token","cyan"],token:["توكن ميتا","Meta token","cyan"],stale:["الأرقام وقفت","Data stale","warn"],test:["تجربة","Test","good"],summary:["ملخص يومي","Daily summary","teal"],dailySummary:["ملخص يومي","Daily summary","teal"],media:["🎬 ميديا جديدة","🎬 New media","violet"]};
+async function alEp(p){ if(p.alEp!==undefined) return p.alEp; const e=p.st&&p.st.sub&&p.st.sub.endpoint; if(!e||!(window.crypto&&crypto.subtle)){ p.alEp=null; return null; }
+  const h=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(e)); p.alEp=[...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,"0")).join("").slice(0,16); return p.alEp; }
+async function alLoad(older){ const p=CP.panel; if(!p||p.type!=="push") return; const H=p.hist=p.hist||{rows:[],since:null,busy:false,err:"",empty:0};
+  if(H.busy) return; H.busy=true; cpPanelDraw();
+  const until=older&&H.since? H.since : null, since=new Date((until? Date.parse(until) : Date.now())-7*86400e3).toISOString();
+  try{ await alEp(p);
+    let q=SUPA_DB.client.from("alerts_sent").select("*").gte("sent_at",since).order("sent_at",{ascending:false}).limit(300);
+    if(until) q=q.lt("sent_at",until);
+    const {data,error}=await q; if(error) throw error;
+    const rows=data||[]; H.rows= older? H.rows.concat(rows) : rows; H.since=since; H.err=""; H.empty= rows.length? 0 : (older? H.empty+1 : 0);
+  }catch(e){ H.err=(e&&e.message)||String(e); }
+  H.busy=false; H.loaded=true; cpPanelDraw(); }
+ACT.alOlder=()=>alLoad(true);
+function alWhen(iso){ const t=Date.parse(iso), d=Math.max(0,Date.now()-t)/1000;
+  const rel= d<60? L("دلوقتي","just now") : d<3600? L("من ","")+Math.round(d/60)+L(" د"," min ago") : d<86400? L("من ","")+Math.round(d/3600)+L(" س"," h ago") : L("من ","")+Math.round(d/86400)+L(" يوم"," d ago");
+  let ex=""; try{ ex=new Intl.DateTimeFormat(S.lang==="en"?"en-GB":"ar-EG-u-nu-latn",{timeZone:"Asia/Riyadh",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date(t)); }catch(e){ ex=String(iso).slice(0,16).replace("T"," "); }
+  return {rel:rel,ex:ex}; }
+function alDev(r,ep){ const dl=Array.isArray(r.deliveries)?r.deliveries:[]; const me=ep? dl.find(x=>x.ep===ep) : null;
+  const M={sent:["وصل للجهاز ده ✓","Delivered here ✓","good"],failed:["فشل على الجهاز ده","Failed on this device","bad"],held:["اتأجّل — برّه مواعيد الجهاز ده","Held — outside this device's hours","amber"],off:["النوع ده مقفول على الجهاز ده","Type is off on this device","ink"]};
+  if(me&&M[me.st]) return M[me.st];
+  if(ep) return [dl.length?"مااتبعتش للجهاز ده":"مااتبعتش لأي جهاز",dl.length?"Not sent to this device":"Not sent to any device","ink"];
+  const n=dl.filter(x=>x.st==="sent").length;
+  return n? ["وصل لـ "+n+" جهاز","Delivered to "+n+" device"+(n>1?"s":""),"good"] : r.status==="held"? ["اتأجّل","Held","amber"] : r.status==="failed"? ["فشل","Failed","bad"] : ["مااتبعتش","Not sent","ink"]; }
+function alHistHTML(p){ if(!p||!p.st) return ""; const H=p.hist; if(!H){ setTimeout(()=>alLoad(false),0); }
+  let h='<div class="card al-card"><div class="al-h"><b>'+esc(L("سجل التنبيهات","Alerts history"))+'</b><small class="hint">'+esc(L("أحدث الأول · من ","Newest first · since "))+(H&&H.since? esc(alWhen(H.since).ex) : "—")+"</small></div>";
+  if(!H||(!H.loaded&&H.busy)) return h+'<div class="hint al-empty">'+esc(L("بيحمّل…","Loading…"))+"</div></div>";
+  if(H.err) h+='<div class="cp-bad al-empty">'+esc(L("مقدرتش أجيب السجل: ","Couldn't load: ")+H.err)+"</div>";
+  if(!H.rows.length&&!H.err) h+='<div class="hint al-empty">'+esc(L("مفيش تنبيهات في الفترة دي. «جرّب تنبيه» بيتسجل هنا برضه.","No alerts in this period. A test alert shows up here too."))+"</div>";
+  const ep=p.alEp||null;
+  h+='<div class="al-list">'+H.rows.map((r,i)=>{ const k=AL_KIND[r.kind||r.rule]||["تنبيه","Alert","ink"], w=alWhen(r.created_at||r.sent_at), dv=alDev(r,ep), cl=r.client_id&&clientById(r.client_id);
+    const media=(r.kind||r.rule)==="media", go=media||!!(r.client_id||r.campaign);
+    return '<'+(go?'button type="button" data-a="alOpen" data-i="'+i+'"':"div")+' class="al-row'+(go?" al-go":"")+'">'+
+      '<div class="al-top"><span class="al-k al-'+k[2]+'">'+esc(L(k[0],k[1]))+"</span>"+(cl?'<span class="al-cl">'+esc(cl.name||r.client_id)+"</span>":"")+(r.campaign?'<b class="al-cp" dir="ltr">'+esc(r.campaign)+"</b>":"")+
+      '<span class="al-t" title="'+esc(w.ex)+'">'+esc(w.rel)+' · <span class="num">'+esc(w.ex)+"</span></span></div>"+
+      '<div class="al-msg">'+(r.title?"<b>"+esc(r.title)+"</b> ":"")+esc(r.body||"")+"</div>"+
+      '<div class="al-ft"><span class="al-d al-'+dv[2]+'">'+esc(L(dv[0],dv[1]))+"</span>"+(go?'<span class="al-open">'+esc(media?L("افتح المكتبة ‹","Open library ›"):L("افتح الحملة ‹","Open campaign ›"))+"</span>":"")+"</div></"+(go?"button":"div")+">"; }).join("")+"</div>";
+  const stop=H.empty>=4||(H.since&&Date.now()-Date.parse(H.since)>90*86400e3);
+  h+='<div class="al-more">'+(stop? '<small class="hint">'+esc(L("مفيش أقدم من كده","Nothing older"))+"</small>" : '<button class="btn" data-a="alOlder"'+(H.busy?" disabled":"")+">"+esc(H.busy?L("بيحمّل…","Loading…"):L("أقدم","Older"))+"</button>")+"</div>";
+  return h+"</div>"; }
+/* الضغط على تنبيه: يفتح العميل والحملة في «أداء الحملات» — على الموبايل/الآيباد شاشة الحملة، على الكمبيوتر الصف مفتوح ومتعلّم */
+ACT.alOpen=t=>{ const p=CP.panel, r=p&&p.hist&&p.hist.rows[+t.dataset.i]; if(!r) return;
+  if(r.client_id&&clientById(r.client_id)&&S.ws!==r.client_id&&!isClient()){ S.ws=r.client_id; S.wsInit=1; try{ lsSet("gad.ws",r.client_id); }catch(e){} CP.key=""; }
+  if((r.kind||r.rule)==="media"){ CP.panel=null; CP.sheet=null; CP.mnav=[]; window.__shK=null; S.view="library"; try{ window.scrollTo(0,0); }catch(e){} refresh(); return; }
+  CP.focus= r.campaign||r.obj? {code:r.campaign||"",pl:r.platform||"",id:r.obj||""} : null;
+  if(CP.focus&&CP.focus.pl&&CP.plats&&CP.plats.length&&CP.plats.indexOf(CP.focus.pl)<0) CP.plats=CP.plats.concat([CP.focus.pl]);
+  CP.panel=null; CP.sheet=null; CP.mnav=[]; window.__shK=null; S.view="campperf"; try{ window.scrollTo(0,0); }catch(e){} refresh(); };
+function cpFocusApply(m){ const f=CP.focus; if(!f||!m||!m.ready) return; CP.focus=null;
+  const c=(m.camps||[]).find(x=>(f.id&&String(x.id)===String(f.id)&&(!f.pl||x.pl===f.pl)))||(m.camps||[]).find(x=>f.code&&x.code===f.code&&(!f.pl||x.pl===f.pl));
+  if(!c){ setTimeout(()=>toast(L("الحملة دي مش ظاهرة بالفلاتر/الفترة دي","That campaign isn't in this view"),true),0); return; }
+  if(maOn()){ const e={t:"camp",k:c.pl+"|"+c.id}; CP.mnav=[e]; CP.mscroll=0; if(!maPad()){ try{ history.pushState({ma:1},""); }catch(x){} } setTimeout(()=>{ render(); window.scrollTo(0,0); },0); return; }
+  const ck="c:"+c.pl+":"+c.id; CP.open[ck]=true;
+  setTimeout(()=>{ render(); const el=document.querySelector('[data-a="cpTog"][data-k="'+ck+'"]'), tr=el&&el.closest("tr"); if(tr){ tr.classList.add("cp-flash"); tr.scrollIntoView({block:"center"}); setTimeout(()=>tr.classList.remove("cp-flash"),2600); } },0); }
+async function pushLoad(){ const p=CP.panel; if(!p||p.type!=="push") return; p.st=await pushState(); p.alEp=undefined; if(p.hist) setTimeout(()=>alLoad(false),0);
   if(p.st.sub){ try{ const q=await SUPA_DB.client.functions.invoke("push",{body:{action:"mine"}}); const me=(q.data&&q.data.subs||[]).find(x=>x.endpoint===p.st.sub.endpoint); p.prefs=Object.assign({},PUSH_DEF,me&&me.prefs||{}); p.rules=Object.assign({},PUSH_DEF.rules,(me&&me.prefs&&me.prefs.rules)||{}); p.last=me; }catch(e){} }
   if(!p.prefs){ p.prefs=Object.assign({},PUSH_DEF); p.rules=Object.assign({},PUSH_DEF.rules); }
   cpPanelDraw(); }
@@ -13942,7 +14076,7 @@ ACT.pushEnable=async()=>{ const p=CP.panel; if(!pushOK()){ toast(L("الجهاز
 ACT.pushTest=async()=>{ const p=CP.panel; p.busy="test"; cpPanelDraw();
   try{ const q=await SUPA_DB.client.functions.invoke("push",{body:{action:"test",endpoint:p.st&&p.st.sub?p.st.sub.endpoint:undefined,silent:!!(p.prefs&&p.prefs.silent)}}); const d=q.data||{};
     toast(d.ok? L("اتبعت ✓ — هيوصلك خلال ثواني","Sent ✓") : L("مااتبعتش: ","Not sent: ")+((d.results&&d.results[0]&&(d.results[0].status+" "+(d.results[0].err||"")))||d.error||(q.error&&q.error.message)||""),!d.ok); }
-  catch(e){ toast((e&&e.message)||String(e),true); } p.busy=""; cpPanelDraw(); };
+  catch(e){ toast((e&&e.message)||String(e),true); } p.busy=""; cpPanelDraw(); setTimeout(()=>{ if(CP.panel===p){ p.hist=null; alLoad(false); } },1200); };
 ACT.pushOff=async()=>{ const p=CP.panel; try{ const s=p.st&&p.st.sub; if(s){ await SUPA_DB.client.functions.invoke("push",{body:{action:"unsubscribe",endpoint:s.endpoint}}); await s.unsubscribe(); } toast(L("التنبيهات اتقفلت على الجهاز ده","Notifications off")); }catch(e){} pushLoad(); };
 CHG.pushPref=(v,el)=>{ const p=CP.panel; if(!p) return; const k=el.dataset.k; p.prefs[k]= el.type==="checkbox"? el.checked : el.type==="number"? +v : v; };
 CHG.pushRule=(v,el)=>{ const p=CP.panel; if(!p) return; p.rules[el.dataset.k]=el.checked; };
@@ -13967,8 +14101,8 @@ function pushHTML(p){ const st=p.st; let b="";
       '<div class="cp-psec">'+esc(L("أنواع التنبيهات","Alert types"))+"</div>"+
       rule("cpa",L("تكلفة التبرع عدّت الحد","Cost per donation over the limit"))+rule("bud",L("الميزانية قربت تخلص (85%) قبل 8 بالليل","Budget 85% spent before 20:00"))+
       rule("roas",L("ROAS إنذار (تحت 2.0)","ROAS alarm (below 2.0)"))+rule("spike",L("الصرف زاد فجأة (+40% عن نفس الساعة امبارح)","Spend spike vs same hour yesterday"))+
-      rule("meta",L("توكن ميتا قرب يخلص","Meta token expiring"))+rule("stale",L("الأرقام مش بتتحدث","Data is stale"))+
-      '<div class="cp-psec">'+esc(L("ملخص اليوم","Daily summary"))+'</div><div class="cp-prow"><input class="sel" type="time" data-c="pushPref" data-k="summary" value="'+esc(pr.summary||"")+'"> <small class="hint">'+esc(L("سيبه فاضي لو مش عايزه","Leave empty for none"))+"</small></div>"+
+      rule("meta",L("توكن ميتا قرب يخلص","Meta token expiring"))+rule("stale",L("الأرقام مش بتتحدث","Data is stale"))+rule("media",L("🎬 ميديا جديدة على Airtable","🎬 New media on Airtable"))+
+      '<div class="cp-psec">'+esc(L("ملخص اليوم","Daily summary"))+"</div>"+rule("dailySummary",L("ابعتلي ملخص اليوم","Send me the daily summary"))+'<div class="cp-prow"><input class="sel" type="time" data-c="pushPref" data-k="summary" value="'+esc(pr.summary||"")+'"> <small class="hint">'+esc(L("سيبه فاضي لو مش عايزه","Leave empty for none"))+"</small></div>"+
       '<label class="cp-tg2"><input type="checkbox" data-c="pushPref" data-k="silent"'+(pr.silent?" checked":"")+"><span>"+esc(L("صامت (من غير صوت)","Silent (no sound)"))+"</span></label>"+
       '<div class="hint">'+esc(L("الصوت نفسه بيتظبط من إعدادات الآيفون ← الإشعارات ← GADLYTICS (الآيفون مبيسمحش بصوت مخصص للتنبيهات دي).","Sound is set in iPhone Settings → Notifications → GADLYTICS."))+"</div>"; }
   return {t:L("التنبيهات","Notifications"),b:b,f:(on?'<button class="btn btn-p" data-a="pushSave">'+esc(L("حفظ الإعدادات","Save settings"))+"</button>":"")+'<button class="btn" data-a="cpPanelClose">'+esc(L("قفل","Close"))+"</button>"}; }
@@ -13998,11 +14132,14 @@ function renderCampPerf(){
      tg?'<span class="hint">'+esc(L("هدف الـ ROAS ","ROAS target "))+tg.toFixed(2)+"x ("+esc(T.src)+")</span>":'<span class="hint">'+esc(L("حط حدود ROAS للعميل ده من لوحة التحكم ← العملاء ← تعديل عشان يظهر حكم زوّد/راقب/وقّف","Set a ROAS target in settings to get verdicts"))+"</span>")+"</div>";
   if(convClient(cid)) h+='<div class="hint cp-note" style="color:var(--ink-3)">'+esc(L("الطلبات والإيراد من AppsFlyer وسلة على مستوى الحملة بس (AppsFlyer مبيقسّمش أقل من كده) — الـ Ad Set والإعلان بالصرف بس.","Orders come from AppsFlyer and Salla per campaign only; ad sets and ads show spend only."))+"</div>";
   if(!haveStruct) h+='<div class="hint cp-note">'+esc(L("لسه مفيش لقطة لحالة الحملات وميزانياتها — دوس «تحديث الأرقام». لحد ما تيجي، ظاهر كل اللي صرف في الفترة.","No status/budget snapshot yet — press «Refresh numbers». Until then, everything that spent is shown."))+"</div>";
-  const camps=m.camps, tot=m.tot, ptot=m.ptot, bud=m.bud, campBudget=m.campBudget;
+  const camps=m.camps, tot=m.tot, ptot=m.ptot, bud=m.bud, campBudget=m.campBudget; cpFocusApply(m);
   const tile=(lb,val,ar)=>'<div class="cp-tile"><small>'+esc(lb)+"</small><b>"+val+"</b>"+(ar||"")+"</div>";
   const tr=m.tr, tc=m.tc, cpaRef=m.cpaRef, nOn=m.nOn, nOff=m.nOff;
   h+='<div class="cp-tiles cp-t8">'+cpKpis(Object.assign({},m,{tot:tot,ptot:ptot,tr:tr,tc:tc,camps:camps,nOn:nOn,nOff:nOff,bud:bud,haveStruct:haveStruct})).map(x=>
     tile(x.lb, x.cur==null?"—":x.fmt(x.cur)+(x.cur$?" <small>"+esc(C)+"</small>":""), x.sub?'<small class="cp-ar" style="color:var(--ink-3)">'+esc(x.sub)+"</small>":(x.prev!==undefined?cpArrow(x.cur,x.prev,!!x.low):""))).join("")+"</div>";
+  h+='<div class="cp-bulkt"><button class="btn'+(CP.bulk?" btn-p":"")+'" data-a="cpBulk">'+cpIco.sel+" "+esc(CP.bulk?L("خروج من التعديل الجماعي","Exit bulk edit"):L("تعديل جماعي","Bulk edit"))+'</button>'+
+    '<button class="btn" data-a="cpUndoList">'+cpIco.undo+" "+esc(L("آخر التعديلات","Recent changes"))+"</button>"+
+    (CP.bulk?'<span class="hint">'+esc(L("علّم على الحملات (CBO) أو الـ Ad sets (ABO) اللي عايز تغيّر ميزانيتها","Tick CBO campaigns or ABO ad sets"))+"</span>":"")+"</div>";
   const head='<tr><th style="width:30%">'+esc(L("الحملة","Campaign"))+'</th><th class="num">'+esc(L("الصرف","Spend"))+'</th><th class="num">'+esc(L("التبرعات","Donations"))+'</th><th class="num">'+esc(L("الإيراد","Revenue"))+'</th><th class="num">ROAS</th><th class="num">'+esc(L("تكلفة التبرع","Cost / don."))+'</th><th class="num" style="width:19%">'+esc(L("الميزانية الحالية","Current budget"))+"</th></tr>";
   PAIDP().forEach(pl=>{ const cs=camps.filter(c=>c.pl===pl).sort((x,y)=>y.v.s-x.v.s); if(!cs.length) return;
     const pp=platById(pl)||{name:pl};
@@ -14010,12 +14147,12 @@ function renderCampPerf(){
     cs.forEach(c=>{ const st=c.st, ck="c:"+pl+":"+c.id, open=CP.open[ck], mode=st&&st.budget_mode||"";
       const sets=Object.values(c.sets).map(s=>{ s.st=cpStatus("adset",s.id,pl); return s; }).filter(s=>s.v.s||s.v.o||cpActive(s.st)).sort((x,y)=>y.v.s-x.v.s);
       const bcell= !st? "—" : mode==="ABO"? fnum(campBudget(c)||0,0)+' <small class="hint">'+esc(L("مجموع","sum"))+"</small>" : cpEd(pl,"campaign",c.id,"budget",st.daily_budget,"",c.code);
-      h+='<tr class="cp-c"><td>'+cpSwitch(pl,"campaign",c.id,c.code)+'<span class="cp-tg" data-a="cpTog" data-k="'+esc(ck)+'">'+(open?"▾":"◂")+'</span><b>'+esc(c.code)+"</b>"+(mode?'<span class="cp-tag">'+esc(mode)+"</span>":"")+cpStateTag(c.ds)+cpVerdict(c.v,tg,cpaRef)+(c.proj?'<small class="cp-sub">'+esc(c.proj)+"</small>":"")+"</td>"+cpCells(c.v,pvIdx["c|"+pl+"|"+c.code])+'<td class="num">'+bcell+"</td></tr>";
+      h+='<tr class="cp-c"><td>'+(st&&mode!=="ABO"?cpChk(pl,"campaign",c.id,c.code,st.daily_budget):"")+cpSwitch(pl,"campaign",c.id,c.code)+'<span class="cp-tg" data-a="cpTog" data-k="'+esc(ck)+'">'+(open?"▾":"◂")+'</span><b>'+esc(c.code)+"</b>"+cpRowTools(pl,c.id,c.code)+(mode?'<span class="cp-tag">'+esc(mode)+"</span>":"")+cpStateTag(c.ds)+cpVerdict(c.v,tg,cpaRef)+(c.proj?'<small class="cp-sub">'+esc(c.proj)+"</small>":"")+"</td>"+cpCells(c.v,pvIdx["c|"+pl+"|"+c.code])+'<td class="num">'+bcell+"</td></tr>";
       if(!open) return;
       sets.forEach(s=>{ const sk="s:"+s.id, so=CP.open[sk], sst=s.st;
         const b= mode==="ABO"&&sst? cpEd(pl,"adset",s.id,"budget",sst.daily_budget,"",s.name) : mode==="CBO"? '<small class="hint">'+esc(L("ميزانية الحملة","Campaign budget"))+"</small>" : (sst&&sst.daily_budget!=null? cpEd(pl,"adset",s.id,"budget",sst.daily_budget,"",s.name):"");
         const bid= sst&&sst.bid_type? '<div class="cp-bid">'+cpEd(pl,"adset",s.id,"bid",sst.bid,sst.bid_type,s.name)+"</div>" : sst? '<div class="cp-bid hint">'+esc(L("أقل تكلفة","Lowest cost"))+"</div>" : "";
-        h+='<tr class="cp-s"><td>'+cpSwitch(pl,"adset",s.id,s.name)+'<span class="cp-tg" data-a="cpTog" data-k="'+esc(sk)+'">'+(so?"▾":"◂")+"</span>"+esc(s.name)+cpStateTag(cpDayState(s,"adset",pl,next))+(c.conv?"":cpVerdict(s.v,tg,cpaRef))+"</td>"+(c.conv?cpSpendOnly(s.v):cpCells(s.v,pvIdx["s|"+s.id]))+'<td class="num">'+b+bid+"</td></tr>";
+        h+='<tr class="cp-s"><td>'+(sst&&(mode==="ABO"||(mode!=="CBO"&&sst.daily_budget!=null))?cpChk(pl,"adset",s.id,s.name,sst.daily_budget):"")+cpSwitch(pl,"adset",s.id,s.name)+'<span class="cp-tg" data-a="cpTog" data-k="'+esc(sk)+'">'+(so?"▾":"◂")+"</span>"+esc(s.name)+cpStateTag(cpDayState(s,"adset",pl,next))+(c.conv?"":cpVerdict(s.v,tg,cpaRef))+"</td>"+(c.conv?cpSpendOnly(s.v):cpCells(s.v,pvIdx["s|"+s.id]))+'<td class="num">'+b+bid+"</td></tr>";
         if(!so) return;
         const conv=c.conv, all=Object.values(s.ads).sort((x,y)=>y.v.s-x.v.s);
         if(s.smart&&(s.smart.o||s.smart.r)){ const vids=all.filter(a=>!a.v.o&&!a.v.r), infs=[...new Set(vids.map(a=>a.inf).filter(Boolean))];
@@ -14033,7 +14170,7 @@ function renderCampPerf(){
       if(c.loose.o||c.loose.r) h+='<tr class="cp-s cp-x"><td>'+esc(L("لينكات على الحملة كلها (من غير Custom والفيديو في أكتر من Ad Set)","Links for the whole campaign (no Custom, video in several ad sets)"))+"</td>"+cpCells(c.loose,null)+"<td></td></tr>"; });
     h+="</table></div>"; });
   if(!camps.length) h+='<div class="hint" style="padding:30px 0">'+esc(L("مفيش حملات بالفلتر ده في الفترة دي.","No campaigns match these filters in this period."))+"</div>";
-  return h+"</div>"; }
+  return h+cpBulkBar()+"</div>"; }
 /* ══ تطبيق الموبايل / الآيباد لـ «أداء الحملات» (≤1180px) — نفس الداتا (cpModel) ونفس أكشنز التعديل والتحديث؛ الديسكتوب زي ما هو ══ */
 const maMQ=window.matchMedia? matchMedia("(max-width:1180px)") : null, maPadMQ=window.matchMedia? matchMedia("(min-width:820px)") : null;
 const maOn=()=>S.view==="campperf"&&!!maMQ&&maMQ.matches;
@@ -14090,9 +14227,11 @@ function maRow(o){ const v=o.v, ro=cpRoas(v), pv=o.pv;
       cell(L("التبرعات","Donations"),maN((v.approx?"≈":"")+fnum(Math.round(v.o||0),0)),maMini(v.o,pv&&pv.o,false))+
       cell(L("الإيراد","Revenue"),maN(fnum(v.r||0,0)),maMini(v.r,pv&&pv.r,false))+
       cell("ROAS",maN(ro==null?"—":ro.toFixed(2)+"x"),maMini(ro,pv?cpRoas(pv):null,false));
-  return '<div class="ma-row'+(o.k?" ma-tap":"")+'"'+(o.k?' data-a="maOpen" data-k="'+esc(o.k)+'"':"")+(o.q?' data-q="'+esc(String(o.q).toLowerCase())+'"':"")+'><div class="ma-r1">'+(o.dot!=null?maStateDot(o.dot):"")+(o.pl?'<i class="ma-pl" style="background:'+((platById(o.pl)||{}).color||"#888")+'"></i>':"")+
-    '<b class="ma-nm" title="'+esc(o.title||o.name)+'">'+esc(o.name)+"</b>"+(o.tag?'<span class="ma-tag">'+esc(o.tag)+"</span>":"")+'<span class="ma-sp"></span>'+(o.sw||"")+(o.k?'<i class="ma-chv">'+maIco.chev+"</i>":"")+"</div>"+
-    '<div class="ma-r2 ma-r4">'+mt+"</div>"+(o.verdict?'<div class="ma-vrow">'+o.verdict+"</div>":"")+(o.chips?'<div class="ma-r3">'+o.chips+"</div>":"")+(o.sub?'<div class="ma-sub">'+esc(o.sub)+"</div>":"")+"</div>"; }
+  const bs=CP.bulk&&o.bsel? o.bsel : null, bOn=bs&&(CP.bsel||{})[bs.k];
+  const tap= bs? ' data-a="cpBTap" data-k="'+esc(bs.k)+'" data-n="'+esc(bs.n||"")+'" data-old="'+(bs.old==null?"":bs.old)+'"' : o.k? ' data-a="maOpen" data-k="'+esc(o.k)+'"' : "";
+  return '<div class="ma-row'+(o.k||bs?" ma-tap":"")+(bOn?" ma-bon":"")+'"'+tap+(o.q?' data-q="'+esc(String(o.q).toLowerCase())+'"':"")+'><div class="ma-r1">'+(bs?'<i class="ma-bsel'+(bOn?" on":"")+'">'+(bOn?"✓":"")+"</i>":"")+(o.dot!=null?maStateDot(o.dot):"")+(o.pl?'<i class="ma-pl" style="background:'+((platById(o.pl)||{}).color||"#888")+'"></i>':"")+
+    '<b class="ma-nm" title="'+esc(o.title||o.name)+'">'+esc(o.name)+"</b>"+(o.tag?'<span class="ma-tag">'+esc(o.tag)+"</span>":"")+'<span class="ma-sp"></span>'+(bs?"":(o.sw||""))+(o.k&&!bs?'<i class="ma-chv">'+maIco.chev+"</i>":"")+"</div>"+
+    '<div class="ma-r2 ma-r4">'+mt+"</div>"+(o.verdict?'<div class="ma-vrow">'+o.verdict+"</div>":"")+(o.chips&&!bs?'<div class="ma-r3">'+o.chips+"</div>":"")+(o.sub?'<div class="ma-sub">'+esc(o.sub)+"</div>":"")+"</div>"; }
 /* chips الصف: الحملة (CBO = ميزانية، ABO = على الـ Ad sets) — الـ Ad set (ABO = ميزانية + المزايدة) */
 function maCampChips(c){ const st=c.st, mode=st&&st.budget_mode||""; if(!st) return "";
   if(mode==="ABO") return '<span class="ma-bc is-ro"><small>ABO</small>'+esc(L("الميزانية على المجموعات","Budget on the ad sets"))+"</span>";
@@ -14118,8 +14257,12 @@ function maCampDetail(m,c,pad){ const pl=c.pl, st=c.st, mode=st&&st.budget_mode|
     ' · <i class="ma-pl" style="background:'+(pp.color||"#888")+'"></i>'+esc(pp.name)+(mode?" · "+esc(mode):"")+(c.proj?" · "+esc(c.proj):"")+(conv?"":" "+maVerdict(c.v,tg,cpaRef))+"</div></div>";
   const bud= !st? "" : mode==="ABO"? '<div class="ma-ed is-ro"><span class="ma-edl">'+esc(L("الميزانية (مجموع المجموعات)","Budget (sum of ad sets)"))+'</span><span class="ma-edv">'+maN(fnum(m.campBudget(c)||0,0))+" <small>"+esc(C)+"</small></span></div>" : maEdit(pl,"campaign",c.id,"budget",st.daily_budget,"",c.code);
   h+=maMetrics(c.v,pv,false,"")+(bud?'<div class="ma-eds">'+bud+"</div>":"");   // الحملة دايماً بأرقامها كاملة (ديمان: من AppsFlyer + سلة)
+  const pk=pl+"|"+c.id, pOpen=CP.paceIn&&CP.paceIn.k===pk;
+  h+='<div class="ma-xrow"><button class="ma-xbtn'+(pOpen?" on":"")+'" data-a="cpPaceIn" data-k="'+esc(pk)+'" data-code="'+esc(c.code)+'">'+cpIco.chart+"<span>"+esc(L("سرعة الصرف والتقييم الكامل","Pacing & full stats"))+"</span><i>"+(pOpen?"▴":"▾")+"</i></button>"+
+    '<button class="ma-xbtn" data-a="cpLog" data-k="'+esc(pk)+'" data-code="'+esc(c.code)+'">'+cpIco.clock+"<span>"+esc(L("سجل التعديلات","Change log"))+"</span></button></div>";
+  if(pOpen) h+='<div class="ma-pace">'+cpPaceHTML(CP.paceIn).b+"</div>";
   h+='<div class="ma-sec">'+esc(L("المجموعات الإعلانية","Ad sets"))+' <small>'+sets.length+"</small></div>";
-  if(sets.length){ h+='<div class="ma-list">'+sets.map(s=>maRow({k:"s|"+pl+"|"+c.id+"|"+s.id,name:s.name,v:s.v,pv:conv?null:m.pvIdx["s|"+s.id],dot:cpDayState(s,"adset",pl,m.next),spendOnly:conv,verdict:conv?"":maVerdict(s.v,tg,cpaRef),
+  if(sets.length){ h+='<div class="ma-list">'+sets.map(s=>maRow({k:"s|"+pl+"|"+c.id+"|"+s.id,bsel:s.st&&(mode==="ABO"||(mode!=="CBO"&&s.st.daily_budget!=null))?{k:cpBKey(pl,"adset",s.id),n:s.name,old:s.st.daily_budget}:null,name:s.name,v:s.v,pv:conv?null:m.pvIdx["s|"+s.id],dot:cpDayState(s,"adset",pl,m.next),spendOnly:conv,verdict:conv?"":maVerdict(s.v,tg,cpaRef),
       sw:maSwitch(pl,"adset",s.id,s.name),chips:maSetChips(c,s)})).join("")+"</div>"; }
   else h+='<div class="ma-empty">'+esc(L("مفيش مجموعات صرفت في الفترة دي.","No ad sets spent in this period."))+"</div>";
   const extra=[]; Object.values(c.unmatched||{}).forEach(u=>extra.push(maRow({name:"⚠ "+L("لينكات «","Links «")+u.custom+L("» مش مربوطة بمجموعة","» not linked to an ad set"),v:u.v,sub:L("اربطها من الديسكتوب","Link it on desktop")})));
@@ -14198,7 +14341,7 @@ function maSortCamps(camps){ const k=CP.msort||"s", big=1e15, a=camps.slice();
   return a; }
 function renderCampApp(){
   maPrefsInit();
-  const m=cpModel(); CP._m=m; const cid=m.cid, conv=convClient(cid), pad=maPad(), C=CURR[S.cfg.settings.currency]||"";
+  const m=cpModel(); CP._m=m; const cid=m.cid, conv=convClient(cid), pad=maPad(), C=CURR[S.cfg.settings.currency]||""; cpFocusApply(m);
   const cl=S.cfg.clients||[], anim=CP.manim; CP.manim=null;
   let h='<div class="ma'+(pad?" ma-pad":"")+'" id="maRoot">';
   const top=CP.mnav.length? CP.mnav[CP.mnav.length-1] : null;
@@ -14239,9 +14382,12 @@ function renderCampApp(){
     const sel=pad? (top&&maFind(m,top.k||(top.pl+"|"+top.cid))) || camps[0] : null;
     let list='<div class="ma-lh"><div class="ma-sec">'+esc(L("الحملات","Campaigns"))+" <small>"+all+"</small></div>"+
       '<label class="ma-sort"><select data-c="maSort" aria-label="'+esc(L("ترتيب","Sort"))+'">'+[["s","الصرف","Spend"],["roas","ROAS","ROAS"],["cpa","تكلفة التبرع","Cost/don."],["name","الاسم","Name"]].map(x=>'<option value="'+x[0]+'"'+((CP.msort||"s")===x[0]?" selected":"")+">"+esc(L("ترتيب: ","Sort: ")+L(x[1],x[2]))+"</option>").join("")+"</select>"+maIco.down+"</label></div>";
+    list+='<div class="ma-tools"><button class="ma-tbtn'+(CP.bulk?" on":"")+'" data-a="cpBulk">'+cpIco.sel+"<span>"+esc(CP.bulk?L("خروج من التعديل الجماعي","Exit bulk edit"):L("تعديل جماعي","Bulk edit"))+'</span></button>'+
+      '<button class="ma-tbtn" data-a="cpUndoList">'+cpIco.undo+"<span>"+esc(L("آخر التعديلات","Recent changes"))+"</span></button></div>"+
+      (CP.bulk?'<div class="ma-bhint">'+esc(L("دوس على الحملات (CBO) اللي عايز تغيّر ميزانيتها — حملات ABO افتحها واختار الـ Ad sets","Tap CBO campaigns; open ABO campaigns to pick ad sets"))+"</div>":"");
     if(all>3||q) list+='<label class="ma-q"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="maQ" type="search" inputmode="search" autocomplete="off" placeholder="'+esc(L("دوّر بكود الحملة","Search campaign code"))+'" value="'+esc(CP.mq||"")+'"></label>';
     list+= camps.length? '<div class="ma-list">'+camps.map(c=>
-        maRow({k:c.pl+"|"+c.id,q:c.code+" "+(c.proj||""),name:c.code,title:c.proj||"",v:c.v,pv:m.pvIdx["c|"+c.pl+"|"+c.code],dot:c.ds,pl:CP.plats.length===1?null:c.pl,verdict:maVerdict(c.v,m.tg,m.cpaRef),sw:maSwitch(c.pl,"campaign",c.id,c.code),chips:maCampChips(c),sub:c.proj||""})
+        maRow({k:c.pl+"|"+c.id,bsel:c.st&&(c.st.budget_mode||"")!=="ABO"?{k:cpBKey(c.pl,"campaign",c.id),n:c.code,old:c.st.daily_budget}:null,q:c.code+" "+(c.proj||""),name:c.code,title:c.proj||"",v:c.v,pv:m.pvIdx["c|"+c.pl+"|"+c.code],dot:c.ds,pl:CP.plats.length===1?null:c.pl,verdict:maVerdict(c.v,m.tg,m.cpaRef),sw:maSwitch(c.pl,"campaign",c.id,c.code),chips:maCampChips(c),sub:c.proj||""})
           .replace('class="ma-row ma-tap"','class="ma-row ma-tap'+(sel&&sel===c?" sel":"")+'"')).join("")+"</div>"
       : '<div class="ma-empty">'+esc(q? L("مفيش حملة بالكود ده.","No campaign with that code.") : (L("مفيش حملات","No campaigns")+(plName?L(" على "," on ")+plName:"")+" "+maPerLabel()))+"</div>";
     if(pad){ let det='<div class="ma-empty">'+esc(L("اختار حملة","Pick a campaign"))+"</div>";
@@ -14251,7 +14397,7 @@ function renderCampApp(){
   }
   h+="</div>";
   h+='<div class="ma-ptr" id="maPtr">'+maIco.ref+"</div>";
-  return h+maSheet()+"</div>"; }
+  return h+cpBulkBar()+maSheet()+"</div>"; }
 /* الأكشنز */
 const maPush=e=>{ CP.mscroll=window.scrollY; CP.mnav.push(e); CP.manim="push"; try{ history.pushState({ma:CP.mnav.length},""); }catch(x){} render(); window.scrollTo(0,0); };
 ACT.maOpen=t=>{ const k=t.dataset.k||""; if(k.indexOf("s|")===0){ const p=k.split("|"); const e={t:"set",pl:p[1],cid:p[2],sid:p[3],k:p[1]+"|"+p[2]};
@@ -14313,8 +14459,8 @@ async function cpApply(id,doc,slowMsg){ const pn={meta:"ميتا",tiktok:"تيك
   if(r&&r.ok){ if(c){ c.status="done"; c.applied=doc.to; }
     const row=(CP.struct||[]).find(x=>x.platform===doc.platform&&String(x.id)===String(doc.objId));
     if(row){ if(doc.field==="status") row.status=doc.to==="ACTIVE"?"active":"paused"; else if(doc.field==="bid") row.bid=doc.to; else row.daily_budget=doc.to; }
-    toast(L("اتطبق على "+pn+" ✓ ("+Math.max(1,Math.round((r.ms||0)/1000))+" ث)","Applied on "+pn+" ✓")); render(); return; }
-  if(r&&(r.code==="not_configured"||r.code==="missing"||r.code==="net")){ toast(slowMsg); cpPoll(); return; }
+    cpUndoToast(id,L("اتطبق على "+pn+" ✓ ("+Math.max(1,Math.round((r.ms||0)/1000))+" ث)","Applied on "+pn+" ✓")); render(); return; }
+  if(r&&(r.code==="not_configured"||r.code==="missing"||r.code==="net")){ cpUndoToast(id,slowMsg); cpPoll(); return; }
   if(c){ c.status="failed"; c.error=(r&&r.error)||"فشل"; } toast(L("مااتطبقش: ","Not applied: ")+((r&&r.error)||""),true); render(); }
 ACT.cpSwArm=t=>{ CP.arm=t.dataset.k||null; render(); };
 ACT.cpSwitch=async t=>{ const id=sid(), lvl=t.dataset.lvl, oid=String(t.dataset.id), st=cpStatus(lvl,oid,t.dataset.pl);
