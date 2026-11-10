@@ -6,7 +6,8 @@
 // push through the `push` function (applies each device's settings: rule off, delivery hours, quiet hours, silent) → every alert is
 // logged in public.alerts_sent («سجل التنبيهات»). Server-to-server calls use the service-role key, which never leaves Supabase.
 // Rules (keys = prefs.rules on each device): roas · spike · norev · media · meta (meta is off unless switched on in config/alerts).
-// Thresholds: docs row path 'config/alerts' → {defaults:{rule:{…}}, clients:{<client_id>:{rule:{…}}}} over the DEF below.
+// Thresholds: each device's own numbers from the notifications screen (push_subs.prefs spikePct/spikeMin/norevWin/norevMin) win;
+// ROAS uses the client's roasAlarm (config/app); everything else: docs 'config/alerts' {defaults:{rule:{…}}, clients:{id:{rule:{…}}}} over DEF.
 // Revenue = Khzama only (khzama_link_daily); platform purchases are never used. Rules that need revenue only run when Khzama is fresh.
 // Input (all optional): {dry:true → evaluate only, no refresh / snapshot / send · force:true → ignore throttle + hours · only:[rule keys]}
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -26,16 +27,16 @@ const PL: Record<string, string> = { meta: "ميتا", snap: "سناب", tiktok:
 
 // defaults — every value can be overridden per client in docs 'config/alerts'
 const DEF: Record<string, any> = {
-  roas: { on: true, alarm: 0, minSpend: 300, cpaMult: 2, total: true, maxKzAgeMin: 180 },   // alarm 0 → the client's roasAlarm (config/app) or 2.0
+  roas: { on: true, alarm: 0, minSpend: 300, cpaMult: 2, total: true, maxKzAgeMin: 180 },   // alarm = the client's roasAlarm (config/app); this only if that is empty; else 2.0
   spike: { on: true, pct: 40, minSar: 150, windowMin: 15, cooldownMin: 60 },
-  norev: { on: true, minSar: 200, windowMin: 15, campaigns: true, campMinSar: 200, cooldownMin: 60 },
+  norev: { on: true, minSar: 200, windowMin: 30, campaigns: true, campMinSar: 200, cooldownMin: 60 },   // same defaults as the page (PUSH_DEF)
   media: { on: true, everyMin: 15 },
   meta: { on: false, days: 7 },
 };
 function cfgFor(doc: any, cid: string | null) {
   const o: any = {};
   for (const k of Object.keys(DEF)) o[k] = { ...DEF[k], ...(doc?.defaults?.[k] || {}), ...(cid ? doc?.clients?.[cid]?.[k] || {} : {}) };
-  o.norev.windowMin = Number(o.norev.windowMin) === 30 ? 30 : 15;
+  o.norev.windowMin = Number(o.norev.windowMin) === 15 ? 15 : 30;
   o.spike.windowMin = Math.min(60, Math.max(5, Number(o.spike.windowMin) || 15));
   return o;
 }
@@ -75,7 +76,24 @@ Deno.serve(async (req: Request) => {
   ]);
   const clients: any[] = (app?.data?.clients || []).filter((c: any) => c && c.id);
   const G = cfgFor(ac?.data, null);
-  const out: any = { ok: true, day: D, at: new Date().toISOString(), dry, refresh: {}, eval: {}, alerts: [], sent: [], skipped: [] };
+
+  // per-device thresholds — what Mahmoud sets on the notifications screen (push_subs.prefs: spikePct · spikeMin · norevWin 15/30 · norevMin).
+  // Devices with the same numbers form one profile; spike / norev are evaluated per profile and sent only to that profile's devices.
+  const { data: subs } = await sb.from("push_subs").select("endpoint,prefs").eq("active", true);
+  const profMap: Record<string, any> = {};
+  for (const s of subs || []) {
+    const p = s.prefs || {}, pos = (x: any) => (Number(x) > 0 ? Number(x) : null), w = Number(p.norevWin);
+    const pr = { spikePct: pos(p.spikePct), spikeMin: pos(p.spikeMin), norevWin: w === 15 || w === 30 ? w : null, norevMin: pos(p.norevMin) };
+    const id = [pr.spikePct ?? "-", pr.spikeMin ?? "-", pr.norevWin ?? "-", pr.norevMin ?? "-"].join("/");
+    (profMap[id] = profMap[id] || { id, ...pr, eps: [] }).eps.push(s.endpoint);
+  }
+  const profiles: any[] = Object.values(profMap);
+  if (!profiles.length) profiles.push({ id: "default", spikePct: null, spikeMin: null, norevWin: null, norevMin: null, eps: null });
+  const profC = (C: any, P: any) => ({
+    spike: { ...C.spike, pct: P.spikePct ?? C.spike.pct, minSar: P.spikeMin ?? C.spike.minSar },
+    norev: { ...C.norev, windowMin: P.norevWin ?? C.norev.windowMin, minSar: P.norevMin ?? C.norev.minSar, campMinSar: P.norevMin ?? C.norev.campMinSar },
+  });
+  const out: any = { ok: true, day: D, at: new Date().toISOString(), dry, refresh: {}, profiles: profiles.map((p) => ({ id: p.id, devices: p.eps ? p.eps.length : 0 })), eval: {}, alerts: [], sent: [], skipped: [] };
   const alerts: any[] = [];
   const add = (a: any) => alerts.push(a);
 
@@ -142,7 +160,7 @@ Deno.serve(async (req: Request) => {
       const { error } = await sb.from("alert_snap").upsert(snapNow.slice(i, i + 500), { onConflict: "client_id,scope,key,at", ignoreDuplicates: true });
       if (error) note("snapshot write: " + error.message);
     }
-    const W_MAX = Math.max(C.spike.windowMin, C.norev.windowMin) * MIN;
+    const W_MAX = Math.max(C.spike.windowMin, 30) * MIN;
     const sinceToday = Math.max(dayStart, now - (Number(C.roas.maxKzAgeMin) || 180) * MIN - W_MAX - 15 * MIN);
     const [hT, hY, hR] = await Promise.all([
       pageAll(sb.from("alert_snap").select("scope,key,at,acct,code,spend").eq("client_id", cid).in("scope", ["camp", "acct"]).gte("at", iso(sinceToday)).order("at")),
@@ -174,60 +192,64 @@ Deno.serve(async (req: Request) => {
       return { total, byCode };
     };
 
-    // ── spike: last window vs the same window yesterday and vs today's average pace (per campaign)
-    if (want("spike") && C.spike.on) {
-      const W = C.spike.windowMin * MIN, pct = Number(C.spike.pct) || 40, minSar = Number(C.spike.minSar) || 150;
-      let checked = 0;
-      for (const o of Object.values(cur) as any[]) {
-        const m1 = markAt(o.acct, now + MIN); if (m1 == null || now - m1 > 15 * MIN) continue;
-        const m0 = markAt(o.acct, m1 - W); if (m0 == null || m1 - m0 < W / 2) continue;
-        checked++;
-        const s1 = v(o.key, m1), s0 = v(o.key, m0), rate = (s1 - s0) * W / (m1 - m0);
-        if (rate < minSar) continue;
-        const bases: number[] = []; let pace: number | null = null, yRate: number | null = null;
-        const quarters = (m0 - dayStart) / W; if (quarters >= 60 * MIN / W && s0 > 0) { pace = s0 / quarters; bases.push(pace); }
-        const y1 = markAt(o.acct, m1 - DAY), y0 = markAt(o.acct, m0 - DAY);
-        if (y1 != null && y0 != null && y1 > y0) { yRate = Math.max(0, (v(o.key, y1) - v(o.key, y0)) * W / (y1 - y0)); bases.push(yRate); }
-        if (!bases.length || !bases.every((x) => rate > (1 + pct / 100) * x)) continue;
-        const wm = C.spike.windowMin;
-        add({ rule: "spike", client: cid, campaign: o.code || o.key.split("|")[1], platform: o.pl, obj: cid + "|" + o.key, level: Math.round(rate), better: "low", cooldownMin: C.spike.cooldownMin,
-          title: `صرف مفاجئ · ${o.code || "حملة"} (${PL[o.pl] || o.pl})`,
-          body: `صرف ${fmt(rate)} ر.س في آخر ${wm} دقيقة — ` + [yRate != null ? `امبارح نفس الوقت ${fmt(yRate)}` : "", pace != null ? `متوسط النهارده ${fmt(pace)} لكل ${wm} دقيقة` : ""].filter(Boolean).join(" · ") + ` · إجمالي النهارده ${fmt(s1)} ر.س`, url });
+    for (const P of profiles) {
+      const CP = profC(C, P), multi = profiles.length > 1, lbl = multi ? " [" + P.id + "]" : "", sfx = multi ? "~" + P.id : "", to = P.eps || "all";
+      const addP = (x: any) => add({ ...x, obj: x.obj + sfx, to });
+      // ── spike: last window vs the same window yesterday and vs today's average pace (per campaign)
+      if (want("spike") && CP.spike.on) {
+        const W = CP.spike.windowMin * MIN, pct = Number(CP.spike.pct) || 40, minSar = Number(CP.spike.minSar) || 150;
+        let checked = 0;
+        for (const o of Object.values(cur) as any[]) {
+          const m1 = markAt(o.acct, now + MIN); if (m1 == null || now - m1 > 15 * MIN) continue;
+          const m0 = markAt(o.acct, m1 - W); if (m0 == null || m1 - m0 < W / 2) continue;
+          checked++;
+          const s1 = v(o.key, m1), s0 = v(o.key, m0), rate = (s1 - s0) * W / (m1 - m0);
+          if (rate < minSar) continue;
+          const bases: number[] = []; let pace: number | null = null, yRate: number | null = null;
+          const quarters = (m0 - dayStart) / W; if (quarters >= 60 * MIN / W && s0 > 0) { pace = s0 / quarters; bases.push(pace); }
+          const y1 = markAt(o.acct, m1 - DAY), y0 = markAt(o.acct, m0 - DAY);
+          if (y1 != null && y0 != null && y1 > y0) { yRate = Math.max(0, (v(o.key, y1) - v(o.key, y0)) * W / (y1 - y0)); bases.push(yRate); }
+          if (!bases.length || !bases.every((x) => rate > (1 + pct / 100) * x)) continue;
+          const wm = CP.spike.windowMin;
+          addP({ rule: "spike", client: cid, campaign: o.code || o.key.split("|")[1], platform: o.pl, obj: cid + "|" + o.key, level: Math.round(rate), better: "low", cooldownMin: CP.spike.cooldownMin,
+            title: `صرف مفاجئ · ${o.code || "حملة"} (${PL[o.pl] || o.pl})`,
+            body: `صرف ${fmt(rate)} ر.س في آخر ${wm} دقيقة — ` + [yRate != null ? `امبارح نفس الوقت ${fmt(yRate)}` : "", pace != null ? `متوسط النهارده ${fmt(pace)} لكل ${wm} دقيقة` : ""].filter(Boolean).join(" · ") + ` · إجمالي النهارده ${fmt(s1)} ر.س`, url });
+        }
+        ev["spike" + lbl] = checked ? `checked ${checked} campaigns` : "no 15-min history yet (needs two pulls ~" + CP.spike.windowMin + " min apart)";
       }
-      ev.spike = checked ? `checked ${checked} campaigns` : "no 15-min history yet (needs two pulls ~" + C.spike.windowMin + " min apart)";
-    }
 
-    // ── norev: spend in the last window with zero new Khzama revenue (client total, then campaigns)
-    if (want("norev") && C.norev.on) {
-      const W = C.norev.windowMin * MIN;
-      if (!hasKz) ev.norev = "no Khzama for this client (conversions come from " + (c.convSource || "?") + ")";
-      else if (!kzAt || now - kzAt > W) ev.norev = "skipped — Khzama not updated in the last " + C.norev.windowMin + " min (last " + (kzAt ? new Date(kzAt).toISOString() : "never today") + ")";
-      else {
-        const sp1 = spendAt(kzAt), sp0 = spendAt(kzAt - W);
-        if (!sp1 || !sp0) ev.norev = "skipped — no platform pull near " + hhmm(kzAt) + " / " + hhmm(kzAt - W);
+      // ── norev: spend in the last window with zero new Khzama revenue (client total, then campaigns)
+      if (want("norev") && CP.norev.on) {
+        const W = CP.norev.windowMin * MIN;
+        if (!hasKz) ev["norev" + lbl] = "no Khzama for this client (conversions come from " + (c.convSource || "?") + ")";
+        else if (!kzAt || now - kzAt > W) ev["norev" + lbl] = "skipped — Khzama not updated in the last " + CP.norev.windowMin + " min (last " + (kzAt ? new Date(kzAt).toISOString() : "never today") + ")";
         else {
-          // revenue at the window start: the last Khzama pull at or before it (none today → 0 at midnight)
-          let r0At = dayStart; for (const r of hR) if (r.key === "_total" && ms(r.at) <= kzAt - W) r0At = Math.max(r0At, ms(r.at));
-          const r0: Record<string, number> = { _total: 0 }; for (const r of hR) if (ms(r.at) === r0At) r0[r.key] = Number(r.rev || 0);
-          const dRev = kzTotal - (r0._total || 0), dS = sp1.total - sp0.total;
-          const camps = Object.keys(sp1.byCode).map((cd) => ({ cd, dS: sp1.byCode[cd] - (sp0.byCode[cd] || 0), dR: (kzCode[cd] || 0) - (r0[cd] || 0) }))
-            .filter((x) => x.dS >= (Number(C.norev.campMinSar) || 200) && x.dR <= 0).sort((a, b) => b.dS - a.dS);
-          ev.norev = `window ${hhmm(kzAt - W)}–${hhmm(kzAt)}: spend ${fmt(dS)} · new revenue ${fmt(dRev)} (since ${hhmm(r0At)})`;
-          const wm = C.norev.windowMin;
-          if (dS >= (Number(C.norev.minSar) || 200) && dRev <= 0)
-            add({ rule: "norev", client: cid, obj: cid + "|total", level: Math.round(dS), better: "low", cooldownMin: C.norev.cooldownMin,
-              title: "صرف من غير تبرعات · " + cname,
-              body: `صرف ${fmt(dS)} ر.س في آخر ${wm} دقيقة (لحد ${hhmm(kzAt)}) ومفيش ولا تبرع جديد في خزامى` + (C.norev.campaigns && camps.length ? "\n" + camps.slice(0, 3).map((x) => `${x.cd}: ${fmt(x.dS)} ر.س`).join(" · ") : ""), url });
-          else if (C.norev.campaigns) for (const x of camps.slice(0, 3))
-            add({ rule: "norev", client: cid, campaign: x.cd, obj: cid + "|" + x.cd, level: Math.round(x.dS), better: "low", cooldownMin: C.norev.cooldownMin,
-              title: "صرف من غير تبرعات · " + x.cd, body: `الحملة صرفت ${fmt(x.dS)} ر.س في آخر ${wm} دقيقة (لحد ${hhmm(kzAt)}) ومفيش تبرع جديد ليها في خزامى`, url });
+          const sp1 = spendAt(kzAt), sp0 = spendAt(kzAt - W);
+          if (!sp1 || !sp0) ev["norev" + lbl] = "skipped — no platform pull near " + hhmm(kzAt) + " / " + hhmm(kzAt - W);
+          else {
+            // revenue at the window start: the last Khzama pull at or before it (none today → 0 at midnight)
+            let r0At = dayStart; for (const r of hR) if (r.key === "_total" && ms(r.at) <= kzAt - W) r0At = Math.max(r0At, ms(r.at));
+            const r0: Record<string, number> = { _total: 0 }; for (const r of hR) if (ms(r.at) === r0At) r0[r.key] = Number(r.rev || 0);
+            const dRev = kzTotal - (r0._total || 0), dS = sp1.total - sp0.total;
+            const camps = Object.keys(sp1.byCode).map((cd) => ({ cd, dS: sp1.byCode[cd] - (sp0.byCode[cd] || 0), dR: (kzCode[cd] || 0) - (r0[cd] || 0) }))
+              .filter((x) => x.dS >= (Number(CP.norev.campMinSar) || 200) && x.dR <= 0).sort((a, b) => b.dS - a.dS);
+            ev["norev" + lbl] = `window ${hhmm(kzAt - W)}–${hhmm(kzAt)}: spend ${fmt(dS)} · new revenue ${fmt(dRev)} (since ${hhmm(r0At)})`;
+            const wm = CP.norev.windowMin;
+            if (dS >= (Number(CP.norev.minSar) || 200) && dRev <= 0)
+              addP({ rule: "norev", client: cid, obj: cid + "|total", level: Math.round(dS), better: "low", cooldownMin: CP.norev.cooldownMin,
+                title: "صرف من غير تبرعات · " + cname,
+                body: `صرف ${fmt(dS)} ر.س في آخر ${wm} دقيقة (لحد ${hhmm(kzAt)}) ومفيش ولا تبرع جديد في خزامى` + (CP.norev.campaigns && camps.length ? "\n" + camps.slice(0, 3).map((x) => `${x.cd}: ${fmt(x.dS)} ر.س`).join(" · ") : ""), url });
+            else if (CP.norev.campaigns) for (const x of camps.slice(0, 3))
+              addP({ rule: "norev", client: cid, campaign: x.cd, obj: cid + "|" + x.cd, level: Math.round(x.dS), better: "low", cooldownMin: CP.norev.cooldownMin,
+                title: "صرف من غير تبرعات · " + x.cd, body: `الحملة صرفت ${fmt(x.dS)} ر.س في آخر ${wm} دقيقة (لحد ${hhmm(kzAt)}) ومفيش تبرع جديد ليها في خزامى`, url });
+          }
         }
       }
     }
 
     // ── roas: «إنذار» under the alarm level — per campaign code and the client's total, both as of the last Khzama pull
     if (want("roas") && C.roas.on) {
-      const alarm = Number(C.roas.alarm) || Number(c.roasAlarm) || 2, maxAge = (Number(C.roas.maxKzAgeMin) || 180) * MIN;
+      const alarm = Number(c.roasAlarm) || Number(C.roas.alarm) || 2, maxAge = (Number(C.roas.maxKzAgeMin) || 180) * MIN;
       const cpa = cpaCache.vals?.[cid] ?? null, minSpend = Number(C.roas.minSpend) || 300, mult = Number(C.roas.cpaMult) || 0;
       const thr = cpa && mult ? Math.min(mult * cpa, minSpend) : minSpend;
       ev.cpaNormal = cpa; ev.roasAlarm = alarm; ev.roasMinSpend = Math.round(thr);
@@ -310,9 +332,9 @@ Deno.serve(async (req: Request) => {
       const lastT = Math.max(...prev.map((x: any) => ms(x.sent_at)));
       if (now - lastT < 60 * MIN) why = "held/off < 1h ago";   // held (quiet hours) → tried again hourly while still true
     }
-    out.alerts.push({ rule: a.rule, obj: a.obj, level: a.level, title: a.title, body: a.body, skip: why || undefined });
+    out.alerts.push({ rule: a.rule, obj: a.obj, level: a.level, devices: Array.isArray(a.to) ? a.to.length : "all", title: a.title, body: a.body, skip: why || undefined });
     if (why || dry) { if (why) out.skipped.push(a.rule + " " + a.obj); continue; }
-    const r = await callFn("push", { action: "send", to: "all", kind: a.rule, rule: a.rule, client: a.client || null, campaign: a.campaign || null, platform: a.platform || null,
+    const r = await callFn("push", { action: "send", to: a.to || "all", kind: a.rule, rule: a.rule, client: a.client || null, campaign: a.campaign || null, platform: a.platform || null,
       obj: a.obj, level: a.level, title: a.title, body: a.body, url: a.url, tag: (a.rule + "-" + (a.campaign || a.obj)).slice(0, 32) });
     out.sent.push({ rule: a.rule, obj: a.obj, ok: !!r?.ok, held: r?.held || 0 });
     if (a._wm && r && (r.ok || r.held)) await sb.from("sys_kv").upsert({ k: "media_wm", v: a._wm, updated_at: new Date().toISOString() }, { onConflict: "k" });
