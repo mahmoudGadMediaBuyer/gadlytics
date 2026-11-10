@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="gad-build" content="20261110100150">
+<meta name="gad-build" content="20261110100352">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -16,7 +16,7 @@
 <script>
 /* تحديث تلقائي للتطبيق على الموبايل/الآيباد: مفيش service worker ولا كاش. كل ما التطبيق يتفتح أو يرجع للواجهة
    بيجيب index.html جديد (no-store) ويقارن رقم البيلد؛ لو فيه نسخة أحدث بيفتحها على طول. */
-(function(){ var B="20261110100150", last=0;
+(function(){ var B="20261110100352", last=0;
   function busy(){ return document.querySelector("#cpIn:focus, .ma-sheet, input:focus, textarea:focus"); }
   function chk(){ var n=Date.now(); if(n-last<20000) return; last=n; if(busy()) return;
     fetch(location.pathname+"?_b="+n,{cache:"no-store"}).then(function(r){ return r.ok? r.text() : ""; }).then(function(t){
@@ -13924,7 +13924,7 @@ async function pushState(){ const s={ok:pushOK(),perm:("Notification" in window)
 const pushKeyBytes=k=>{ const s=k.replace(/-/g,"+").replace(/_/g,"/"), p=s+"===".slice((s.length+3)%4); return Uint8Array.from(atob(p),c=>c.charCodeAt(0)); };
 ACT.pushOpen=()=>{ if(S.view!=="push") CP.pushBack=S.view; CP.sheet=null; CP.mnav=[]; window.__shK=null; ACT.go({dataset:{v:"push"}}); };
 function renderPushPage(){ if(!CP.panel||CP.panel.type!=="push"){ CP.panel={type:"push",st:null,prefs:null,busy:""}; setTimeout(pushLoad,0); }
-  const P=pushHTML(CP.panel); return '<div class="card push-page"><div class="cp-pan">'+P.b+"</div>"+(P.f?'<div class="cp-pf">'+P.f+"</div>":"")+"</div>"; }
+  const P=pushHTML(CP.panel); return '<div class="card push-page"><div class="cp-pan">'+P.b+"</div>"+(P.f?'<div class="cp-pf">'+P.f+"</div>":"")+pushDiag()+"</div>"; }
 async function pushLoad(){ const p=CP.panel; if(!p||p.type!=="push") return; p.st=await pushState();
   if(p.st.sub){ try{ const q=await SUPA_DB.client.functions.invoke("push",{body:{action:"mine"}}); const me=(q.data&&q.data.subs||[]).find(x=>x.endpoint===p.st.sub.endpoint); p.prefs=Object.assign({},PUSH_DEF,me&&me.prefs||{}); p.rules=Object.assign({},PUSH_DEF.rules,(me&&me.prefs&&me.prefs.rules)||{}); p.last=me; }catch(e){} }
   if(!p.prefs){ p.prefs=Object.assign({},PUSH_DEF); p.rules=Object.assign({},PUSH_DEF.rules); }
@@ -13948,6 +13948,8 @@ CHG.pushPref=(v,el)=>{ const p=CP.panel; if(!p) return; const k=el.dataset.k; p.
 CHG.pushRule=(v,el)=>{ const p=CP.panel; if(!p) return; p.rules[el.dataset.k]=el.checked; };
 ACT.pushSave=async()=>{ const p=CP.panel; if(!(p&&p.st&&p.st.sub)) return; const prefs=Object.assign({},p.prefs,{rules:p.rules});
   const q=await SUPA_DB.client.functions.invoke("push",{body:{action:"prefs",endpoint:p.st.sub.endpoint,prefs:prefs}}); toast(q.data&&q.data.ok? L("اتحفظ ✓","Saved ✓") : L("مااتحفظش","Not saved"),!(q.data&&q.data.ok)); };
+function pushDiag(){ const bd=(document.querySelector('meta[name="gad-build"]')||{}).content||"?";
+  return '<small class="hint push-diag" style="display:block;margin-top:14px;direction:ltr;text-align:left">build '+esc(bd)+" · app "+(pushStandalone()?"yes":"no")+" · push "+(pushOK()?"yes":"no")+" · perm "+esc(("Notification" in window)?Notification.permission:"none")+" · iOS "+(pushIOS()?"yes":"no")+"</small>"; }
 function pushHTML(p){ const st=p.st; let b="";
   if(!st) return {t:L("التنبيهات","Notifications"),b:'<div class="hint">'+esc(L("بيحمّل…","Loading…"))+"</div>"};
   if(pushIOS()&&!pushStandalone()) b+='<div class="cp-warn">'+esc(L("على الآيفون والآيباد التنبيهات بتشتغل من التطبيق المثبّت بس: افتح الموقع في Safari ← زرار المشاركة ⬆️ ← «Add to Home Screen»، وبعدين افتح GADLYTICS من الأيقونة وارجع هنا.","On iPhone/iPad, open the installed home-screen app first."))+"</div>";
