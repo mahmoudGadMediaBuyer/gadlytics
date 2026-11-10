@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="gad-build" content="20261110072942">
+<meta name="gad-build" content="20261110073339">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -16,7 +16,7 @@
 <script>
 /* تحديث تلقائي للتطبيق على الموبايل/الآيباد: مفيش service worker ولا كاش. كل ما التطبيق يتفتح أو يرجع للواجهة
    بيجيب index.html جديد (no-store) ويقارن رقم البيلد؛ لو فيه نسخة أحدث بيفتحها على طول. */
-(function(){ var B="20261110072942", last=0;
+(function(){ var B="20261110073339", last=0;
   function busy(){ return document.querySelector("#cpIn:focus, .ma-sheet, input:focus, textarea:focus"); }
   function chk(){ var n=Date.now(); if(n-last<20000) return; last=n; if(busy()) return;
     fetch(location.pathname+"?_b="+n,{cache:"no-store"}).then(function(r){ return r.ok? r.text() : ""; }).then(function(t){
@@ -12608,9 +12608,9 @@ function navHTML(){
   const work=grp(L("شغلي","My work"),[I.me,I.tasks,I.chat]);
   const G=[
     [L("الإدارة والتحليل","Manage & analyze"),[["overview",it("overview",L("نظرة عامة","Overview"))],["campperf",it("campperf",L("أداء الحملات","Campaign performance"),"roster")],
-      ["roster",it("roster",L("إدارة الحملات","Campaign roster"))],["creatives",I.media],["library",I.cr],["explorer",it("explorer",L("المحلل","Analyzer"),"insights")]]],
+      ["roster",it("roster",L("إدارة الحملات","Campaign roster"))],["creatives",I.media],["library",I.cr],["explorer",it("explorer",L("المحلل","Analyzer"),"insights")],["site",it("site",L("الموقع والقمع","Site & funnel"),"cart")]]],
     [L("المتابعة","Monitor"),[["actions",it("actions",L("مركز الإجراءات","Action Center"))],["live",it("live",L("اليوم المباشر","Live Today"))],["reports",I.rep],["entry",I.entry]]],
-    [L("أدوات إضافية","More tools"),[["site",it("site",L("الموقع والقمع","Site & funnel"),"cart")],["plans",I.plans],["approvals",I.ap],["experiments",it("experiments",L("التجارب","Experiments"))],["changes",it("changes",L("سجل التغييرات","Change log"))]]]];
+    [L("أدوات إضافية","More tools"),[["plans",I.plans],["approvals",I.ap],["experiments",it("experiments",L("التجارب","Experiments"))],["changes",it("changes",L("سجل التغييرات","Change log"))]]]];
   const simple=SIMPLE(), member=isMember();
   const ok=v=> !(simple||member) || SIMPLE_VIEWS[v] || v==="site";
   const body=G.map(g=>{ const xs=g[1].filter(x=>ok(x[0])).map(x=>x[1]); return xs.length?grp(g[0],xs):""; }).join("");
