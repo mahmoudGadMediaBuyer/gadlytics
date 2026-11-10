@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="gad-build" content="20261110110502">
+<meta name="gad-build" content="20261110110845">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -16,7 +16,7 @@
 <script>
 /* تحديث تلقائي للتطبيق على الموبايل/الآيباد: مفيش service worker ولا كاش. كل ما التطبيق يتفتح أو يرجع للواجهة
    بيجيب index.html جديد (no-store) ويقارن رقم البيلد؛ لو فيه نسخة أحدث بيفتحها على طول. */
-(function(){ var B="20261110110502", last=0;
+(function(){ var B="20261110110845", last=0;
   function busy(){ return document.querySelector("#cpIn:focus, .ma-sheet, input:focus, textarea:focus"); }
   function chk(){ var n=Date.now(); if(n-last<20000) return; last=n; if(busy()) return;
     fetch(location.pathname+"?_b="+n,{cache:"no-store"}).then(function(r){ return r.ok? r.text() : ""; }).then(function(t){
@@ -912,6 +912,7 @@ html.ma-on .ma-k8 .ma-ksub{color:var(--ink-3);font-size:10.5px}
 @media (min-width:761px){html.ma-on .ma-ks.ma-k8{gap:10px}html.ma-on .ma-k8 .ma-k{padding:12px 14px;gap:3px}html.ma-on .ma-k8 .ma-k>small{font-size:13px}html.ma-on .ma-k8 .ma-k b{font-size:22px}html.ma-on .ma-k8 .ma-k b small{font-size:12px}html.ma-on .ma-k8 .ma-k em,html.ma-on .ma-k8 .ma-k .ma-dl{font-size:12.5px}}
 
 /* ══ الماك (>1180): «أداء الحملات» بشكل الآيباد جوه الديسكتوب (html.ma-desk) ══ */
+html.ma-desk{--tbh:82px}
 html.ma-desk .main{padding:0 28px 60px}
 html.ma-desk .ma{max-width:1600px;margin:0 auto;padding:0 0 40px;min-height:0;--ma-pad:0px}
 html.ma-desk .ma-nb{position:sticky;top:var(--tbh,62px);z-index:20;margin:0;padding:10px 0;background:var(--ground-0)}
@@ -14389,7 +14390,7 @@ function maPrefsSave(){ try{ localStorage.setItem("gad.ma",JSON.stringify({per:C
 function maRefBtn(){ const fb=CP.fbusy; return '<button class="ma-ib ma-rfb'+(fb?" busy":"")+'" data-a="cpRefresh"'+(fb?" disabled":"")+' aria-label="'+esc(L("تحديث الأرقام","Refresh numbers"))+'">'+maIco.ref+"</button>"; }
 function maUpdTxt(){ const fr=cpFast(), rq=CP.req, pend=rq&&rq.status==="pending", conv=convClient(cpCid()), src=conv?L("AppsFlyer","AppsFlyer"):L("خزامى","Khzama");
   if(CP.fbusy) return L("بيتحدث…","Updating…");
-  return (fr? L("آخر تحديث ","Updated ")+cpHM(fr.at) : L("اسحب لتحت للتحديث","Pull down to refresh"))+(pend? " · "+src+L(" بيتحدث"," updating") : ""); }
+  return (fr? L("آخر تحديث ","Updated ")+cpHM(fr.at) : (maDesk()? L("دوس ⟳ للتحديث","Click ⟳ to refresh") : L("اسحب لتحت للتحديث","Pull down to refresh")))+(pend? " · "+src+L(" بيتحدث"," updating") : ""); }
 function maSortCamps(camps){ const k=CP.msort||"s", big=1e15, a=camps.slice();
   if(k==="roas") a.sort((x,y)=>((cpRoas(y.v)==null?-1:cpRoas(y.v))-(cpRoas(x.v)==null?-1:cpRoas(x.v)))||(y.v.s-x.v.s));
   else if(k==="cpa") a.sort((x,y)=>((cpCpa(x.v)==null?big:cpCpa(x.v))-(cpCpa(y.v)==null?big:cpCpa(y.v)))||(y.v.s-x.v.s));
