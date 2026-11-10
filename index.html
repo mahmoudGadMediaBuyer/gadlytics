@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="gad-build" content="20261110104226">
+<meta name="gad-build" content="20261110104748">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -16,7 +16,7 @@
 <script>
 /* تحديث تلقائي للتطبيق على الموبايل/الآيباد: مفيش service worker ولا كاش. كل ما التطبيق يتفتح أو يرجع للواجهة
    بيجيب index.html جديد (no-store) ويقارن رقم البيلد؛ لو فيه نسخة أحدث بيفتحها على طول. */
-(function(){ var B="20261110104226", last=0;
+(function(){ var B="20261110104748", last=0;
   function busy(){ return document.querySelector("#cpIn:focus, .ma-sheet, input:focus, textarea:focus"); }
   function chk(){ var n=Date.now(); if(n-last<20000) return; last=n; if(busy()) return;
     fetch(location.pathname+"?_b="+n,{cache:"no-store"}).then(function(r){ return r.ok? r.text() : ""; }).then(function(t){
@@ -1008,6 +1008,11 @@ body:has(.ma-sheet) .ai-fab{display:none!important}
 .cp-tg2{display:flex;align-items:center;gap:10px;min-height:40px;font-size:14px;cursor:pointer}.cp-tg2 input{width:20px;height:20px;accent-color:var(--cyan)}
 html.ma-on .cp-pan{min-width:0}
 .al-card{margin-top:14px;padding:14px 16px}
+.cp-login{border:1px solid var(--line);border-radius:12px;background:var(--ground-1);padding:10px 12px;margin:8px 0 12px}
+.cp-loginh{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}.cp-loginh b{font-size:14px}.cp-loginh .btn{margin-inline-start:auto}
+.cp-logf{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 8px}
+tr.cp-logtr>td{padding:0 8px 8px!important;white-space:normal!important;background:transparent}
+html.ma-on .cp-login{margin:8px 0 12px}
 .push-head{display:flex;align-items:center;gap:12px;padding:14px 16px}.push-hl{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.push-hl b{font-size:16px}
 .push-on{color:var(--good)}.push-off{color:var(--ink-3)}.push-set{margin-top:12px}.push-th{margin:-2px 0 8px;padding-inline-start:28px}.push-n{width:78px}
 html.ap-on .push-head{padding:12px}
@@ -1049,7 +1054,7 @@ tr.cp-flash>td{background:color-mix(in srgb,var(--cyan) 14%,transparent);transit
 .ma-row.ma-bon{outline:2px solid color-mix(in srgb,var(--cyan) 60%,transparent);outline-offset:-2px}
 .ma-xrow{display:flex;gap:8px;margin:10px 0}
 .ma-xbtn{flex:1 1 0;min-height:46px;display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:12px;border:1px solid var(--line);background:var(--ground-1);color:var(--ink);font-weight:700;font-size:14px;cursor:pointer;padding:0 10px;min-width:0}
-.ma-xbtn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ma-xbtn svg{width:17px;height:17px;flex:none}.ma-xbtn i{font-style:normal;color:var(--ink-3)}.ma-xbtn.on{border-color:var(--cyan)}
+.ma-xbtn span{white-space:normal;line-height:1.25;text-align:center;padding:6px 0}.ma-xbtn svg{width:17px;height:17px;flex:none}.ma-xbtn i{font-style:normal;color:var(--ink-3)}.ma-xbtn.on{border-color:var(--cyan)}
 .ma-pace{background:var(--ground-1);border-radius:14px;padding:10px 12px;margin-bottom:12px}
 .ma-pace .cp-sh,.ma-pace .cp-sr{grid-template-columns:1.25fr 1fr 1fr}
 html.ma-on .cp-bbar{bottom:calc(10px + env(safe-area-inset-bottom));inset-inline:10px;border-radius:16px}
@@ -13910,7 +13915,7 @@ function cpUndoToast(id,msg,batch){ let el=$("#toastAct"); if(!el){ el=document.
 ACT.cpUndoHide=()=>{ const el=$("#toastAct"); if(el) el.className="toast-act"; };
 async function cpUndoOne(id){ const c=CP.chg.find(x=>x._id===id), why=cpUndoWhy(c); if(why) return {ok:false,error:why};
   return cpDo({pl:c.platform,lvl:c.level,id:c.objId,name:c.name,field:c.field,bidType:c.bidType,from:c.field==="status"?c.to:(c.applied!=null?c.applied:c.to),to:c.from,undoOf:id}); }
-ACT.cpUndo=async t=>{ ACT.cpUndoHide(); const r=await cpUndoOne(t.dataset.id); toast(r.ok? (r.queued?L("اتبعت التراجع — مستني المنصة","Undo queued"):L("رجعت زي ما كانت ✓","Reverted ✓")) : L("مارجعتش: ","Not reverted: ")+(r.error||""),!r.ok);
+ACT.cpUndo=async t=>{ ACT.cpUndoHide(); const r=await cpUndoOne(t.dataset.id); if(CP.logCamp) cpLogLoad(CP.logCamp); toast(r.ok? (r.queued?L("اتبعت التراجع — مستني المنصة","Undo queued"):L("رجعت زي ما كانت ✓","Reverted ✓")) : L("مارجعتش: ","Not reverted: ")+(r.error||""),!r.ok);
   if(CP.panel) cpPanelDraw(); render(); };
 ACT.cpUndoBatch=async t=>{ ACT.cpUndoHide(); const b=t.dataset.b, list=CP.chg.filter(x=>x.batch===b&&cpUndoable(x)); let ok=0;
   for(const c of list){ const r=await cpUndoOne(c._id); if(r.ok) ok++; }
@@ -13928,13 +13933,25 @@ function cpUndoHTML(){ const list=(CP.chg||[]).filter(x=>x.status!=="failed"||Da
   return {t:L("آخر التعديلات","Recent changes"),b: list.length? '<div class="cp-ll">'+list.map(c=>cpChgRow(c,true)).join("")+"</div>" : '<div class="hint">'+esc(L("لسه مفيش تعديلات من الصفحة دي.","No changes yet."))+"</div>",
     f:'<button class="btn" data-a="cpPanelClose">'+esc(L("قفل","Close"))+"</button>"}; }
 /* ── سجل تعديلات حملة واحدة ── */
-ACT.cpLog=t=>{ const [pl,id]=String(t.dataset.k).split("|"); cpPanelOpen({type:"log",pl:pl,id:id,code:t.dataset.code||"",items:null}); cpLogLoad(); };
-async function cpLogLoad(){ const p=CP.panel; if(!p||p.type!=="log") return;
+async function cpLogLoad(tg){ const p=tg||CP.panel; if(!p||(!tg&&p.type!=="log")) return;
   const ids=new Set([String(p.id)]); (CP.struct||[]).forEach(r=>{ if(r.platform===p.pl&&(String(r.parent_id)===String(p.id))) ids.add(String(r.id)); });
   (CP.struct||[]).forEach(r=>{ if(r.platform===p.pl&&r.level==="ad"&&ids.has(String(r.parent_id))) ids.add(String(r.id)); });
   const mine=(CP.chg||[]).filter(c=>c.platform===p.pl&&ids.has(String(c.objId))).map(c=>Object.assign({k:"chg",t:c.at||0},c));
   let ext=[]; try{ const all=await RT.list("changes"); ext=(all||[]).filter(x=>x&&x.clientId===cpCid()&&String(x.id||"").indexOf("auto_cp_")!==0&&((p.code&&x.campaign===p.code)||ids.has(String(x.objectId||"")))).map(x=>({k:"ext",t:x.ts||0,x:x})); }catch(e){}
-  p.items=mine.concat(ext).sort((a,b)=>b.t-a.t).slice(0,80); cpPanelDraw(); }
+  p.items=mine.concat(ext).sort((a,b)=>b.t-a.t).slice(0,80); if(tg) render(); else cpPanelDraw(); }
+/* «سجل التعديلات» جوه الصفحة نفسها (مش شاشة تانية ولا pop-up): للحملة تحت الحملة، وللصفحة كلها تحت أزرار القائمة — كل تعديل بيتسجل برضه في «سجل التغييرات» (camp-apply بيكتب changes/*) */
+ACT.cpLog=t=>{ const k=String(t.dataset.k), [pl,id]=k.split("|"); if(CP.logCamp&&CP.logCamp.k===k){ CP.logCamp=null; render(); return; }
+  CP.logCamp={k:k,pl:pl,id:id,code:t.dataset.code||"",items:null}; render(); cpLogLoad(CP.logCamp); };
+function cpLogInHTML(p){ const b=cpLogHTML(p).b; return '<div class="cp-login"><div class="cp-loginh"><b>'+esc(L("سجل التعديلات · ","Change log · ")+(p.code||""))+'</b><button class="btn btn-s" data-a="cpLog" data-k="'+esc(p.k)+'" data-code="'+esc(p.code||"")+'">'+esc(L("قفل","Close"))+"</button></div>"+b+"</div>"; }
+ACT.cpLogAll=()=>{ CP.logAll=!CP.logAll; render(); };
+ACT.cpLogPl=t=>{ CP.logPl=t.dataset.v||""; render(); };
+function cpLogAllHTML(){ const cid=cpCid(), all=(CP.chg||[]).filter(c=>!c.client||c.client===cid).sort((a,b)=>(b.at||0)-(a.at||0));
+  const pls=[...new Set(all.map(c=>c.platform))].filter(Boolean), f=CP.logPl&&pls.indexOf(CP.logPl)>=0? CP.logPl : "";
+  const list=all.filter(c=>!f||c.platform===f).slice(0,60);
+  let h='<div class="cp-login cp-logall"><div class="cp-loginh"><b>'+esc(L("سجل التعديلات","Change log"))+'</b><small class="hint">'+esc(L("كل تعديلات العميل ده من الصفحة — بتتسجل برضه في «سجل التغييرات»","All edits for this client — also logged in the change log"))+'</small><button class="btn btn-s" data-a="cpLogAll">'+esc(L("قفل","Close"))+"</button></div>";
+  if(pls.length>1) h+='<div class="cp-logf">'+[["",L("الكل","All")]].concat(pls.map(x=>[x,(platById(x)||{}).name||x])).map(x=>'<button class="chip'+(f===x[0]?" on":"")+'" data-a="cpLogPl" data-v="'+esc(x[0])+'">'+esc(x[1])+"</button>").join("")+"</div>";
+  h+= list.length? '<div class="cp-ll">'+list.map(c=>cpChgRow(c,true)).join("")+"</div>" : '<div class="hint">'+esc(L("لسه مفيش تعديلات من الصفحة دي.","No changes yet."))+"</div>";
+  return h+"</div>"; }
 function cpLogHTML(p){ let b;
   if(!p.items) b='<div class="hint">'+esc(L("بيحمّل…","Loading…"))+"</div>";
   else if(!p.items.length) b='<div class="hint">'+esc(L("مفيش تعديلات متسجلة على الحملة دي.","No changes logged for this campaign."))+"</div>";
@@ -14153,8 +14170,8 @@ function renderCampPerf(){
   h+='<div class="cp-tiles cp-t8">'+cpKpis(Object.assign({},m,{tot:tot,ptot:ptot,tr:tr,tc:tc,camps:camps,nOn:nOn,nOff:nOff,bud:bud,haveStruct:haveStruct})).map(x=>
     tile(x.lb, x.cur==null?"—":x.fmt(x.cur)+(x.cur$?" <small>"+esc(C)+"</small>":""), x.sub?'<small class="cp-ar" style="color:var(--ink-3)">'+esc(x.sub)+"</small>":(x.prev!==undefined?cpArrow(x.cur,x.prev,!!x.low):""))).join("")+"</div>";
   h+='<div class="cp-bulkt"><button class="btn'+(CP.bulk?" btn-p":"")+'" data-a="cpBulk">'+cpIco.sel+" "+esc(CP.bulk?L("خروج من التعديل الجماعي","Exit bulk edit"):L("تعديل جماعي","Bulk edit"))+'</button>'+
-    '<button class="btn" data-a="cpUndoList">'+cpIco.undo+" "+esc(L("آخر التعديلات","Recent changes"))+"</button>"+
-    (CP.bulk?'<span class="hint">'+esc(L("علّم على الحملات (CBO) أو الـ Ad sets (ABO) اللي عايز تغيّر ميزانيتها","Tick CBO campaigns or ABO ad sets"))+"</span>":"")+"</div>";
+    '<button class="btn'+(CP.logAll?" btn-p":"")+'" data-a="cpLogAll" aria-expanded="'+(CP.logAll?"true":"false")+'">'+cpIco.clock+" "+esc(L("سجل التعديلات","Change log"))+"</button>"+
+    (CP.bulk?'<span class="hint">'+esc(L("علّم على الحملات (CBO) أو الـ Ad sets (ABO) اللي عايز تغيّر ميزانيتها","Tick CBO campaigns or ABO ad sets"))+"</span>":"")+"</div>"+(CP.logAll?cpLogAllHTML():"");
   const head='<tr><th style="width:30%">'+esc(L("الحملة","Campaign"))+'</th><th class="num">'+esc(L("الصرف","Spend"))+'</th><th class="num">'+esc(L("التبرعات","Donations"))+'</th><th class="num">'+esc(L("الإيراد","Revenue"))+'</th><th class="num">ROAS</th><th class="num">'+esc(L("تكلفة التبرع","Cost / don."))+'</th><th class="num" style="width:19%">'+esc(L("الميزانية الحالية","Current budget"))+"</th></tr>";
   PAIDP().forEach(pl=>{ const cs=camps.filter(c=>c.pl===pl).sort((x,y)=>y.v.s-x.v.s); if(!cs.length) return;
     const pp=platById(pl)||{name:pl};
@@ -14163,6 +14180,7 @@ function renderCampPerf(){
       const sets=Object.values(c.sets).map(s=>{ s.st=cpStatus("adset",s.id,pl); return s; }).filter(s=>s.v.s||s.v.o||cpActive(s.st)).sort((x,y)=>y.v.s-x.v.s);
       const bcell= !st? "—" : mode==="ABO"? fnum(campBudget(c)||0,0)+' <small class="hint">'+esc(L("مجموع","sum"))+"</small>" : cpEd(pl,"campaign",c.id,"budget",st.daily_budget,"",c.code);
       h+='<tr class="cp-c"><td>'+(st&&mode!=="ABO"?cpChk(pl,"campaign",c.id,c.code,st.daily_budget):"")+cpSwitch(pl,"campaign",c.id,c.code)+'<span class="cp-tg" data-a="cpTog" data-k="'+esc(ck)+'">'+(open?"▾":"◂")+'</span><b>'+esc(c.code)+"</b>"+(mode?'<span class="cp-tag">'+esc(mode)+"</span>":"")+cpStateTag(c.ds)+cpVerdict(c.v,tg,cpaRef)+'<small class="cp-sub">'+(c.proj?esc(c.proj):"")+cpRowTools(pl,c.id,c.code)+"</small></td>"+cpCells(c.v,pvIdx["c|"+pl+"|"+c.code])+'<td class="num">'+bcell+"</td></tr>";
+      if(CP.logCamp&&CP.logCamp.k===pl+"|"+c.id) h+='<tr class="cp-logtr"><td colspan="7">'+cpLogInHTML(CP.logCamp)+"</td></tr>";
       if(!open) return;
       sets.forEach(s=>{ const sk="s:"+s.id, so=CP.open[sk], sst=s.st;
         const b= mode==="ABO"&&sst? cpEd(pl,"adset",s.id,"budget",sst.daily_budget,"",s.name) : mode==="CBO"? '<small class="hint">'+esc(L("ميزانية الحملة","Campaign budget"))+"</small>" : (sst&&sst.daily_budget!=null? cpEd(pl,"adset",s.id,"budget",sst.daily_budget,"",s.name):"");
@@ -14274,8 +14292,9 @@ function maCampDetail(m,c,pad){ const pl=c.pl, st=c.st, mode=st&&st.budget_mode|
   h+=maMetrics(c.v,pv,false,"")+(bud?'<div class="ma-eds">'+bud+"</div>":"");   // الحملة دايماً بأرقامها كاملة (ديمان: من AppsFlyer + سلة)
   const pk=pl+"|"+c.id, pOpen=CP.paceIn&&CP.paceIn.k===pk;
   h+='<div class="ma-xrow"><button class="ma-xbtn'+(pOpen?" on":"")+'" data-a="cpPaceIn" data-k="'+esc(pk)+'" data-code="'+esc(c.code)+'">'+cpIco.chart+"<span>"+esc(L("سرعة الصرف والتقييم الكامل","Pacing & full stats"))+"</span><i>"+(pOpen?"▴":"▾")+"</i></button>"+
-    '<button class="ma-xbtn" data-a="cpLog" data-k="'+esc(pk)+'" data-code="'+esc(c.code)+'">'+cpIco.clock+"<span>"+esc(L("سجل التعديلات","Change log"))+"</span></button></div>";
+    '<button class="ma-xbtn'+(CP.logCamp&&CP.logCamp.k===pk?" on":"")+'" data-a="cpLog" data-k="'+esc(pk)+'" data-code="'+esc(c.code)+'">'+cpIco.clock+"<span>"+esc(L("سجل التعديلات","Change log"))+"</span><i>"+(CP.logCamp&&CP.logCamp.k===pk?"▴":"▾")+"</i></button></div>";
   if(pOpen) h+='<div class="ma-pace">'+cpPaceHTML(CP.paceIn).b+"</div>";
+  if(CP.logCamp&&CP.logCamp.k===pk) h+=cpLogInHTML(CP.logCamp);
   h+='<div class="ma-sec">'+esc(L("المجموعات الإعلانية","Ad sets"))+' <small>'+sets.length+"</small></div>";
   if(sets.length){ h+='<div class="ma-list">'+sets.map(s=>maRow({k:"s|"+pl+"|"+c.id+"|"+s.id,bsel:s.st&&(mode==="ABO"||(mode!=="CBO"&&s.st.daily_budget!=null))?{k:cpBKey(pl,"adset",s.id),n:s.name,old:s.st.daily_budget}:null,name:s.name,v:s.v,pv:conv?null:m.pvIdx["s|"+s.id],dot:cpDayState(s,"adset",pl,m.next),spendOnly:conv,verdict:conv?"":maVerdict(s.v,tg,cpaRef),
       sw:maSwitch(pl,"adset",s.id,s.name),chips:maSetChips(c,s)})).join("")+"</div>"; }
@@ -14398,7 +14417,7 @@ function renderCampApp(){
     let list='<div class="ma-lh"><div class="ma-sec">'+esc(L("الحملات","Campaigns"))+" <small>"+all+"</small></div>"+
       '<label class="ma-sort"><select data-c="maSort" aria-label="'+esc(L("ترتيب","Sort"))+'">'+[["s","الصرف","Spend"],["roas","ROAS","ROAS"],["cpa","تكلفة التبرع","Cost/don."],["name","الاسم","Name"]].map(x=>'<option value="'+x[0]+'"'+((CP.msort||"s")===x[0]?" selected":"")+">"+esc(L("ترتيب: ","Sort: ")+L(x[1],x[2]))+"</option>").join("")+"</select>"+maIco.down+"</label></div>";
     list+='<div class="ma-tools"><button class="ma-tbtn'+(CP.bulk?" on":"")+'" data-a="cpBulk">'+cpIco.sel+"<span>"+esc(CP.bulk?L("خروج من التعديل الجماعي","Exit bulk edit"):L("تعديل جماعي","Bulk edit"))+'</span></button>'+
-      '<button class="ma-tbtn" data-a="cpUndoList">'+cpIco.undo+"<span>"+esc(L("آخر التعديلات","Recent changes"))+"</span></button></div>"+
+      '<button class="ma-tbtn'+(CP.logAll?" on":"")+'" data-a="cpLogAll" aria-expanded="'+(CP.logAll?"true":"false")+'">'+cpIco.clock+"<span>"+esc(L("سجل التعديلات","Change log"))+"</span></button></div>"+(CP.logAll?cpLogAllHTML():"")+
       (CP.bulk?'<div class="ma-bhint">'+esc(L("دوس على الحملات (CBO) اللي عايز تغيّر ميزانيتها — حملات ABO افتحها واختار الـ Ad sets","Tap CBO campaigns; open ABO campaigns to pick ad sets"))+"</div>":"");
     if(all>3||q) list+='<label class="ma-q"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="maQ" type="search" inputmode="search" autocomplete="off" placeholder="'+esc(L("دوّر بكود الحملة","Search campaign code"))+'" value="'+esc(CP.mq||"")+'"></label>';
     list+= camps.length? '<div class="ma-list">'+camps.map(c=>

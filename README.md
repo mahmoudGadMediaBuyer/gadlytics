@@ -1068,10 +1068,10 @@ Where each button is:
 | Feature | Desktop (>1180 px) | iPad (761–1180) | iPhone (≤760) |
 |---|---|---|---|
 | **«تعديل جماعي»** | toolbar above the campaigns table → checkboxes appear on CBO campaigns and on ABO ad sets with an editable budget → bar at the bottom «عدّل N» | «تعديل جماعي» chip under the list header → a select circle on each eligible row (tap the row to select) → bottom bar | same as iPad |
-| **«آخر التعديلات» / «رجّع»** | toolbar button next to «تعديل جماعي» (modal) | chip next to «تعديل جماعي» (full screen with «رجوع») | same as iPad |
+| **«سجل التعديلات» (whole page) / «رجّع»** | toolbar button next to «تعديل جماعي» → opens inline under the toolbar, platform filter chips, «رجّع» on each edit | chip next to «تعديل جماعي» → inline under it | same as iPad |
 | **«تراجع» toast** | 10 s after any applied change (single edit, switch, bulk) | same | same |
-| **«سرعة الصرف والتقييم الكامل»** | 📊 icon after the campaign code (modal) | campaign screen → «سرعة الصرف والتقييم الكامل» (opens inline, tap again to close) | same as iPad |
-| **«سجل التعديلات» per campaign** | 🕒 icon after the campaign code (modal) | campaign screen → «سجل التعديلات» (full screen) | same as iPad |
+| **«سرعة الصرف والتقييم الكامل»** | 📊 icon on the campaign's project line (modal) | campaign screen → «سرعة الصرف والتقييم الكامل» (opens inline, tap again to close) | same as iPad |
+| **«سجل التعديلات» per campaign** | 🕒 icon on the campaign's project line → an inline row opens right under that campaign | campaign screen → «سجل التعديلات» (opens inline under the buttons) | same as iPad |
 | **«سجل التنبيهات»** | التنبيهات screen, card under the settings | same | same |
 
 - **Bulk edit**: options ±10 / ±20 %, a custom %, or a fixed value; the preview shows old → new for each item (rounded to whole SAR, no budget cap). Apply goes item by item through `campchg` + `camp-apply`: Meta and Snap apply instantly, TikTok is queued ⏳ (applied by the scheduled task). Each item gets ✓ / ✗.
@@ -1085,7 +1085,8 @@ Where each button is:
   - budget % used and the projected end-of-day spend;
   - «التقييم الكامل للفترة» for the selected period: spend + Khzama donations / revenue / ROAS / CPA / AOV, plus impressions, reach, clicks, CTR, CPC, CPM, link clicks, LPV, video plays, ThruPlays, ATC and checkout (never platform purchases).
   - `camp-refresh` (v4) writes `camp_hourly` on every refresh, one row per campaign per 15-minute bucket (upsert on `client_id,platform,campaign_id,ts`, plus `hour`). The same-hour comparison only works from the day after the first snapshots: «المقارنة بالساعة بتبدأ من بكره — بنسجّل من النهارده».
-- **On phone/iPad** every panel is a full screen (`S.view="cppanel"`, `renderCpPanelPage`, «رجوع» returns to the same scroll spot), never a pop-up sheet (iOS flicker). Pace is an inline expander.
+- **Change logs never leave the page** (Mahmoud): both logs open inline (`CP.logAll` → `cpLogAllHTML`, `CP.logCamp` → `cpLogInHTML`, the loader is `cpLogLoad(target)`). Every applied edit is still written to «سجل التغييرات» (`changes/*`, by `camp-apply`).
+- **On phone/iPad** the bulk-edit panel is a full screen (`S.view="cppanel"`, `renderCpPanelPage`, «رجوع» returns to the same scroll spot), never a pop-up sheet (iOS flicker). Pace is an inline expander.
 - **Alerts history** («سجل التنبيهات», `alHistHTML` / `alLoad`):
   - reads `alerts_sent` (row security: `user_id` null or = me), ordered by `sent_at` desc, the last 7 days; «أقدم» loads 7 more, up to 90.
   - each row shows the type label (تكلفة التبرع / الميزانية / ROAS إنذار / زيادة صرف / توكن ميتا / الأرقام وقفت / تجربة / ملخص يومي / ميديا جديدة), client, campaign code, relative + exact Riyadh time, and the message.
