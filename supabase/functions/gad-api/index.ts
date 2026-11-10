@@ -1,19 +1,28 @@
-// GADLYTICS gad-api — fast, READ-ONLY API for AI assistants (instinct, Claude, ChatGPT custom actions, any MCP client).
+// GADLYTICS gad-api — fast API for AI assistants (instinct, Claude, ChatGPT custom actions, any MCP client). Read-only,
+// except the two /edit routes (scope edit) that change ONE budget / bid / on-off through the site's own path.
 // One edge function, two faces:
-//   REST  GET /clients · /summary · /campaigns · /campaign · /alerts · /changes · POST /refresh · GET /openapi.json
-//   MCP   POST /mcp  (Streamable HTTP, JSON-RPC 2.0: initialize · tools/list · tools/call · ping)
+//   REST  GET /report · /clients · /summary · /campaigns · /campaign · /alerts · /changes · POST /refresh · GET /openapi.json
+//         GET /edit/preview → confirm_token (10 min) · POST /edit/apply {confirm_token}
+//   MCP   POST /mcp  (Streamable HTTP, JSON-RPC 2.0: initialize · tools/list · tools/call · ping) — read-only tools only
 // Auth (deployed with verify_jwt ON): the Supabase gateway needs  Authorization: Bearer <anon key>  +  apikey: <anon key>
 // (the public anon key from config.js); the GADLYTICS API key goes in  x-api-key: <key>  (or ?key=<read-only key> on GET).
 // A bearer that is a JWT (eyJ…) or sb_publishable_… is never treated as an API key. Keys live ONLY as SHA-256 hashes in the
 // private table public.api_keys (RLS on, no policies; written by ~/.gadlytics/make_api_key.py through the ingest function).
-// Scopes: read (everything below) and refresh (POST /refresh → camp-refresh, today's spend from the platforms).
+// Scopes: read (everything below), refresh (POST /refresh → camp-refresh, today's spend from the platforms) and edit
+// (/edit/*: header only — a refresh or edit key in ?key= is refused). Browsing agents use r.html, which keeps the key in the
+// URL hash (never sent to a server) and sends it in x-api-key.
+// Edits: /edit/preview resolves the target from camp_struct exactly like «أداء الحملات» (CBO → campaign budget, ABO → the ad set),
+// signs {target, from, to} with an HMAC (secret derived from the service-role key, 10-minute expiry). /edit/apply checks it, writes
+// the same campchg/* doc the site writes (by "api:<key name>"), calls camp-apply with the service role (camp-apply applies only
+// that one field, reads it back, updates camp_struct and writes the changes/* log row → undo works), then pushes to Mahmoud.
+// 30 edits / hour per key; the same object again within 15 s = duplicate. No budget cap (up to 1,000,000 SAR/day is normal).
 // Business logic mirrors the site's «أداء الحملات» page (cpRange / cpBuild / cpModel / cpKpis / cpVerdict) exactly:
 //   spend = ad_daily (platforms) · donations + revenue = khzama_link_daily (ملبي) or conv_daily (ديمان) — never platform purchases ·
 //   Smart+ = one ad (a multi-video link is never split across videos) · verdicts from config/app roasGood / roasMin / roasAlarm.
-// Dates are Asia/Riyadh, money is SAR. Nothing here writes to the ad platforms, and no key or token is ever logged or echoed.
+// Dates are Asia/Riyadh, money is SAR. Only /edit/apply writes to the ad platforms (through camp-apply); no key or token is ever logged or echoed.
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-const VERSION = "1.0.0";
+const VERSION = "1.1.0";
 const env = (k: string) => Deno.env.get(k) || "";
 const SB_URL = env("SUPABASE_URL"), SRK = env("SUPABASE_SERVICE_ROLE_KEY");
 const BASE = SB_URL + "/functions/v1/gad-api";
@@ -27,7 +36,7 @@ const cors = {
 const json = (o: unknown, status = 200, extra: Record<string, string> = {}) =>
   new Response(JSON.stringify(o), { status, headers: { ...cors, "content-type": "application/json; charset=utf-8", ...extra } });
 
-class ApiErr extends Error { constructor(public status: number, public code: string, public ar: string, public en: string) { super(en); } }
+class ApiErr extends Error { constructor(public status: number, public code: string, public ar: string, public en: string, public extra?: Record<string, unknown>) { super(en); } }
 const bad = (ar: string, en: string) => new ApiErr(400, "bad_request", ar, en);
 
 // ───────────── dates (Asia/Riyadh) ─────────────
@@ -456,9 +465,212 @@ async function auth(req: Request, allowQuery = false): Promise<KeyRow> {
   }
   if (!c.row) { hit(RL_BAD, ip, 1e9, 600e3); throw new ApiErr(401, "unauthorized", "المفتاح غلط أو اتلغى", "Invalid or revoked key"); }
   if (fromQuery && c.row.scopes.indexOf("refresh") >= 0) throw new ApiErr(403, "scope", "المفتاح اللي فيه صلاحية التحديث مينفعش يتحط في لينك — اعمل مفتاح قراية بس للينكات", "A key with the refresh scope cannot be used in a link (?key=) — create a read-only key for links");
+  // an edit key travels only in the x-api-key header (r.html keeps it in the URL hash, which never reaches a server)
+  if (fromQuery && c.row.scopes.indexOf("edit") >= 0) throw new ApiErr(403, "scope", "مفتاح التعديل مينفعش يتحط في ?key= — استخدم لينك r.html#key=… (المفتاح بيتبعت في الهيدر)", "A key with the edit scope cannot be used in ?key= — use the r.html#key=… link (the key goes in the x-api-key header)");
   if (hit(RL, "k" + c.row.id, 120, 60e3)) throw new ApiErr(429, "rate_limited", "طلبات كتير — أقصى حاجة 120 في الدقيقة", "Too many requests — 120 per minute max");
   const id = c.row.id; if (Date.now() - (USED.get(id) || 0) > 60e3) { USED.set(id, Date.now()); bg(sb.from("api_keys").update({ last_used_at: new Date().toISOString() }).eq("id", id).then(() => {})); }
   return c.row;
+}
+
+// ───────────── edits (scope edit) — GET /edit/preview → confirm_token · POST /edit/apply {confirm_token} ─────────────
+const SITE = "https://mahmoudgadmediabuyer.github.io/gadlytics/";
+const RHTML = SITE + "r.html";
+const EDIT_PL = ["meta", "tiktok", "snap"];                          // camp-apply's platforms
+const USD_SNAP = new Set(["961fd033-2f79-4acc-88ba-0b546464d2b2"]);   // shown only; camp-apply does the ÷3.75 itself
+const FIELD_AR: Record<string, string> = { budget: "الميزانية اليومية", bid: "المزايدة", status: "الحالة" };
+const FIELD_EN: Record<string, string> = { budget: "daily budget", bid: "bid", status: "status" };
+const te = new TextEncoder();
+const b64u = (u: Uint8Array) => btoa(String.fromCharCode(...u)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const ub64 = (s: string) => { s = s.replace(/-/g, "+").replace(/_/g, "/"); while (s.length % 4) s += "="; return Uint8Array.from(atob(s), (c) => c.charCodeAt(0)); };
+let TOKKEY: CryptoKey | null = null;
+/** HMAC key for confirm tokens, derived from the service-role key (never stored, never leaves the function) */
+async function tokKey() {
+  if (TOKKEY) return TOKKEY;
+  const base = await crypto.subtle.importKey("raw", te.encode(SRK), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const derived = new Uint8Array(await crypto.subtle.sign("HMAC", base, te.encode("gad-api/edit-confirm-token/v1")));
+  TOKKEY = await crypto.subtle.importKey("raw", derived, { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]);
+  return TOKKEY;
+}
+async function signTok(p: Record<string, unknown>) {
+  const body = b64u(te.encode(JSON.stringify(p)));
+  return body + "." + b64u(new Uint8Array(await crypto.subtle.sign("HMAC", await tokKey(), te.encode(body))));
+}
+const tokBad = () => new ApiErr(400, "bad_token", "التأكيد ده مش سليم — اعمل معاينة جديدة", "Invalid confirm_token — make a new preview");
+async function readTok(t: string) {
+  const m = /^([A-Za-z0-9_-]{16,3000})\.([A-Za-z0-9_-]{43})$/.exec(t); if (!m) throw tokBad();
+  if (!(await crypto.subtle.verify("HMAC", await tokKey(), ub64(m[2]), te.encode(m[1])))) throw tokBad();
+  let p: any; try { p = JSON.parse(new TextDecoder().decode(ub64(m[1]))); } catch { throw tokBad(); }
+  if (!p || p.v !== 1) throw tokBad();
+  if (!(+p.exp > Date.now())) throw new ApiErr(410, "token_expired", "التأكيد ده عدّى عليه أكتر من 10 دقايق — افتح اللينك تاني واعمل معاينة جديدة", "confirm_token expired (10 minutes) — make a new preview");
+  return p;
+}
+const needEdit = (key: KeyRow) => { if (key.scopes.indexOf("edit") < 0) throw new ApiErr(403, "scope", "المفتاح ده مالوش صلاحية تعديل — اعمل مفتاح بـ --edit", "This key has no edit scope — create one with --edit"); };
+/** Arabic-Indic digits → ASCII, drop thousands separators and a trailing currency word */
+const toAscii = (s: string) => s.replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x660)).replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x6f0))
+  .replace(/٫/g, ".").replace(/[,٬،\s]/g, "").replace(/(ريال|ر\.?س|sar|rs)$/i, "");
+function parseField(f: unknown) {
+  const s = arKey(f);
+  if (/^(budget|daily_budget|الميزانيه|ميزانيه|الميزانيه اليوميه)$/.test(s)) return "budget";
+  if (/^(bid|المزايده|مزايده|السعر المستهدف|target cost|cost cap|bid cap)$/.test(s)) return "bid";
+  if (/^(status|state|الحاله|حاله|تشغيل|ايقاف)$/.test(s)) return "status";
+  throw bad("field لازم يبقى budget أو bid أو status", "field must be budget | bid | status");
+}
+function parseStatus(v: unknown) {
+  const s = arKey(v).replace(/ّ/g, "");
+  if (/^(on|active|enable|enabled|resume|run|شغل|شغال|شغاله|تشغيل|اشتغل)$/.test(s)) return "ACTIVE";
+  if (/^(off|pause|paused|disable|disabled|stop|وقف|موقف|موقفه|ايقاف|اقف)$/.test(s)) return "PAUSED";
+  throw bad("للحالة: to=on (تشغيل) أو to=off (إيقاف)", "For status use to=on or to=off");
+}
+const numOrNull = (v: unknown) => v == null || v === "" || !isFinite(+v!) ? null : +v!;
+const fmtVal = (f: string, v: unknown) => f === "status" ? (v === "ACTIVE" ? "شغالة" : v === "PAUSED" ? "موقفة" : "—") : v == null ? "—" : fN(v, Math.round(+v!) === +v! ? 0 : 2) + " ر.س";
+const fmtValEn = (f: string, v: unknown) => f === "status" ? (v === "ACTIVE" ? "on" : v === "PAUSED" ? "off" : "—") : v == null ? "—" : fN(v, Math.round(+v!) === +v! ? 0 : 2) + " SAR";
+const campOpt = (x: any) => ({ platform: x.platform, platform_ar: (PL_NAME[x.platform] || [x.platform])[0], id: String(x.id), code: x.camp_no || null, name: x.name || null,
+  status: x.status || null, state_ar: isActive(x) ? "شغالة" : "موقفة", budget_mode: x.budget_mode || null, daily_budget: numOrNull(x.daily_budget) });
+const setOpt = (x: any) => ({ id: String(x.id), name: x.name || null, status: x.status || null, state_ar: isActive(x) ? "شغالة" : "موقفة",
+  daily_budget: numOrNull(x.daily_budget), bid_type: x.bid_type || null, bid: numOrNull(x.bid) });
+const choose = (what: "campaign" | "adset", options: any[], ar: string, en: string) =>
+  new ApiErr(409, "choose_" + what, ar, en, { choose: what, param: what === "campaign" ? "code (id) + platform" : "adset (id)", options });
+
+/** the target of one edit, resolved from camp_struct the way «أداء الحملات» draws its edit cells */
+async function editTarget(q: Record<string, any>) {
+  const { c: client } = await getClient(q.client), cid = client.id, field = parseField(q.field);
+  const code = String(q.code || q.id || "").trim(); if (!code) throw bad("ابعت code (كود الحملة زي MGG-03059 أو الـ id بتاعها)", "Send code (campaign code like MGG-03059, or its id)");
+  const plats = String(q.platform || "").toLowerCase().split(/[,\s]+/).filter(Boolean).map((p) => p === "facebook" || p === "instagram" ? "meta" : p === "snapchat" ? "snap" : p);
+  for (const p of plats) if (EDIT_PL.indexOf(p) < 0) throw bad("التعديل من هنا لميتا وتيك توك وسناب بس", "Edits support meta | tiktok | snap only");
+  const live = (await structRows(cid)).filter((x) => x.status !== "stale");
+  const camps = live.filter((x) => x.level === "campaign" && EDIT_PL.indexOf(x.platform) >= 0 && (!plats.length || plats.indexOf(x.platform) >= 0));
+  const want = code.toLowerCase();
+  let hits = camps.filter((x) => String(x.id) === code);
+  if (!hits.length) hits = camps.filter((x) => String(x.camp_no || "").toLowerCase() === want);
+  if (!hits.length) hits = camps.filter((x) => { const m = String(x.name || "").match(PM_CAMP); return !!m && m[1].toLowerCase() === want; });
+  if (!hits.length && want.length >= 4) hits = camps.filter((x) => String(x.name || "").toLowerCase().indexOf(want) >= 0);
+  if (!hits.length) throw new ApiErr(404, "not_found", "مفيش حملة بالكود ده" + (plats.length ? " على المنصة دي" : "") + " — اتأكد من الكود أو دوس «تحديث الأرقام»", "No campaign with that code" + (plats.length ? " on that platform" : ""));
+  if (hits.length > 1) throw choose("campaign", hits.map(campOpt), "فيه " + hits.length + " حملات بالكود ده — ابعت platform أو الـ id بتاع الحملة في code", "Several campaigns match — send platform, or the campaign id as code");
+  const camp = hits[0], pl = camp.platform, mode = camp.budget_mode || null;
+  const sets = live.filter((x) => x.level === "adset" && x.platform === pl && String(x.parent_id) === String(camp.id));
+  const aq = String(q.adset || "").trim();
+  const pick = (pool: any[], none_ar: string, none_en: string) => {
+    let p = pool;
+    if (aq) { const w = aq.toLowerCase(); let h = p.filter((s) => String(s.id) === aq);
+      if (!h.length) h = p.filter((s) => String(s.name || "").toLowerCase() === w);
+      if (!h.length) h = p.filter((s) => String(s.name || "").toLowerCase().indexOf(w) >= 0);
+      if (!h.length) throw new ApiErr(404, "adset_not_found", "مفيش Ad Set بالاسم أو الـ id ده في الحملة دي", "No such ad set in this campaign", { choose: "adset", param: "adset (id)", options: pool.map(setOpt) });
+      p = h; }
+    if (p.length === 1) return p[0];
+    if (!p.length) throw new ApiErr(400, "no_target", none_ar, none_en);
+    throw choose("adset", p.map(setOpt), "الحملة دي فيها " + p.length + " Ad Sets — ابعت adset (الـ id أو الاسم) عشان أعرف أعدّل أنهي واحد", "This campaign has " + p.length + " ad sets — send adset (id or name)");
+  };
+  let level: string, row: any;
+  if (field === "budget") {
+    // same as the page: CBO (or a campaign that carries a daily budget) → the campaign cell; ABO → each ad set's cell
+    if (mode === "CBO" || (mode !== "ABO" && camp.daily_budget != null)) {
+      if (aq) throw bad("الحملة دي CBO — الميزانية على الحملة نفسها مش على الـ Ad Set (شيل adset)", "This is a CBO campaign — the budget is on the campaign (drop adset)");
+      level = "campaign"; row = camp;
+    } else { level = "adset"; row = pick(mode === "ABO" ? sets : sets.filter((s) => s.daily_budget != null), "مفيش Ad Set بميزانية يومية في الحملة دي", "No ad set with a daily budget in this campaign"); }
+    if (row.lifetime_budget != null && row.daily_budget == null) throw bad("دي ميزانية مدى الحياة — عدّلها من المنصة", "Lifetime budget — change it on the platform");
+  } else if (field === "bid") {
+    level = "adset"; row = pick(sets.filter((s) => s.bid_type), "مفيش Ad Set بمزايدة في الحملة دي (كلها أقل تكلفة)", "No ad set with a bid in this campaign (lowest cost)");
+    if (pl === "meta" && row.bid_type === "ROAS goal") throw bad("هدف الـ ROAS مش متاح من هنا — عدّله من المنصة", "ROAS goal can't be changed from here");
+  } else if (aq) { level = "adset"; row = pick(sets, "مفيش Ad Sets في الحملة دي", "No ad sets in this campaign"); }
+  else { level = "campaign"; row = camp; }
+  const from = field === "status" ? (isActive(row) ? "ACTIVE" : "PAUSED") : numOrNull(field === "budget" ? row.daily_budget : row.bid);
+  let to: any;
+  if (field === "status") to = parseStatus(q.to);
+  else {
+    const raw = toAscii(String(q.to ?? "")), n = Number(raw);
+    if (!raw || !isFinite(n) || n <= 0) throw bad("اكتب الرقم الجديد في to (رقم أكبر من صفر بالريال)", "to must be a number above zero (SAR)");
+    if (field === "budget" && n < 20) throw bad("الميزانية لازم 20 ر.س أو أكتر", "Budget must be 20 SAR or more");
+    to = Math.round(n * 100) / 100;                                       // no upper cap — 1,000,000 SAR/day is normal
+  }
+  const same = field === "status" ? from === to : from != null && Math.abs(+from - +to) < 0.005;
+  return { client, cid, pl, level, row, camp, mode, field, from, to, same, code: camp.camp_no || ((String(camp.name || "").match(PM_CAMP) || [])[1]) || camp.name || String(camp.id) };
+}
+function editWords(t: any) {
+  const plAr = (PL_NAME[t.pl] || [t.pl])[0], plEn = (PL_NAME[t.pl] || [t.pl, t.pl])[1];
+  const what_ar = (t.level === "adset" ? "الـ Ad Set «" + (t.row.name || t.row.id) + "» في حملة " : "حملة ") + t.code;
+  const what_en = (t.level === "adset" ? "ad set “" + (t.row.name || t.row.id) + "” in campaign " : "campaign ") + t.code;
+  return { plAr, plEn, what_ar, what_en };
+}
+async function epEditPreview(q: Record<string, any>, key: KeyRow) {
+  needEdit(key);
+  const t = await editTarget(q), w = editWords(t), now = Date.now();
+  const base = { client: { id: t.cid, name: t.client.name }, ...plOut(t.pl), level: t.level, object_id: String(t.row.id), name: t.level === "adset" ? (t.row.name || null) : (t.camp.name || null),
+    campaign: { id: String(t.camp.id), code: t.code, name: t.camp.name || null, budget_mode: t.mode, state_ar: isActive(t.camp) ? "شغالة" : "موقفة", status: t.camp.status || null },
+    adset: t.level === "adset" ? setOpt(t.row) : null, field: t.field, field_ar: FIELD_AR[t.field], from: t.from, to: t.to,
+    from_text_ar: fmtVal(t.field, t.from), to_text_ar: fmtVal(t.field, t.to), state_ar: isActive(t.row) ? "شغالة" : "موقفة", status: t.row.status || null, currency: "SAR",
+    bid_type: t.field === "bid" ? t.row.bid_type || null : undefined,
+    platform_amount: t.field !== "status" && t.pl === "snap" && USD_SNAP.has(String(t.row.account_id)) ? { currency: "USD", value: r2(+t.to / 3.75), note_ar: "حساب سناب ده بالدولار — هيتحول ÷3.75 على المنصة" } : undefined,
+    note_ar: t.pl === "tiktok" ? "تيك توك: لو لسه مش متوصل مباشرة، التعديل هيفضل مستني في الطابور لحد ما المهمة المجدولة تنفّذه." : undefined,
+    only_this_field_ar: t.field === "status" ? "هيتغير التشغيل/الإيقاف بس." : "هيتغير الرقم ده بس — الحالة (" + (isActive(t.row) ? "شغالة" : "موقفة") + ") مش هتتلمس." };
+  if (t.same) return { ...base, no_change: true, message_ar: FIELD_AR[t.field] + " " + w.what_ar + " على " + w.plAr + " هي أصلاً " + fmtVal(t.field, t.from) + " — مفيش حاجة تتغير.", message_en: "The " + FIELD_EN[t.field] + " of " + w.what_en + " on " + w.plEn + " is already " + fmtValEn(t.field, t.from) + " — nothing to change." };
+  const nonce = [...crypto.getRandomValues(new Uint8Array(9))].map((b) => b.toString(16).padStart(2, "0")).join("");
+  const exp = now + 600e3;
+  const confirm_token = await signTok({ v: 1, k: key.id, c: t.cid, p: t.pl, l: t.level, o: String(t.row.id), f: t.field, fr: t.from, to: t.to,
+    n: t.level === "adset" ? (t.row.name || "") : t.code, cc: t.code, bt: t.field === "bid" ? (t.row.bid_type || null) : null, exp, j: nonce });
+  return { ...base, no_change: false,
+    message_ar: "هغيّر " + FIELD_AR[t.field] + " " + w.what_ar + " على " + w.plAr + ": من " + fmtVal(t.field, t.from) + " لـ " + fmtVal(t.field, t.to) + ".",
+    message_en: "Will change the " + FIELD_EN[t.field] + " of " + w.what_en + " on " + w.plEn + ": from " + fmtValEn(t.field, t.from) + " to " + fmtValEn(t.field, t.to) + ".",
+    confirm_token, expires_at: rTime(exp), expires_in_s: 600,
+    apply: { method: "POST", url: BASE + "/edit/apply", body: { confirm_token: "<confirm_token>" }, note_ar: "مفيش حاجة اتغيرت لسه — التعديل بيحصل بس لما تبعت التأكيد (زرار «تأكيد التعديل» في r.html)." } };
+}
+async function epEditApply(b: any, key: KeyRow) {
+  needEdit(key);
+  const t0 = Date.now(), tok = String(b?.confirm_token || "").trim();
+  if (!tok) throw bad("ابعت confirm_token اللي رجع من /edit/preview", "Send the confirm_token from /edit/preview");
+  const p = await readTok(tok);
+  if (p.k !== key.id) throw new ApiErr(403, "token_key", "التأكيد ده معمول بمفتاح تاني", "This confirm_token belongs to another key");
+  const now = Date.now(), by = "api:" + key.name;
+  // 30 edits / hour per key and «same object within 15 s» — counted from the campchg docs themselves (shared by every isolate)
+  const [mine, same] = await Promise.all([
+    sb.from("docs").select("path,data").eq("coll", "campchg").eq("data->>by", by).gte("updated_at", new Date(now - 3600e3).toISOString()).limit(500),
+    sb.from("docs").select("path,data").eq("coll", "campchg").eq("data->>objId", String(p.o)).gte("updated_at", new Date(now - 15e3).toISOString()).limit(50)]);
+  if (mine.error || same.error) throw new ApiErr(500, "db", "خطأ في قاعدة البيانات", "Database error");
+  if ((mine.data || []).filter((r: any) => (+r.data?.at || 0) > now - 3600e3).length >= 30) throw new ApiErr(429, "rate_limited", "وصلت لـ 30 تعديل في الساعة بالمفتاح ده — استنى شوية", "30 edits per hour per key — wait a bit");
+  if ((same.data || []).some((r: any) => (+r.data?.at || 0) > now - 15e3)) throw new ApiErr(409, "duplicate", "فيه تعديل على نفس الحاجة من أقل من 15 ثانية — اتأكد من النتيجة الأول، ولو لسه عايز تعدّل استنى شوية", "The same object was edited less than 15 s ago — duplicate refused");
+  const { data: row, error: re } = await sb.from("camp_struct").select("*").eq("client_id", p.c).eq("platform", p.p).eq("level", p.l).eq("id", p.o).maybeSingle();
+  if (re) throw new ApiErr(500, "db", "خطأ في قاعدة البيانات", "Database error");
+  if (!row || row.status === "stale") throw new ApiErr(404, "not_found", "الكيان ده مبقاش موجود — دوس «تحديث الأرقام» واعمل معاينة جديدة", "The object is gone — refresh and preview again");
+  const from = p.f === "status" ? (isActive(row) ? "ACTIVE" : "PAUSED") : numOrNull(p.f === "budget" ? row.daily_budget : row.bid);
+  const eq = (a: any, b2: any) => p.f === "status" ? a === b2 : (a == null && b2 == null) || (a != null && b2 != null && Math.abs(+a - +b2) < 0.005);
+  if (!eq(from, p.fr)) throw new ApiErr(409, "changed", "القيمة اتغيّرت من وقت المعاينة (بقت " + fmtVal(p.f, from) + ") — اعمل معاينة جديدة", "The value changed since the preview (now " + fmtValEn(p.f, from) + ") — preview again");
+  const plAr = (PL_NAME[p.p] || [p.p])[0], plEn = (PL_NAME[p.p] || [p.p, p.p])[1];
+  const what_ar = (p.l === "adset" ? "الـ Ad Set «" + p.n + "» في حملة " : "حملة ") + p.cc, what_en = (p.l === "adset" ? "ad set “" + p.n + "” in campaign " : "campaign ") + p.cc;
+  const stateAr = isActive(row) ? "شغالة" : "موقفة";
+  if (eq(from, p.to)) return { ok: true, result: "no_change", applied: false, pending: false, message_ar: FIELD_AR[p.f] + " " + what_ar + " هي أصلاً " + fmtVal(p.f, from) + " — مفيش حاجة اتغيرت.", message_en: "Already " + fmtValEn(p.f, from) + " — nothing changed." };
+  // the same campchg doc «أداء الحملات» writes (cpSave / cpSwitch), then the same camp-apply call (cpApply)
+  const id = "api" + String(p.j).replace(/[^a-f0-9]/g, "").slice(0, 24);
+  const doc = { client: p.c, platform: p.p, level: p.l, objId: String(p.o), name: p.n || "", field: p.f, bidType: p.bt || null, from, to: p.to, status: "pending", at: now, by, undoOf: null, batch: null };
+  const ins = await sb.from("docs").insert({ path: "campchg/" + id, coll: "campchg", data: doc, updated_at: new Date().toISOString() });
+  if (ins.error) { if ((ins.error as any).code === "23505") throw new ApiErr(409, "already_used", "التأكيد ده اتستخدم قبل كده — التعديل اتبعت مرة واحدة بس", "This confirm_token was already used"); throw new ApiErr(500, "db", "مقدرتش أسجّل الطلب", "Could not record the request"); }
+  let r: any = null;
+  try {
+    const res = await fetch(SB_URL + "/functions/v1/camp-apply", { method: "POST", headers: { Authorization: "Bearer " + SRK, apikey: SRK, "content-type": "application/json" },
+      body: JSON.stringify({ client: doc.client, platform: doc.platform, level: doc.level, objId: doc.objId, field: doc.field, to: doc.to, docId: id }) });
+    r = await res.json().catch(() => ({ ok: false, code: "http", error: "HTTP " + res.status }));
+  } catch (e) { r = { ok: false, code: "net", error: String((e as Error)?.message || e).slice(0, 200) }; }
+  const pendingCodes = ["not_configured", "missing", "net", "taken"];
+  const result = r?.ok ? "applied" : pendingCodes.indexOf(r?.code) >= 0 ? "pending" : "failed";
+  // camp-apply refused before claiming the doc (bad / unauthorized / http): don't leave it in the queue for the scheduled task
+  if (result === "failed") await sb.from("docs").update({ data: { ...doc, status: "failed", error: r?.error || "فشل", done_at: Date.now() }, updated_at: new Date().toISOString() })
+    .eq("path", "campchg/" + id).filter("data->>status", "eq", "pending").then(() => {}, () => {});
+  const fv = fmtVal(p.f, from), tv = fmtVal(p.f, p.to), keep = p.f === "status" ? "" : " · الحالة زي ما هي (" + stateAr + ")";
+  const message_ar = result === "applied"
+    ? "تم ✓ " + FIELD_AR[p.f] + " " + what_ar + " على " + plAr + " بقت " + tv + " (كانت " + fv + ")" + (r.verified ? " — اتأكدت من المنصة" : "") + keep + "."
+    : result === "pending"
+      ? "مستني (" + (p.p === "tiktok" ? "تيك توك لسه مش متوصل" : r?.code === "taken" ? "بيتنفّذ دلوقتي" : plAr + " لسه مردتش") + ") — الطلب اتسجل: " + FIELD_AR[p.f] + " " + what_ar + " من " + fv + " لـ " + tv + "، وهيتنفّذ من المهمة المجدولة خلال دقايق."
+      : "مااتنفذش ✗ " + FIELD_AR[p.f] + " " + what_ar + " على " + plAr + " — " + (r?.error || "حصل خطأ") + (r?.detail ? " (" + String(r.detail).slice(0, 160) + ")" : "") + ". مفيش حاجة اتغيرت.";
+  const message_en = result === "applied" ? "Done ✓ " + FIELD_EN[p.f] + " of " + what_en + " on " + plEn + " is now " + fmtValEn(p.f, p.to) + " (was " + fmtValEn(p.f, from) + ")."
+    : result === "pending" ? "Pending — queued for the scheduled task (" + (r?.code || "") + ")." : "Not applied — " + (r?.error || "error") + ".";
+  // push to Mahmoud's devices (same push function as the alerts) — in the background, the answer doesn't wait for it
+  const pushBody = key.name + " عدّل " + FIELD_AR[p.f] + " " + what_ar + " (" + plAr + "): من " + fv + " لـ " + tv + (result === "applied" ? " ✓" : result === "pending" ? " — مستني" : " — فشل ✗");
+  bg(fetch(SB_URL + "/functions/v1/push", { method: "POST", headers: { Authorization: "Bearer " + SRK, apikey: SRK, "content-type": "application/json" },
+    body: JSON.stringify({ action: "send", to: "all", title: "GADLYTICS · تعديل من " + key.name, body: pushBody, url: SITE + "?p=campperf", tag: "apiedit-" + doc.objId,
+      kind: "edit", rule: "edit", client: doc.client, campaign: p.cc, platform: doc.platform, obj: doc.objId, force: true }) }).then((x) => x.text()).catch(() => {}));
+  return { ok: result !== "failed", result, applied: result === "applied", pending: result === "pending", verified: result === "applied" ? !!r.verified : false,
+    message_ar, message_en, ...plOut(p.p), level: p.l, object_id: String(p.o), name: p.n || null, campaign: { code: p.cc }, field: p.f, from, to: p.to,
+    read_back: r?.readBack ?? null, currency: "SAR", state_ar: p.f === "status" ? undefined : stateAr, error_code: result === "failed" ? (r?.code || "error") : undefined,
+    doc_id: id, by, platform_ms: r?.ms ?? null, ms: Date.now() - t0,
+    undo_ar: result === "failed" ? undefined : "يترجع من «أداء الحملات» ← سجل التعديلات ← «رجّع»، أو بلينك تعديل تاني بالقيمة القديمة (" + fv + ")." };
 }
 
 // ───────────── MCP ─────────────
@@ -522,7 +734,7 @@ function openapi() {
   const get = (id: string, summary: string, params: any[]) => ({ get: { operationId: id, summary, description: TOOLS.find((t) => t.name === id)?.description, parameters: params, responses: resp } });
   return {
     openapi: "3.1.0",
-    info: { title: "GADLYTICS API", version: VERSION, description: "Read-only API for AI assistants over GADLYTICS (ملبي / ديمان). Spend from the ad platforms, donations/orders and revenue from Khzama or AppsFlyer+Salla. SAR, Asia/Riyadh. Also available as an MCP server at " + BASE + "/mcp." },
+    info: { title: "GADLYTICS API", version: VERSION, description: "API for AI assistants over GADLYTICS (ملبي / ديمان) — read-only except /edit/* (scope edit). Spend from the ad platforms, donations/orders and revenue from Khzama or AppsFlyer+Salla. SAR, Asia/Riyadh. Also available as an MCP server at " + BASE + "/mcp." },
     servers: [{ url: BASE }],
     security: [{ ApiKey: [], AnonBearer: [], AnonApikey: [] }],
     components: { securitySchemes: {
@@ -530,7 +742,7 @@ function openapi() {
       AnonBearer: { type: "http", scheme: "bearer", description: "Supabase gateway: Authorization: Bearer <public anon key> (from the site's config.js). Not the API key." },
       AnonApikey: { type: "apiKey", in: "header", name: "apikey", description: "Supabase gateway: apikey: <public anon key>." } } },
     paths: {
-      "/report": { get: { operationId: "get_report", summary: "One-page report (HTML or text) · تقرير صفحة واحدة", description: "Everything in one page for browsing agents: freshness, 8 KPIs, campaigns, top/bottom ROAS, last alerts and changes. Accepts ?key=<read-only key> instead of the header.",
+      "/report": { get: { operationId: "get_report", summary: "One-page report (HTML or text) · تقرير صفحة واحدة", description: "Everything in one page for browsing agents: freshness, 8 KPIs, campaigns, top/bottom ROAS, last alerts and changes. Browsing agents (instinct) open " + RHTML + "#key=<KEY>&client=3sa3k1k&period=today — r.html keeps the key in the URL hash (never sent to a server) and calls this endpoint with the x-api-key header. ?key=<read-only key> also works for read-only keys; refresh / edit keys are header only.",
         parameters: [...common, qp("format", { type: "string", enum: ["html", "text"] }, "html (default) or text"), qp("key", { type: "string" }, "read-only key, for plain links only")], responses: { "200": { description: "HTML or text", content: { "text/html": {}, "text/plain": {} } } } } },
       "/clients": get("list_clients", "Clients · العملاء", []),
       "/summary": get("get_summary", "Summary KPIs · الملخص", common),
@@ -538,6 +750,12 @@ function openapi() {
       "/campaign": get("get_campaign", "Campaign detail · تفاصيل حملة", [qp("code", { type: "string" }, "Campaign code (MGG-03059) or platform id", true), ...common, qp("platform", { type: "string" }, "optional platform filter")]),
       "/alerts": get("list_alerts", "Alerts · التنبيهات", [qp("client", { type: "string" }, P_CLIENT.description), qp("days", { type: "integer", default: 7 }, P_DAYS.description)]),
       "/changes": get("list_changes", "Change log · سجل التعديلات", [qp("client", { type: "string" }, P_CLIENT.description), qp("days", { type: "integer", default: 7 }, P_DAYS.description)]),
+      "/edit/preview": { get: { operationId: "edit_preview", summary: "Preview one edit · معاينة تعديل", description: "Needs the edit scope (header key only). Resolves the target exactly like «أداء الحملات»: CBO → campaign budget, ABO → the ad set (several → 409 choose_adset with options). Changes NOTHING; returns current and new value, platform, level, object id, name, state and a confirm_token valid 10 minutes. Money is SAR (Snap USD account converted by the server). No budget cap. Browsing agents: " + RHTML + "#key=<EDIT KEY>&client=3sa3k1k&edit=1&code=MGG-03059&field=budget&to=500",
+        parameters: [qp("client", { type: "string" }, P_CLIENT.description), qp("code", { type: "string" }, "Campaign code (MGG-03059) or platform campaign id", true), qp("field", { type: "string", enum: ["budget", "bid", "status"] }, "budget | bid | status", true),
+          qp("to", { type: "string" }, "New value: number in SAR (Arabic digits ok), or on / off for status", true), qp("adset", { type: "string" }, "Ad set id or name (ABO budget, bid, or ad-set on/off)"), qp("platform", { type: "string" }, "meta | snap | tiktok when the code exists on several")],
+        responses: { ...resp, "403": { description: "Key lacks the edit scope" }, "404": { description: "Campaign / ad set not found" }, "409": { description: "choose_campaign / choose_adset: several matches, options listed" } } } },
+      "/edit/apply": { post: { operationId: "edit_apply", summary: "Apply a previewed edit · تأكيد التعديل", description: "Needs the edit scope, x-api-key header only (never ?key=). Body {confirm_token}. Writes the same campchg doc the site writes (by api:<key name>), calls camp-apply (only that one field changes, read back from the platform), logs it in the change log (undo works) and pushes a notification. result = applied | pending (TikTok not connected → stays in the queue) | failed. 30 edits/hour per key; the same object within 15 s → 409 duplicate; a token works once (409 already_used) and expires after 10 minutes (410).",
+        requestBody: { required: true, content: { "application/json": { schema: { type: "object", required: ["confirm_token"], properties: { confirm_token: { type: "string" } } } } } }, responses: { ...resp, "403": { description: "Key lacks the edit scope" }, "409": { description: "duplicate | already_used | changed" }, "410": { description: "confirm_token expired" } } } },
       "/refresh": { post: { operationId: "refresh_numbers", summary: "Refresh today's numbers · تحديث الأرقام", description: TOOLS.find((t) => t.name === "refresh_numbers")?.description,
         requestBody: { required: false, content: { "application/json": { schema: { type: "object", properties: { client: P_CLIENT } } } } }, responses: { ...resp, "403": { description: "Key lacks the refresh scope" } } } },
     },
@@ -559,6 +777,8 @@ async function report(q: Record<string, any>) {
   ].sort((a, b) => (b.at > a.at ? 1 : b.at < a.at ? -1 : 0)).slice(0, 10);
   return { m, fr, k: kpis(m), rows, more: Math.max(0, m.camps.length - rows.length), top, bottom, alerts: al.alerts.slice(0, 10), changes };
 }
+const EDIT_HELP_AR = "تعديل حملة (مفتاح فيه صلاحية تعديل بس): " + RHTML + "#key=<المفتاح>&client=3sa3k1k&edit=1&code=<كود الحملة>&field=budget|bid|status&to=<رقم بالريال أو on/off>" +
+  " — ولو الحملة ABO وفيها أكتر من Ad Set زوّد &adset=<الـ id أو الاسم>، ولو الكود على أكتر من منصة زوّد &platform=meta|snap|tiktok. اللينك بيعرض معاينة بس؛ التعديل بيحصل لما تدوس «تأكيد التعديل»، والنتيجة بتظهر مكتوبة (تم ✓ / مستني / مااتنفذش).";
 const esc = (s: unknown) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" } as any)[c]);
 const fN = (v: unknown, d = 0) => v == null || !isFinite(+v!) ? "—" : (+v!).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
 const fK = (k: any) => k.value == null ? "—" : k.key === "roas" ? fN(k.value, 2) + "x" : fN(k.value) + (k.unit === "SAR" ? " ر.س" : "");
@@ -586,7 +806,8 @@ function reportHtml(R: any, ms: number) {
     mini("أعلى 3 في الـ ROAS", R.top) + mini("أقل 3 في الـ ROAS", R.bottom) +
     "<h2>آخر التنبيهات (7 أيام)</h2>" + (R.alerts.length ? "<ol>" + R.alerts.map((a: any) => "<li>" + esc(a.at) + " — " + esc(a.title) + (a.body ? ": " + esc(a.body) : "") + "</li>").join("") + "</ol>" : "<p>مفيش تنبيهات</p>") +
     "<h2>آخر التعديلات (7 أيام)</h2>" + (R.changes.length ? "<ol>" + R.changes.map((c: any) => "<li>" + esc(c.at) + " — " + esc(c.text) + "</li>").join("") + "</ol>" : "<p>مفيش تعديلات</p>") +
-    "<p><small>قراية بس · الفترات: today · yesterday · 7d · 30d · day:YYYY-MM-DD · range:A..B · نسخة نص: format=text</small></p></body></html>";
+    "<p><small>الفترات: today · yesterday · 7d · 30d · day:YYYY-MM-DD · range:A..B · نسخة نص: text=1</small></p>" +
+    "<p><small>" + esc(EDIT_HELP_AR) + "</small></p></body></html>";
 }
 function reportText(R: any, ms: number) {
   const m = R.m, ol = m.conv ? "الطلبات" : "التبرعات", L: string[] = [];
@@ -600,6 +821,7 @@ function reportText(R: any, ms: number) {
   L.push("أقل 3 ROAS: " + (R.bottom.map((r: any) => r.code + " " + fR(r.roas)).join(" · ") || "—"));
   L.push(""); L.push("آخر التنبيهات:"); (R.alerts.length ? R.alerts : [null]).forEach((a: any) => L.push(a ? "- " + a.at + " — " + a.title + (a.body ? ": " + a.body : "") : "- مفيش"));
   L.push(""); L.push("آخر التعديلات:"); (R.changes.length ? R.changes : [null]).forEach((c: any) => L.push(c ? "- " + c.at + " — " + c.text : "- مفيش"));
+  L.push(""); L.push(EDIT_HELP_AR);
   return L.join("\n") + "\n";
 }
 
@@ -610,11 +832,14 @@ Deno.serve(async (req: Request) => {
   const url = new URL(req.url), path = (url.pathname.replace(/^.*?\/gad-api/, "") || "/").replace(/\/+$/, "") || "/";
   const done = (o: unknown, status = 200) => json(o, status, { "x-gad-ms": String(Date.now() - t0) });
   const fail = (e: unknown) => { const x = e instanceof ApiErr ? e : new ApiErr(500, "error", "حصل خطأ في السيرفر", String((e as Error)?.message || e).slice(0, 200));
-    return done({ ok: false, code: x.code, error_ar: x.ar, error_en: x.en }, x.status); };
+    return done({ ok: false, code: x.code, error_ar: x.ar, error_en: x.en, ...(x.extra || {}) }, x.status); };
   try {
     if (path === "/openapi.json" && req.method === "GET") return done(openapi());
-    if (path === "/" && req.method === "GET") return done({ ok: true, name: "GADLYTICS API", version: VERSION, read_only: true, openapi: BASE + "/openapi.json", mcp: BASE + "/mcp",
-      auth: "Gateway: Authorization: Bearer <anon key> + apikey: <anon key> (public, from config.js). API key: x-api-key: <key> (or ?key=<read-only key> on GET).", report: BASE + "/report?client=3sa3k1k&period=today&key=<read-only key>", endpoints: ["GET /report", "GET /clients", "GET /summary", "GET /campaigns", "GET /campaign?code=", "GET /alerts", "GET /changes", "POST /refresh", "POST /mcp"] });
+    if (path === "/" && req.method === "GET") return done({ ok: true, name: "GADLYTICS API", version: VERSION, read_only: "everything except /edit/* (scope edit)", openapi: BASE + "/openapi.json", mcp: BASE + "/mcp",
+      auth: "Gateway: Authorization: Bearer <anon key> + apikey: <anon key> (public, from config.js). API key: x-api-key: <key> (or ?key=<read-only key> on GET; refresh / edit keys: header only).",
+      report: RHTML + "#key=<KEY>&client=3sa3k1k&period=today", report_ar: "لينك التقرير لـ instinct: r.html بيحط المفتاح في الهيدر (المفتاح في الـ # ومبيوصلش لأي سيرفر). الفترات: today · yesterday · 7d · 30d · day:YYYY-MM-DD · range:A..B · نص: &text=1",
+      edit: RHTML + "#key=<EDIT KEY>&client=3sa3k1k&edit=1&code=MGG-03059&field=budget&to=500", edit_ar: "لينك تعديل: edit=1&code=<كود الحملة>&field=budget|bid|status&to=<رقم بالريال أو on/off> (+ &adset=<id أو اسم> لو ABO، + &platform=meta|snap|tiktok لو الكود متكرر). اللينك بيعرض معاينة بس — مفيش حاجة بتتغير غير لما تدوس «تأكيد التعديل».",
+      endpoints: ["GET /report", "GET /clients", "GET /summary", "GET /campaigns", "GET /campaign?code=", "GET /alerts", "GET /changes", "POST /refresh", "GET /edit/preview", "POST /edit/apply", "POST /mcp"] });
     if (path === "/mcp") {
       if (req.method === "GET" || req.method === "DELETE") return new Response(null, { status: 405, headers: { ...cors, Allow: "POST" } });
       if (req.method !== "POST") return done({ ok: false, code: "method" }, 405);
@@ -631,6 +856,14 @@ Deno.serve(async (req: Request) => {
       const r = await report(q), text = String(q.format || "").toLowerCase() === "text";
       return new Response(text ? reportText(r, Date.now() - t0) : reportHtml(r, Date.now() - t0), { status: 200, headers: { ...cors, "content-type": (text ? "text/plain" : "text/html") + "; charset=utf-8",
         "cache-control": "no-store", "x-robots-tag": "noindex, nofollow", "referrer-policy": "no-referrer", "x-gad-ms": String(Date.now() - t0) } });
+    }
+    if (path === "/edit/preview" || path === "/edit/apply") {
+      const isApply = path === "/edit/apply";
+      if (req.method !== (isApply ? "POST" : "GET")) throw new ApiErr(405, "method", "استخدم " + (isApply ? "POST" : "GET"), "Use " + (isApply ? "POST" : "GET"));
+      const key = await auth(req, false); needEdit(key);                 // x-api-key header only — never ?key=
+      if (isApply) { let b: any = {}; try { b = await req.json(); } catch { /* bad_request below */ } return done({ ...(await epEditApply(b, key)), generated_at: rTime(Date.now()) }); }
+      const q: Record<string, any> = Object.fromEntries(url.searchParams.entries()); delete q.key;
+      return done({ ok: true, ...(await epEditPreview(q, key)), generated_at: rTime(Date.now()), ms: Date.now() - t0 });
     }
     const EP: Record<string, [string, string]> = { "/clients": ["GET", "clients"], "/summary": ["GET", "summary"], "/campaigns": ["GET", "campaigns"], "/campaign": ["GET", "campaign"], "/alerts": ["GET", "alerts"], "/changes": ["GET", "changes"], "/refresh": ["POST", "refresh"] };
     const ep = EP[path]; if (!ep) throw new ApiErr(404, "not_found", "مفيش endpoint بالاسم ده — شوف /openapi.json", "No such endpoint — see /openapi.json");
