@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="gad-build" content="20261110090902">
+<meta name="gad-build" content="20261110091521">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -16,7 +16,7 @@
 <script>
 /* تحديث تلقائي للتطبيق على الموبايل/الآيباد: مفيش service worker ولا كاش. كل ما التطبيق يتفتح أو يرجع للواجهة
    بيجيب index.html جديد (no-store) ويقارن رقم البيلد؛ لو فيه نسخة أحدث بيفتحها على طول. */
-(function(){ var B="20261110090902", last=0;
+(function(){ var B="20261110091521", last=0;
   function busy(){ return document.querySelector("#cpIn:focus, .ma-sheet, input:focus, textarea:focus"); }
   function chk(){ var n=Date.now(); if(n-last<20000) return; last=n; if(busy()) return;
     fetch(location.pathname+"?_b="+n,{cache:"no-store"}).then(function(r){ return r.ok? r.text() : ""; }).then(function(t){
@@ -54,7 +54,8 @@
 .lb-kv th{white-space:nowrap;text-align:start;width:150px}.lb-tag{display:inline-block;padding:0 8px;border-radius:999px;font-size:11px;background:color-mix(in srgb,var(--cyan) 14%,transparent);color:var(--cyan)}
 .lb-nt{display:grid;grid-template-columns:1fr 1.4fr auto;gap:8px;align-items:end;margin-bottom:12px}.lb-drag{cursor:grab}.lb-on{padding:6px;border:1px dashed var(--line-2,rgba(127,127,127,.3));border-radius:10px}
 @media (max-width:700px){.lb-nt{grid-template-columns:1fr}}.lb-hk{margin-bottom:12px;line-height:1.8}
-.ex-drill{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}</style>
+.ex-drill{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}.push-page{max-width:640px;padding:18px}.push-page .cp-pbtns .btn{min-height:46px;font-size:16px}
+</style>
 <style>.ss-live{margin-bottom:14px}.ss-lh{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
 .ss-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}.ss-kc{border:1px solid var(--line,rgba(128,128,128,.22));border-radius:12px;padding:12px}
 .ss-kl{font-size:12px;opacity:.75}.ss-kv{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;margin:4px 0}.ss-kf{font-size:12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}.ss-d{font-weight:800}
@@ -1351,7 +1352,7 @@ function defaultConfig(){
 
 /* ── الوضع البسيط: نفس السيستم بشاشات وأقسام أقل — التبديل بيرجّع كل حاجة زي ما هي ── */
 const SIMPLE = () => ((S.cfg.settings&&S.cfg.settings.mode)||"simple")!=="pro";
-const SIMPLE_VIEWS={campperf:1,snapboard:1,explorer:1,analyze:1,overview:1,live:1,entry:1,tasks:1,admin:1,me:1,chat:1,team:1,pending:1,plans:1,creatives:1,library:1,approvals:1,perf:1,reports:1,portal:1};
+const SIMPLE_VIEWS={push:1,campperf:1,snapboard:1,explorer:1,analyze:1,overview:1,live:1,entry:1,tasks:1,admin:1,me:1,chat:1,team:1,pending:1,plans:1,creatives:1,library:1,approvals:1,perf:1,reports:1,portal:1};
 const SIMPLE_SEC_ID={s_kpi:1,s_health:1,s_trend:1,s_bspend:1,s_broas:1,s_sheet:1,s_lkpi:1,s_lcurve:1,s_lcmp:1};
 const SIMPLE_SEC_TYPE={brief:1,eod:1};
 let _defIds=null;   // أقسام السيستم الافتراضية — أي قسم تاني إنت اللي ضايفه فبيفضل ظاهر
@@ -12623,6 +12624,7 @@ function renderViewRaw(){
       case "analyze":  return renderAnalyze();
       case "explorer": return renderExplorer();
       case "campperf": return renderCampPerf();
+      case "push": return renderPushPage();
       case "snapboard": return renderSnapSheet();
       case "insights": return renderInsights();
       case "entry":    return renderEntry();
@@ -12682,6 +12684,7 @@ function headerFor(){
     compare:[L("مقارنة الفترات","Compare periods"),L("قارن أي فترتين ببعض","Compare any two periods")],
     snapboard:[L("اللقطات","Snapshots"),L("كل لقطة سطر: صرف كل منصة وإيراد خزامى بالأكواد — شوف الفرق بين كل ساعة واللي بعدها، وقارن ساعة على كل الأيام","Each snapshot is a row: spend per platform and Khzama revenue by code")],
     site:[L("الموقع والقمع","Site & funnel"),L("سلوك الزوار على الموقع من ميكس بانل: القمع والمصادر والحملات والأجهزة وطرق الدفع والساعات","How visitors behave on the site (Mixpanel): funnel, sources, campaigns, devices, payments, hours")],
+    push:[L("التنبيهات","Notifications"),L("إشعارات الحملات على الجهاز ده — وقتها وأنواعها","Campaign alerts on this device — when and which")],
     campperf:[L("أداء الحملات","Campaign performance"),L("كل حملة ← Ad Set ← إعلان: الصرف من المنصة والتبرعات من خزامى، والميزانية والمزايدة تتعدل من هنا","Campaign → ad set → ad: spend from the platform, donations from Khzama; edit budgets and bids here")],
     explorer:[L("المحلل","Analyzer"),L("كل إعلان وفيديو ومشهور على كل المنصات — قسّم وقارن ودوس على أي سطر للتفاصيل","Every ad, video and influencer across platforms — break down, compare, drill in")],
     analyze:[L("تحليل الحملات","Campaign analysis"),L("كل أرقام الحملة في مكان واحد: المسار، الأيام، الساعات، المنصات","Every number for a campaign: funnel, days, hours, platforms")],
@@ -12739,7 +12742,7 @@ function navHTML(){
   if(member) return work+body;
   return work+body+grp(L("الفريق","Team"),[I.team,I.perf])+
     (cs.length?grp(L("شاشاتي","My screens"),cs.map(v=>it(v.id,v.name,"screen"))):"")+
-    grp(L("الإعدادات","Settings"),[simple?I.admin:it("admin",L("لوحة التحكم","Admin panel")),'<button class="nav-i" data-a="pushOpen" aria-label="'+esc(L("التنبيهات","Notifications"))+'">'+ic("bell")+esc(L("التنبيهات","Notifications"))+"</button>"])+modeBar();
+    grp(L("الإعدادات","Settings"),[simple?I.admin:it("admin",L("لوحة التحكم","Admin panel")),'<button class="nav-i'+(S.view==="push"?" on":"")+'" data-a="pushOpen" aria-label="'+esc(L("التنبيهات","Notifications"))+'">'+ic("bell")+esc(L("التنبيهات","Notifications"))+"</button>"])+modeBar();
 }
 function modeBar(){
   const s=SIMPLE();
@@ -13791,8 +13794,8 @@ function cpBulkBar(){ if(!CP.bulk) return ""; const n=cpBCount();
     '<button class="btn btn-p" data-a="cpBOpen"'+(n?"":" disabled")+">"+esc(L("تعديل الميزانية","Edit budgets"))+"</button></div>"; }
 /* ── لوحة واحدة للديسكتوب (modal) والموبايل/الآيباد (شيت) ── */
 function cpPanelOpen(p){ CP.panel=p; if(maOn()){ CP.sheet={kind:"panel"}; render(); } else cpPanelDraw(); }
-function cpPanelDraw(){ if(!CP.panel) return; if(maOn()){ render(); return; } const P=cpPanelHTML(); modal(P.t,'<div class="cp-pan">'+P.b+"</div>",P.f||""); }
-ACT.cpPanelClose=()=>{ CP.panel=null; if(maOn()){ CP.sheet=null; render(); } else closeModal(); };
+function cpPanelDraw(){ if(!CP.panel) return; if(CP.panel.type==="push"&&S.view==="push"){ render(); return; } if(maOn()){ render(); return; } const P=cpPanelHTML(); modal(P.t,'<div class="cp-pan">'+P.b+"</div>",P.f||""); }
+ACT.cpPanelClose=()=>{ if(S.view==="push"){ CP.panel=null; S.view=CP.pushBack||"campperf"; render(); return; } CP.panel=null; if(maOn()){ CP.sheet=null; render(); } else closeModal(); };
 function cpPanelHTML(){ const p=CP.panel||{}; return p.type==="bulk"? cpBulkHTML(p) : p.type==="undo"? cpUndoHTML(p) : p.type==="log"? cpLogHTML(p) : p.type==="pace"? cpPaceHTML(p) : p.type==="push"? pushHTML(p) : {t:"",b:""}; }
 /* ── التعديل نفسه (من غير توستات) ── */
 async function cpDo(p){ const id=sid(), doc={client:cpCid(),platform:p.pl,level:p.lvl,objId:String(p.id),name:p.name||"",field:p.field,bidType:p.bidType||null,from:p.from,to:p.to,status:"pending",at:Date.now(),by:ME.email||"",undoOf:p.undoOf||null,batch:p.batch||null};
@@ -13919,7 +13922,9 @@ async function pushReg(){ return navigator.serviceWorker.getRegistration("./").t
 async function pushState(){ const s={ok:pushOK(),perm:("Notification" in window)?Notification.permission:"unsupported",sub:null};
   if(s.ok){ try{ const r=await navigator.serviceWorker.getRegistration("./"); s.sub=r? await r.pushManager.getSubscription() : null; }catch(e){} } return s; }
 const pushKeyBytes=k=>{ const s=k.replace(/-/g,"+").replace(/_/g,"/"), p=s+"===".slice((s.length+3)%4); return Uint8Array.from(atob(p),c=>c.charCodeAt(0)); };
-ACT.pushOpen=()=>{ const was=!!CP.sheet; CP.sheet=null; window.__shK=null; if(was) render(); setTimeout(()=>{ window.__shAt=Date.now(); cpPanelOpen({type:"push",st:null,prefs:null,busy:""}); pushLoad(); }, was?320:0); };
+ACT.pushOpen=()=>{ if(S.view!=="push") CP.pushBack=S.view; CP.sheet=null; CP.mnav=[]; window.__shK=null; CP.panel={type:"push",st:null,prefs:null,busy:""}; S.view="push"; try{ window.scrollTo(0,0); }catch(e){} render(); pushLoad(); };
+function renderPushPage(){ if(!CP.panel||CP.panel.type!=="push"){ CP.panel={type:"push",st:null,prefs:null,busy:""}; setTimeout(pushLoad,0); }
+  const P=pushHTML(CP.panel); return '<div class="card push-page"><div class="cp-pan">'+P.b+"</div>"+(P.f?'<div class="cp-pf">'+P.f+"</div>":"")+"</div>"; }
 async function pushLoad(){ const p=CP.panel; if(!p||p.type!=="push") return; p.st=await pushState();
   if(p.st.sub){ try{ const q=await SUPA_DB.client.functions.invoke("push",{body:{action:"mine"}}); const me=(q.data&&q.data.subs||[]).find(x=>x.endpoint===p.st.sub.endpoint); p.prefs=Object.assign({},PUSH_DEF,me&&me.prefs||{}); p.rules=Object.assign({},PUSH_DEF.rules,(me&&me.prefs&&me.prefs.rules)||{}); p.last=me; }catch(e){} }
   if(!p.prefs){ p.prefs=Object.assign({},PUSH_DEF); p.rules=Object.assign({},PUSH_DEF.rules); }
