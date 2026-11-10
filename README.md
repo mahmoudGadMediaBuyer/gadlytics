@@ -1047,3 +1047,10 @@ GADLYTICS works as an app on Mahmoud's iPhone and iPad (a home-screen web app �
 Also fixed while building this: `camp_struct` (2,450 rows for ملبي) was read in unordered 1,000-row pages, so campaigns randomly lost their status/budget on desktop too — every paged query now has a stable `order(...)`.
 
 - Rows in the app (Nov 10 2026): every campaign / ad set / ad row shows **الصرف · التبرعات · الإيراد · ROAS** in four equal columns with thin separators, the number on top and the ▲▼ comparison under it (Mahmoud's choice); the budget chip sits under them. Checked at 375 / 390 / 820 with 7-digit values — nothing clipped.
+
+## 24) Sidebar order (Nov 10 2026, Mahmoud's order — desktop sidebar and the phone/iPad menu sheet use the same list)
+- **شغلي:** لوحتي · المهام · المجتمع
+- **الإدارة والتحليل:** نظرة عامة · أداء الحملات · إدارة الحملات · إدارة الميديا · مكتبة الكريتيف · المحلل · الموقع والقمع
+- **المتابعة:** مركز الإجراءات · اليوم المباشر · التقارير · إدخال البيانات
+- **أدوات إضافية:** الميديا بلان · الموافقات · التجارب · سجل التغييرات
+- **الفريق:** الفريق · تقييم الأداء — then شاشاتي (if any) and الإعدادات. Simple mode / members see the same groups minus screens they don't have.
