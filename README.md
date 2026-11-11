@@ -1236,6 +1236,7 @@ These tasks stop on a permission prompt when they hit a tool they haven't been a
 | Nov 10 | Edits from instinct: `gad-api` v2 (1.1.0) `GET /edit/preview` + `POST /edit/apply`, new key scope `edit` (`make_api_key.py --edit`, `api_keys` check constraint + `ingest` v13), `camp-apply` v4 accepts the service role with a queued `campchg` docId, `r.html` edit mode (preview card → «تأكيد التعديل»). Tested on paused Snap MG-01380: 200→210→200 SAR, status stayed PAUSED. §32.7. |
 | Nov 11 | iPhone / iPad home-screen widget (Scriptable) `widget/GADLYTICS.js`: today's / yesterday's spend · donations · revenue · ROAS from `gad-api` `/summary`, per client and per platform (widget Parameter), small / medium / large + lock-screen widgets, «تحديث» button = `POST /refresh` then redraw. Key `make_api_key.py widget --refresh` in the iOS Keychain; file is pure ASCII (Arabic as `\u` escapes) after clipboard mojibake. §33. |
 | Nov 11 | Khzama live sync: Chrome extension `khzama-live/` (every 2 min, today's Khzama links → `gad-api` `POST /khzama/push`, full snapshot of the day, 50 % guard, login/error push notifications, heartbeat `sys/khzama_live` → `/summary` `data_freshness.orders.khzama_live`). `gad-api` v3 / 1.2.0, new key scope `khzama` (`make_api_key.py --khzama`; a khzama key can't read, a read key can't push), `ingest` v14 accepts `["khzama"]`. Khzama pull = screen read of `affiliateLinks` React props + `khzama_ingest.py`. |
+| Nov 11 | Season mode «وضع الموسم» (§35): edge fn `season-tick` v1 (verify_jwt on) + cron `gad-season-tick` every 2 min — when `config/app.season` is active, platform spend refreshes every 2 min 24 h and `camp-alerts` also runs 00:00–07:59 Riyadh; auto start 2027-01-09 (1 Sha'ban 1448); heartbeat `sys/season`. Tested on, then left **off** (waiting for 2027-01-09). |
 
 ## 32) AI assistants API (instinct / MCP) — `gad-api` (Nov 10 2026)
 
@@ -1509,3 +1510,46 @@ Install (once): `chrome://extensions` → Developer mode → Load unpacked → `
 - `POST /khzama/status` — scope `khzama`. `{state: ok | login_required | error, detail}`. login_required / error send **one** phone notification («خزامى محتاج تسجيل دخول — السحب اللحظي واقف» or the error) via `push`, at most once per state per 2 h.
 - Heartbeat: `docs` `sys/khzama_live` (`last_ok_at`, `last_state`, `last_detail`, `rows`, `totals` for today, `days`, `notified`). `/summary` shows it as `data_freshness.orders.khzama_live` (`last_ok_at`, `minutes_ago`, `state`, `today`).
 - Tested Nov 11 2026: 401 without a key; khzama key → 403 on `/summary`, `/mcp`, `/edit/preview`, `/report?key=`; read key → 403 on `/khzama/push`; re-push of 2026-11-10 (1 link, 1 donation, 100 SAR) → `unchanged: true`; second push within 30 s → 429; empty push over a 10-donation day → 409 guard; date outside today/yesterday → 400.
+
+## 35) Season mode «وضع الموسم» (Nov 11 2026)
+
+During the season (Ramadan 1448) spend moves fast and money is spent at night too, so the numbers must stay fresh around the clock. Season mode does two things, and nothing outside the season changes:
+
+1. **Platform spend every 2 minutes, 24 hours a day**, for every client in `config/app.clients` (ملبي `3sa3k1k`, ديمان `dm1n4an`): `camp-refresh` `{client, from: today, to: today}` (Riyadh day) with the service role, one client after the other so one failing never blocks the other. Between 00:00 and 00:10 Riyadh the first tick also re-reads yesterday once (`from: yesterday`). Meta + Snap today; TikTok answers `not_configured` until the TikTok app is approved.
+2. **Alerts 24 hours.** The normal cron `gad-camp-alerts` (`*/5 5-20 * * *` UTC = 08:00–23:59 Riyadh) is unchanged. In season mode `season-tick` also calls `camp-alerts` during 21:00–04:59 UTC (00:00–07:59 Riyadh) every ~5 minutes (UTC minute % 5 < 2, at most once per 3 min) with `{force: true}` — camp-alerts skips those hours otherwise. New-media (Airtable) alerts keep their 15-minute cadence (`only` without `media` on the other ticks). Each device's own delivery / quiet hours in the التنبيهات screen still apply.
+
+Read-only on the ad accounts: the only platform traffic is the reads `camp-refresh` already does — no writes, no budget changes.
+
+### 35.1 Switch
+
+`docs` `config/app` key `season`:
+
+```json
+{"auto_start": "2027-01-09", "on": false, "off": false, "label": "رمضان 1448", "note": "…"}
+```
+
+Active = `!off && (on || today(Riyadh) >= auto_start)`. **Auto start: 1 Sha'ban 1448 (Umm al-Qura) = 2027-01-09.** If the key is missing, `season-tick` still uses 2027-01-09.
+
+| Mahmoud says | SQL (always a merge — never overwrite config/app) |
+|---|---|
+| «فعّل وضع الموسم» | `update docs set data = data \|\| jsonb_build_object('season', (data->'season') \|\| '{"on":true,"off":false}'::jsonb), updated_at = now() where path = 'config/app';` |
+| «وقّف وضع الموسم» | same with `'{"on":false,"off":true}'` — stays off even after 2027-01-09 |
+| back to automatic | same with `'{"on":false,"off":false}'` |
+
+⚠️ The site's settings save (`normalizeCfg` → `Store.setConfig`) writes config/app with only the keys it knows, so a settings change from the site drops `.season`. Automatic start still happens (the 2027-01-09 fallback), but a manual on/off is lost — check the key after settings changes. Fix still open: keep `season` in `normalizeCfg`, or a `before update` trigger on `docs` that carries `season` over (proposed Nov 11, not applied).
+
+### 35.2 `season-tick` + cron
+
+- Edge function `season-tick` v1, `supabase/functions/season-tick/index.ts`, **verify_jwt ON**. pg_cron job `gad-season-tick` (jobid 2), `*/2 * * * *`, `net.http_post` with the anon key header — the same command as `gad-camp-alerts`, only the URL differs.
+- Inactive → one small read and returns (`{active:false, why:"waiting for 2027-01-09"}`, ~0.2–0.5 s inside the function).
+- Guard: skip if the last tick started < 90 s ago and is still running (`overlap`), or finished and started < 60 s ago (`throttled`) — repeated calls with the public anon key are harmless.
+- Heartbeat `docs` `sys/season`: `active`, `why`, `running`, `started_at`, `last_tick_at`, `ms`, `ok`, `clients.{id}` (`ok`, `ms`, `fn_ms`, `from`, `to`, `spend` per platform, `errors`), `last_alerts_at`, `last_alerts`, `ticks`, `yesterday_done`, `last_error_at`; marked `active:false` + `stopped_at` once when the season goes off.
+- Test hook: body `{"probe_alerts": true}` also calls `camp-alerts` with `dry: true` (evaluate only, nothing sent).
+- Check: `select data from docs where path = 'sys/season';` and `select * from cron.job_run_details where jobid = 2 order by start_time desc limit 5;`
+
+### 35.3 Tested Nov 11 2026
+
+- `on: true` → one call with the anon bearer: 15.4 s total — ملبي 7.96 s (camp-refresh 7.76 s), ديمان 3.29 s (3.26 s), dry camp-alerts probe 2.76 s; `camp_struct.updated_at` moved for both clients on Meta + Snap, heartbeat written. Today's spend was 0 on Meta and Snap for both clients (no `ad_daily` rows for the day, so `pulled_at` could not move).
+- Cron tick 11:30 UTC: `succeeded`; tick ran 14.9 s (ملبي 12.2 s, ديمان 2.45 s), `ticks: 2`.
+- Back to `on: false` → `active:false, why:"waiting for 2027-01-09"` in 214–490 ms (function) / 0.5–0.8 s (round trip).
+- Cron tick 11:32 UTC with the season off: `succeeded`, function answered 200 about 1.3 s after the cron fired (cold start); `sys/season` shows `active:false`, `stopped_at` 11:30:49 UTC.
