@@ -3,9 +3,10 @@
 القاعدة: الصرف وباقي الأرقام من المنصات؛ الطلبات والإيراد من خزامى (أكواد ME/TT/SC + bio/com/DM بس).
 Supabase project: ibpwudzjwjraqhfdmzet · client_id: 3sa3k1k · مفتاح الاستقبال: ~/.gadlytics/ingest.key (متطبعوش في أي رد)
 Ingest endpoint: https://ibpwudzjwjraqhfdmzet.supabase.co/functions/v1/ingest
-  - من Bash: POST JSON {"table":..., "rows":[...]} مع هيدر x-ingest-key (≤ ~2 MB لكل طلب، قسّم لو أكبر)
-  - من صفحة خزامى في Chrome: fetch لـ supabase.co ممنوع → استخدم form POST (حقول key/table/rows) لـ iframe مخفي
+  - من Bash بس: POST JSON {"table":..., "rows":[...]} مع هيدر x-ingest-key (≤ ~2 MB لكل طلب، قسّم لو أكبر). متبعتش أي حاجة من صفحة خزامى.
+  - ingest بيعمل upsert على المفتاح (client_id,date,link_id) للخزامى: بيكتب فوق الأرقام، بس مبيمسحش صف قديم مش موجود في الطلب.
 الجداول المسموحة: ad_daily, khzama_link_daily, snapshots, khzama_rev, media, mx_daily
+camp-refresh (edge function): أي نداء ليها من Bash/سكريبت لازم الهيدرين مع بعض: x-ingest-key + Authorization: Bearer <anon key> (supabaseAnonKey من gadlytics-site/config.js) — من غير الـ Bearer بترجع 401.
 
 ## ⚡ تحديث سريع («تحديث سريع» أو sys/pullreq فيه mode="quick")
 النهارده بس (بتوقيت الرياض)، وبأقل خطوات — الهدف دقايق مش ساعة:
@@ -33,21 +34,46 @@ Ingest endpoint: https://ibpwudzjwjraqhfdmzet.supabase.co/functions/v1/ingest
   python3 ~/.gadlytics/snap_usd_pull.py <أول يوم> <آخر يوم> DIR/snap_usd.json   (الدولار بيتحول لريال ×3.75 في الخطوة اللي بعدها)
 بعدها: python3 ~/.gadlytics/prep_ad_daily.py 3sa3k1k DIR OUT.json → ابعت OUT.json لـ ingest (table ad_daily) على دفعات 1500 صف.
 
-## 2) خزامى → khzama_link_daily (Claude in Chrome)
-1. افتح تاب جديد في جروب التابات بتاعك على https://admin.molabi.sa/affiliateLinks (لو طلب تسجيل دخول: وقّف وبلّغ — متكتبش باسوردات).
-2. خد هيدرز الطلب من الصفحة نفسها (متطبعهمش):
-   hook على XMLHttpRequest.prototype.open/setRequestHeader يحفظ الهيدرز لأي URL فيه AdminAffiliateLink في window.__hh،
-   وبعدين history.pushState لـ '/affiliateLinks?toDate=...&keyword=ME&fromDate=...' + dispatch PopStateEvent، واستنى 6 ثواني.
-3. لكل يوم: XHR POST https://api.molabi.sa/api/AdminAffiliateLink/search بالهيدرز Accept/Content-Type/Authorization والبودي
-   {"Page":1,"PageSize":5000,"searchKey":"","fromDate":"YYYY-MM-DDT00:00:00.000Z","toDate":"YYYY-MM-DDT23:59:59.000Z","affiliateId":null}
-   (التواريخ بتوقيت الرياض ومكتوب عليها Z). الرد data[] فيه id,title,numberOfDonations,totalDonationAmount.
-4. خد الصفوف اللي فيها تبرعات أو مبلغ، وحوّل كل واحد لـ:
-   {client_id:'3sa3k1k', date, link_id:String(id), title, camp_no, custom, creative_id, code, platform, product, rest, donations, amount}
-   بالـ regex: ^-?([A-Z]{2,4}-\d{3,6})-(?:([A-Za-z0-9_]+)-)?(\d{14}(?:~\d{14})*)-([A-Za-z]{2,3})-(.+)$  → camp, custom (= اسم الـ Ad Set، ممكن فيه أرقام زي CPA35 أو Mansour_1), creative (أول ID)، code، rest (product = أول كلمة).
-   لو مطابقش: camp من ^[A-Z]{2,4}-\d{3,6}، code من -(ME|TT|SC)- أو العنوان نفسه لو bio/com/DM، creative أول 14 رقم. platform: ME→meta, TT→tiktok, SC→snap.
-5. ابعت كل يوم بـ form POST (حقول key/table=khzama_link_daily/rows=JSON) لـ iframe مخفي باسم جديد لكل طلب.
-6. اتأكد بـ execute_sql: select date, count(*), sum(donations), sum(amount) from public.khzama_link_daily where client_id='3sa3k1k' and date in (...) group by 1.
-7. اقفل التاب بتاعك.
+## 2) خزامى → khzama_link_daily (Claude in Chrome — قراية الشاشة بس)
+🟢 من 11 نوفمبر 2026: إضافة كروم «GADLYTICS · خزامى لحظي» (gadlytics-site/khzama-live، README §34) بتسحب النهارده لوحدها كل دقيقتين
+   (POST gad-api/khzama/push، snapshot كامل لليوم) وبتقفل امبارح بين 00:00 و00:20. فالمهمة المجدولة هنا بقت تتأكد وتكمّل الفجوات بس:
+   - execute_sql: select data from public.docs where path='sys/khzama_live' → last_ok_at (ms) و last_state و days{تاريخ: {links,donations,amount,at,complete}}.
+   - لو last_ok_at أقل من 15 دقيقة و last_state='ok' و days فيها امبارح بـ complete → متسحبش النهارده ولا امبارح من خزامى؛ اسحب بس الأيام التانية من الـ 3 اللي ناقصة/قديمة.
+   - لو الإضافة واقفة (last_state = login_required/error أو last_ok_at قديم) → اسحب بالطريقة اللي تحت، وقول لمحمود في التقرير إن الإضافة واقفة وليه.
+   - نفس كود القراية بتاع الإضافة (khzama-live/reader.js) ينفع يتلزق في javascript_tool؛ بيرجّع {state, dates, page, total, count, idSum, rows}.
+⛔ ممنوع نهائياً: التقاط هيدر Authorization أو أي توكن/كوكي/localStorage/sessionStorage من صفحة خزامى، أو hook على XMLHttpRequest/fetch، أو نداء api.molabi.sa مباشرة بهيدرز منسوخة.
+   مصنّف الأمان بيوقف ده (credential capture) — متعيدش المحاولة ومتلفّش عليه. ومتكتبش باسوردات: لو الصفحة طلبت تسجيل دخول وقّف وبلّغ.
+الطريقة (اتجربت 11 نوفمبر 2026 على 10-24 → 11-10، ونتايجها طابقت المخزّن لـ 10-14 و10-24 بالظبط):
+1. ToolSearch مرة واحدة لأدوات claude-in-chrome (tabs_context_mcp, tabs_create_mcp, navigate, javascript_tool, computer, browser_batch, tabs_close_mcp, select_browser).
+   select_browser للمتصفح المسجّل دخول في خزامى، tabs_context_mcp، وبعدين tabs_create_mcp (تاب جديد بتاعك — متلمسش تابات تانية في الجروب، ساعات سيشن تانية شغالة فيها).
+2. الصفحة (بتتفتح بالـ URL، من غير ما تدوس على حاجة):
+   https://admin.molabi.sa/affiliateLinks?fromDate=D&toDate=D+1&size=1000&page=N
+   - toDate حصري (نص الليل): يوم واحد = fromDate=اليوم&toDate=اليوم اللي بعده. fromDate=toDate بيرجع صفر. التواريخ بتوقيت الرياض (خانة التاريخ بتعرض «03:00»).
+   - القايمة بتعرض كل الروابط (~2,435، يعني 3 صفحات × 1000) والفلتر بيغيّر الأرقام بس. أكبر size في القايمة 1000 (size=3000 مبيحملش). page=N في الـ URL شغال.
+   - أعمدة الجدول: المعلن · العنوان/الرابط · الزيارات · التبرعات · الطلبات · المبلغ · التاريخ · الحالة · خيارات. العنوان الكامل في p[title] (النص الظاهر مقصوص بـ «…»)، والـ id في رابط التعديل /affiliateLinks/<id>.
+   - الجدول virtualized (~22 صف بس في الـ DOM)، وتاب الإضافة غالباً hidden فالتايمرز والـ scroll بيبقوا بطيئين جداً (ثانية لكل خطوة) — متقراش بالتمرير، ومتكبّرش ارتفاع الجدول (الصفحة بتهنج).
+3. اقرا الصفوف اللي الصفحة محمّلاها أصلاً من props بتاعة مكوّن الجدول (React) — قراية من الذاكرة بس، من غير أي طلب شبكة ومن غير أي storage/كوكيز/هيدرز.
+   لكل صفحة: navigate → computer wait 7 ث → javascript_tool بالكود ده بالظبط:
+   (()=>{const tr=document.querySelector('table tbody tr');if(!tr)return 'not-ready';const k=Object.keys(tr).find(k=>k.startsWith('__reactFiber'));let f=tr[k];while(f&&!(f.memoizedProps&&Array.isArray(f.memoizedProps.data)&&f.memoizedProps.columns))f=f.return;const p=f.memoizedProps;if(p.isLoading)return 'loading';const rows=p.data.filter(r=>'title' in r);const fi=[...document.querySelectorAll('input')].map(i=>i.value).filter(v=>/\d{4}/.test(v)).map(v=>v.slice(0,10)).join('-');return [fi,p.pagination.page,rows.length,rows.reduce((a,r)=>a+r.id,0),rows.filter(r=>r.numberOfDonations>0||r.totalDonationAmount>0).map(r=>[r.id,r.title,r.numberOfDonations,r.totalDonationAmount])]})()
+   الناتج: [تاريخين الخانات، رقم الصفحة، عدد الصفوف، مجموع الـ ids، [[id,title,donations,amount],…]]. آخر عنصر في data هو صف «المجموع» (id customRow) — الكود بيشيله.
+   لو رجّع not-ready أو loading: wait 4 ث وشغّل الكود تاني (من غير navigate).
+   تحقّق قبل ما تعتمد الصفحة: تواريخ الخانات = اليوم المطلوب، page صح، 1000/1000/435 صف، ومجموع الـ ids لكل صفحة ثابت في كل الأيام
+   (نوفمبر 2026: p1 598826 · p2 1660873 · p3 874090 — بيتغير لما روابط تتضاف، المهم يفضل نفسه في نفس السحبة).
+4. اختصار مهم: الأول اقرا الفترة كلها مرة واحدة (fromDate=أول يوم&toDate=آخر يوم+1) لصفحاتها التلاتة. أي صفحة مفيهاش ولا رابط بتبرعات في الفترة كلها اتخطاها في كل الأيام
+   (في نوفمبر 2026 الصفحة 1 كانت فاضية، فكل يوم = صفحتين 2 و3). وفي الآخر: مجموع الأيام لكل رابط لازم = رقم الفترة (اتطابق 100% في 10-25 → 11-10).
+5. التوقيت: browser_batch ≤ 3 صفحات (navigate + wait 7 + JS لكل صفحة ≈ 9–10 ث)؛ أكتر من كده بيعدّي الـ timeout والنتايج بتضيع والـ batch بيكمل في الخلفية.
+   يوم = 2–3 صفحات ≈ 20–30 ث؛ 17 يوم ≈ 12–15 دقيقة. احفظ صفوف كل يوم في ملف DAYS.json أول بأول ({"YYYY-MM-DD": [[id,title,donations,amount],…]}، يوم من غير تبرعات = []).
+   متتنقلش بـ history.pushState/popstate: الصفحة بتعرض ردود متأخرة لـ URL قديم تحت الـ URL الجديد (شفنا صفحة 3 بـ 1000 صف). navigate (reload كامل) لكل صفحة.
+6. التحويل والإرسال من Bash (مش من الصفحة): python3 ~/.gadlytics/khzama_ingest.py DAYS.json   (--dry يطبع الملخص من غير إرسال)
+   السكريبت بيحوّل كل صف لـ {client_id:'3sa3k1k', date, link_id:String(id), title, camp_no, custom, creative_id, code, platform, product, rest, donations, amount}
+   بالـ regex: ^-?([A-Z]{2,4}-\d{3,6})-(?:([A-Za-z0-9_]+)-)?(\d{14}(?:~\d{14})*)-([A-Za-z]{2,3})-(.+)$  → camp, custom (= اسم الـ Ad Set، ممكن فيه أرقام زي CPA35 أو Mansour_1 أو TargetCPA50), creative (أول ID)، code، rest (product = أول كلمة).
+   لو مطابقش: camp من ^[A-Z]{2,4}-\d{3,6}، code من -(ME|TT|SC)- أو العنوان نفسه لو bio/com/DM، creative أول 14 رقم.
+   platform: ME→meta, TT→tiktok, SC→snap, GG→google، وأي كود تاني = نفسه (IG/FB/GD/bio/com/DM). روابط واتساب وغيرها بتتخزن بـ code/platform = null (زي ما كانت).
+   link_id = id الرابط في خزامى (نفس رقم /affiliateLinks/<id>). لو في يوم مظهرش id (مش متوقع): السكريبت بيستخدم 't:' + sha1(title)[:16] — وده مش هيطابق صفوف قديمة لنفس الرابط.
+   بيبعت كل يوم لـ ingest بـ x-ingest-key + Authorization Bearer anon، ومبيطبعش أي مفتاح. يوم فاضي مبيتبعتش.
+   ingest = upsert: إعادة إرسال يوم بتكتب فوق أرقامه، بس رابط كان متسجل ومبقاش موجود مش بيتمسح — لو حصل امسحه بـ execute_sql (delete … where client_id='3sa3k1k' and date=… and link_id=…).
+7. اتأكد بـ execute_sql: select date, count(*), sum(donations), sum(amount) from public.khzama_link_daily where client_id='3sa3k1k' and date between … group by 1 order by 1 — لازم يطابق ملخص السكريبت.
+8. اقفل التاب بتاعك (tabs_close_mcp).
 
 ## 3) ميكس بانل → mx_daily (سلوك الزوار على الموقع — مش بديل لخزامى)
 Mixpanel project 3769752 (Molabi)، أداة Run-Query (report_type "insights", chartType "line"). نفس الأيام (FROM = أول يوم، TO = النهارده).

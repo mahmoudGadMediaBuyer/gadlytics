@@ -19,10 +19,10 @@ execute_sql:
 
 ## 2) خزامى (Claude in Chrome)
 1. افتح تاب جديد على https://admin.molabi.sa/affiliateLinks (لو طلب تسجيل دخول: وقّف وبلّغ — متكتبش باسوردات).
-2. خد الهيدرز زي الخطوة 2 في ~/.gadlytics/daily_pull.md (متطبعهمش).
-3. XHR POST https://api.molabi.sa/api/AdminAffiliateLink/search بالبودي
-   {"Page":1,"PageSize":5000,"searchKey":"","fromDate":"<النهارده>T00:00:00.000Z","toDate":"<النهارده>T23:59:59.000Z","affiliateId":null}
-4. جوه الصفحة نفسها اجمع numberOfDonations و totalDonationAmount حسب الكود ورجّع JSON صغير بس (6 أرقام × 2):
+2. ⛔ متاخدش هيدرز/توكن ومتعملش XHR لـ api.molabi.sa (مصنّف الأمان بيوقفه). اقرا الصفحة زي daily_pull.md §2 بالظبط:
+   navigate لـ /affiliateLinks?fromDate=<النهارده>&toDate=<بكره>&size=1000&page=N (الـ 3 صفحات) + wait 7 + كود JS بتاع §2 خطوة 3.
+3. (اتشال — مفيش نداء API مباشر.)
+4. من الصفوف اللي رجعت ([id,title,donations,amount]) اجمع التبرعات والمبلغ حسب الكود (6 أرقام × 2):
    الكود = المجموعة الرابعة من ^-?([A-Z]{2,4}-\d{3,6})-(?:([A-Za-z]+)-)?(\d{14}(?:~\d{14})*)-([A-Za-z]{2,3})-(.+)$ ،
    ولو مطابقش: -(ME|TT|SC)- من العنوان، أو العنوان نفسه لو (بعد trim) bio أو com أو DM (case-insensitive، سجّله bio/com/DM).
    أي كود تاني يتجاهل (تبع أقسام تانية).
