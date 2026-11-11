@@ -48,6 +48,8 @@ The site **only displays data**. It never writes to or changes an ad account. Al
 29. [Connections, tokens, scheduled tasks — status and renewals](#29-connections-tokens-scheduled-tasks--status-and-renewals-nov-10-2026)
 30. [Rules learned the hard way](#30-rules-learned-the-hard-way-nov-8-10-2026)
 31. [Changelog](#31-changelog)
+32. [AI assistants API (instinct / MCP) — `gad-api`](#32-ai-assistants-api-instinct--mcp--gad-api-nov-10-2026)
+33. [iPhone / iPad widget (Scriptable)](#33-iphone--ipad-widget-scriptable-nov-11-2026)
 
 ---
 
@@ -819,7 +821,8 @@ The ✦ button (bottom-left) opens an assistant that reads your numbers from the
 | `tools/rebuild_entries.sql` | Rebuilds the daily report docs (platform metrics + Khzama orders and revenue) |
 | `supabase/functions/ai/` | The AI assistant function; calls the Claude API with the stored secret |
 | `supabase/functions/gad-api/` | Read-only API + MCP server for AI assistants (instinct, Claude, ChatGPT). See §32. |
-| `r.html` | Tiny page that turns a plain link into the `gad-api` report for browsing assistants (key in `#hash`). See §32. |
+| `r.html` | Tiny page that turns a plain link into the `gad-api` report for browsing assistants (key in `#hash`). See §32 (and the edit flow, §32.7). |
+| `widget/GADLYTICS.js` | iPhone / iPad home- and lock-screen widget for Scriptable (reads `gad-api`; pure ASCII). See §33. |
 | `skill/gadlytics/` | The Claude skill: how to run everything (runbooks + Mac scripts), so the work moves to another account or machine. No secrets in it. |
 
 **Deployed, but intentionally left out of this public repo:**
@@ -1208,6 +1211,7 @@ These tasks stop on a permission prompt when they hit a tool they haven't been a
 - **Every feature ships with phone (≤ 760), iPad (761–1180) and Mac (> 1180) layouts** and is tested at 390×844, 430×932, 375×667, 820×1180, 1024×1366, 1180×820, 1280, 1440, 1920. Same link on all devices; updates arrive by the build-id check, never by a cache.
 - **GitHub web upload silently drops files** if «Commit changes» is pressed before the upload finishes. Wait until `.js-upload-progress` is hidden **and** `form.js-manifest-commit-form input[name=manifest_id]` has a value, then set `input[name=message]` (dispatch `input`) and click that form's own «Commit changes». Use the Chrome profile signed in to GitHub (other profiles show «Uploads are disabled»). Verify every file afterwards by comparing `git hash-object <file>` with the blob SHA from `api.github.com/repos/mahmoudGadMediaBuyer/gadlytics/git/trees/main?recursive=1`.
 - **Tab suspender** extensions freeze background tabs mid-upload; keep the upload tab in front.
+- **Never copy UTF-8 text from the Mac to the iPhone through the clipboard** (Universal Clipboard / pasting into Scriptable): the widget's Arabic arrived as mojibake. Files meant to be pasted on the phone are kept **pure ASCII**, with every Arabic string written as `\uXXXX` escapes (§33.6).
 - **Several tasks at once:** when Mahmoud asks for several things together, they all run in the background in parallel; the chat continues on one of them.
 
 ## 31) Changelog
@@ -1229,10 +1233,13 @@ These tasks stop on a permission prompt when they hit a tool they haven't been a
 | Nov 10 | `camp-alerts` v2: spike / norev use each device's own thresholds from the التنبيهات screen (`push_subs.prefs` spikePct/spikeMin/norevWin/norevMin), grouped into profiles and sent only to that profile's devices; ROAS alarm = client `roasAlarm`; norev default window 30 min (same as the page). `push` v5: `Topic` = SHA-256(tag)[0..32] (Apple returned 400 BadWebPushTopic for tag `ready`). |
 | Nov 10 | `gad-api` v1 deployed (verify_jwt **on**): read-only REST + MCP for AI assistants, own SHA-256 key auth (`api_keys`), `r.html` link page for instinct; tested against 2026-05-20 (spend 190,866.44 · donations 2,122 · revenue 387,894 · ROAS 2.03). §32. |
 | Nov 10 | Edits from instinct: `gad-api` v2 (1.1.0) `GET /edit/preview` + `POST /edit/apply`, new key scope `edit` (`make_api_key.py --edit`, `api_keys` check constraint + `ingest` v13), `camp-apply` v4 accepts the service role with a queued `campchg` docId, `r.html` edit mode (preview card → «تأكيد التعديل»). Tested on paused Snap MG-01380: 200→210→200 SAR, status stayed PAUSED. §32.7. |
+| Nov 11 | iPhone / iPad home-screen widget (Scriptable) `widget/GADLYTICS.js`: today's / yesterday's spend · donations · revenue · ROAS from `gad-api` `/summary`, per client and per platform (widget Parameter), small / medium / large + lock-screen widgets, «تحديث» button = `POST /refresh` then redraw. Key `make_api_key.py widget --refresh` in the iOS Keychain; file is pure ASCII (Arabic as `\u` escapes) after clipboard mojibake. §33. |
 
 ## 32) AI assistants API (instinct / MCP) — `gad-api` (Nov 10 2026)
 
 One **read-only** edge function that lets an AI assistant (instinct, Claude, ChatGPT custom actions, any MCP client) read GADLYTICS the same way «أداء الحملات» shows it. Source: `supabase/functions/gad-api/index.ts`. Deployed as `gad-api` v1 with **verify_jwt on**.
+
+> **Not only read-only any more:** since v2 (1.1.0) a key with the `edit` scope can change one budget / bid / on-off through the `r.html` edit flow — the link only previews, and nothing changes until «تأكيد التعديل» is clicked (§32.7). Everything else stays read-only. The iPhone / iPad widget (§33) is another client of this API (`/summary` + `POST /refresh`).
 
 Base URL: `https://ibpwudzjwjraqhfdmzet.supabase.co/functions/v1/gad-api`
 
@@ -1388,3 +1395,78 @@ https://mahmoudgadmediabuyer.github.io/gadlytics/r.html#key=<KEY>&client=3sa3k1k
 - `camp-apply` v4: besides a signed-in user it accepts the project's service-role key (server to server) — then a queued `docId` is required, and the doc's `by` is used in the change log (`api:<key name> · أداء الحملات`).
 
 **Test (Nov 10 2026, temporary keys `claude-edit-tmp` + `claude-read-tmp`, both revoked afterwards):** paused Snap CBO campaign MG-01380 (account 828aa8bb, SAR): 200 → 210 via `r.html` (preview card → «تأكيد التعديل»), read back 210 and Snap showed `daily_budget_micro` 210,000,000 + `PAUSED`; restored 210 → 200 via the API, Snap 200,000,000 + `PAUSED`. `camp-apply` 3.5–4.5 s, apply round trip ≈ 8 s, preview 1–2.7 s warm (5.4 s cold). Duplicate within 15 s → 409; replayed token → 409; read key → 403; no key / `?key=` only → 401; tampered token → 400; expired token → 410. Push delivered to both devices. One extra edit happened by mistake during the expiry test (a token that was still valid): paused Snap ad set of YA-0013 (USD account `961fd033-…`) 187.50 → 195 SAR (50 → 52 USD) and straight back to 187.50 (read back 187.50 both times in `camp_struct`); its platform status could not be cross-checked with the Snap MCP (that account is outside the MCP's organisation), but the Snap path only re-sends the object with the new `daily_budget_micro`.
+
+## 33) iPhone / iPad widget (Scriptable) (Nov 11 2026)
+
+A home-screen and lock-screen widget that shows the headline numbers of «أداء الحملات» without opening the app. It is a [Scriptable](https://scriptable.app) script: `widget/GADLYTICS.js` (≈11.5 KB). It only reads `gad-api` (§32) and, when the «تحديث» button is tapped, asks `gad-api` to pull today's spend. It never edits a campaign.
+
+### 33.1 What it shows
+
+| Size | Content | Tap |
+|---|---|---|
+| **Small** | Client · platform · period, الصرف (big), the ROAS verdict pill (زوّد / كويس / راقب / إنذار) and الروز | Anywhere = refresh (a small widget has only one tap target) |
+| **Medium** | «تحديث» button + `GADLYTICS · <client> · <platform> · النهارده/امبارح`, then الروز · الإيراد · التبرعات (ديمان: الطلبات) · الصرف, and a footer with «آخر تحديث h:mm» and each platform's ROAS (coloured when راقب / إنذار) | «تحديث» = refresh; anywhere else opens GADLYTICS at «أداء الحملات» (`#campperf`) |
+| **Large** | Medium + a second row: تكلفة التبرع · متوسط التبرع · الميزانية · الحملات | Same as medium |
+| **Lock screen** — rectangular | Client line, ROAS + spend, «اضغط للتحديث · h:mm» | Refresh |
+| **Lock screen** — inline / circular | Spend + ROAS (circular: ROAS over spend) | Refresh |
+
+Numbers follow the site's rules: spend from the ad platforms, donations / orders and revenue from Khzama (ملبي) or AppsFlyer + Salla (ديمان), ROAS colours from the client's own rules (`roas_rules`: ملبي 2.0 / 2.1 / 2.8). SAR, Asia/Riyadh. When one platform is chosen, the per-platform footer is hidden.
+
+### 33.2 Install (what Mahmoud did, Nov 11 2026)
+
+1. Install **Scriptable** from the App Store (free).
+2. In Scriptable: **+** → new script, rename it exactly **`GADLYTICS`**, paste the whole content of `widget/GADLYTICS.js`. (The refresh links run the script by its own name — `Script.name()` — so another name also works, but keep `GADLYTICS` so all widgets point at the same script.)
+3. On the Mac, make the key: `python3 ~/.gadlytics/make_api_key.py widget --refresh` (printed once and copied). Run the script once inside Scriptable (▶) — it asks «مفتاح GADLYTICS»; paste the `gad_…` key and tap «حفظ». A medium preview appears.
+4. Home screen → long-press → **+** → Scriptable → **Medium** → Add Widget. Long-press it → **Edit Widget**: Script = `GADLYTICS`, **When Interacting = Run Script**, **Parameter** = see 33.3.
+5. One widget per view (total, ميتا, تيك توك, سناب, ديمان…). They can be stacked on top of each other in a **Smart Stack** and swiped through.
+
+The same steps work on the iPad (the key is per device: each device's Keychain holds its own copy).
+
+### 33.3 Widget Parameter
+
+| Parameter | Shows |
+|---|---|
+| *(empty)* | ملبي, all platforms, today |
+| `meta` (or `ميتا` / `facebook`) | Meta only — `/summary?platform=meta` |
+| `tiktok` (or `تيك توك`) | TikTok only |
+| `snap` (or `سناب`) | Snapchat only |
+| `ديمان` (or `deiman`) | The ديمان client (`dm1n4an`); the orders tile is labelled الطلبات |
+| `yesterday` (or `امبارح`) | Yesterday's numbers instead of today's |
+
+Words can be combined with a comma or a space: `ديمان,yesterday`, `meta yesterday`, `ديمان snap`. Anything not recognised is ignored (default client ملبي `3sa3k1k`, period `today`).
+
+### 33.4 How refreshing works — and its limits
+
+- **Automatic redraw:** the widget asks iOS to redraw it after 15 minutes (`refreshAfterDate`). **iOS decides the real timing** (it can be much later, especially in Low Power Mode or for a widget that is rarely looked at). An automatic redraw only **reads the numbers already stored** (`GET /summary`) — it never pulls from the platforms.
+- **«تحديث» button (or a tap on small / lock-screen widgets):** opens Scriptable with `scriptable:///run/GADLYTICS?refresh=1&client=…&period=…[&platform=…]`. The script calls `POST /refresh {client}` — the same as «تحديث الأرقام» on the site (`camp-refresh`: **today's** spend and status from **Meta + Snapchat**), then reads `/summary` again and shows the result with «اتحدّث h:mm ✓». If the refresh fails, the error is shown in the footer instead and the stored numbers are still drawn.
+- **TikTok spend is not in `camp-refresh` yet** (the TikTok Marketing API app is waiting for approval), so TikTok spend changes only with the daily pull / scheduled tasks.
+- **Khzama donations and revenue come only from the Khzama pull** (scheduled task / daily pull), not from the button — right after a refresh, spend can be newer than donations, so ROAS can look low for a few minutes.
+- `/refresh` is limited to once a minute per key and client; a second tap within a minute shows the API's message.
+- `period=yesterday` with the button still refreshes **today's** spend on the server (that is all `camp-refresh` does); yesterday's numbers are final from the daily pull.
+
+### 33.5 The key
+
+- Made with `python3 ~/.gadlytics/make_api_key.py widget --refresh` → scopes **read + refresh**. It **cannot edit** anything (no `edit` scope). Making it again with the same name replaces the old one (every device then needs the new key).
+- Stored only in the **iOS Keychain** (`Keychain` key `gadlytics_api_key`), never in the script file, so the file can be shared or committed safely.
+- The script sends it in the `x-api-key` header (never in a URL). The **anon key** is not in the file either: on every run it is read from the site's public `config.js` (`supabaseAnonKey`) and cached in the Keychain (`gadlytics_anon`) for offline runs.
+- Revoke: `python3 ~/.gadlytics/revoke_api_key.py widget` (stops working within 30 s on every device).
+
+### 33.6 Lesson: the file is pure ASCII on purpose
+
+The first version was copied from the Mac to the iPhone through the clipboard and every Arabic word arrived as **mojibake** (UTF-8 read as another encoding). `GADLYTICS.js` is therefore **pure ASCII**: every Arabic string is written as `\uXXXX` escapes (e.g. `"تحديث"` = «تحديث»), and JavaScript turns them back into Arabic at run time. When editing the widget:
+
+- Write new Arabic text as `\u` escapes, never as raw Arabic letters (also inside regular expressions and comments).
+- Check before publishing: `perl -ne 'print if /[^\x00-\x7F]/' widget/GADLYTICS.js` must print nothing.
+- Escaping a whole file: `python3 -c "import sys;s=open(sys.argv[1],encoding='utf-8').read();open(sys.argv[1],'w').write(s.encode('ascii','backslashreplace').decode())" widget/GADLYTICS.js` (safe because Arabic only appears in string literals, regexes and comments; avoid emoji — Python writes them as `\U0001…`, which JavaScript does not read — use `\uD83D\uDD14`-style surrogate pairs instead).
+
+### 33.7 Troubleshooting
+
+| What you see | Why / fix |
+|---|---|
+| «محتاج مفتاح — اضغط هنا» | No key in this device's Keychain, or the key was revoked / replaced. **Tap the widget** → Scriptable opens and asks for the key → paste a key from `make_api_key.py widget --refresh` → «حفظ». |
+| «المفتاح غلط أو اتلغى — الصق مفتاح جديد» (inside Scriptable) | The API answered 401. Paste the current key; if lost, run `make_api_key.py widget --refresh` again (replaces the old one). |
+| «مش قادر أوصل للسيستم — اتأكد من النت» | No internet and no cached anon key yet. Open the script once while online. |
+| Numbers look old | iOS has not redrawn the widget yet — tap «تحديث». Donations wait for the Khzama pull (33.4). |
+| Tapping does nothing / opens Scriptable without refreshing | Edit Widget → When Interacting must be **Run Script**, and the script name must match. |
+| Arabic shows as strange Latin characters | The file was pasted with raw Arabic in it — paste the ASCII version from the repo again (33.6). |
+| Remove access from a lost phone | `python3 ~/.gadlytics/revoke_api_key.py widget`, then make a new key for the other devices. |
