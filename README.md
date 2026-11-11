@@ -50,6 +50,7 @@ The site **only displays data**. It never writes to or changes an ad account. Al
 31. [Changelog](#31-changelog)
 32. [AI assistants API (instinct / MCP) — `gad-api`](#32-ai-assistants-api-instinct--mcp--gad-api-nov-10-2026)
 33. [iPhone / iPad widget (Scriptable)](#33-iphone--ipad-widget-scriptable-nov-11-2026)
+34. [Khzama live sync (Chrome extension)](#34-khzama-live-sync-chrome-extension-nov-11-2026)
 
 ---
 
@@ -150,7 +151,7 @@ A video with two influencers shows both names in a fixed order, for example «أ
 A scheduled task in the Claude desktop app, **"GADLYTICS — daily pull for Molabi"**, runs every day at **08:30** and:
 
 1. Pulls the **last 3 days** from every platform account, per ad and per video, day by day. Re-pulling three days lets late-arriving conversions settle.
-2. Pulls the Khzama link totals for the same days.
+2. Pulls the Khzama link totals for the same days (read from the screen of `admin.molabi.sa/affiliateLinks`, then `~/.gadlytics/khzama_ingest.py`; see §34). Today is kept live by the Chrome extension in §34, so this step only checks `sys/khzama_live` and backfills gaps.
 3. Rebuilds the daily report docs: platform metrics plus Khzama orders and revenue.
 
 **Requirements:**
@@ -1234,6 +1235,7 @@ These tasks stop on a permission prompt when they hit a tool they haven't been a
 | Nov 10 | `gad-api` v1 deployed (verify_jwt **on**): read-only REST + MCP for AI assistants, own SHA-256 key auth (`api_keys`), `r.html` link page for instinct; tested against 2026-05-20 (spend 190,866.44 · donations 2,122 · revenue 387,894 · ROAS 2.03). §32. |
 | Nov 10 | Edits from instinct: `gad-api` v2 (1.1.0) `GET /edit/preview` + `POST /edit/apply`, new key scope `edit` (`make_api_key.py --edit`, `api_keys` check constraint + `ingest` v13), `camp-apply` v4 accepts the service role with a queued `campchg` docId, `r.html` edit mode (preview card → «تأكيد التعديل»). Tested on paused Snap MG-01380: 200→210→200 SAR, status stayed PAUSED. §32.7. |
 | Nov 11 | iPhone / iPad home-screen widget (Scriptable) `widget/GADLYTICS.js`: today's / yesterday's spend · donations · revenue · ROAS from `gad-api` `/summary`, per client and per platform (widget Parameter), small / medium / large + lock-screen widgets, «تحديث» button = `POST /refresh` then redraw. Key `make_api_key.py widget --refresh` in the iOS Keychain; file is pure ASCII (Arabic as `\u` escapes) after clipboard mojibake. §33. |
+| Nov 11 | Khzama live sync: Chrome extension `khzama-live/` (every 2 min, today's Khzama links → `gad-api` `POST /khzama/push`, full snapshot of the day, 50 % guard, login/error push notifications, heartbeat `sys/khzama_live` → `/summary` `data_freshness.orders.khzama_live`). `gad-api` v3 / 1.2.0, new key scope `khzama` (`make_api_key.py --khzama`; a khzama key can't read, a read key can't push), `ingest` v14 accepts `["khzama"]`. Khzama pull = screen read of `affiliateLinks` React props + `khzama_ingest.py`. |
 
 ## 32) AI assistants API (instinct / MCP) — `gad-api` (Nov 10 2026)
 
@@ -1470,3 +1472,40 @@ The first version was copied from the Mac to the iPhone through the clipboard an
 | Tapping does nothing / opens Scriptable without refreshing | Edit Widget → When Interacting must be **Run Script**, and the script name must match. |
 | Arabic shows as strange Latin characters | The file was pasted with raw Arabic in it — paste the ASCII version from the repo again (33.6). |
 | Remove access from a lost phone | `python3 ~/.gadlytics/revoke_api_key.py widget`, then make a new key for the other devices. |
+
+---
+
+## 34) Khzama live sync (Chrome extension) (Nov 11 2026)
+
+ملبي's donations and revenue come from Khzama only, and Khzama has no API we may call. Until Nov 11 they arrived once a day (the 08:30 pull) or when «تحديث الأرقام» queued the Khzama part. Now a small Chrome extension in Mahmoud's own Chrome keeps **today** live, every ~2 minutes.
+
+### 34.1 How Khzama is read (the UI method)
+
+- Page: `https://admin.molabi.sa/affiliateLinks?fromDate=D&toDate=D+1&size=1000&page=N` — `toDate` is exclusive (one day = D → D+1), dates are Riyadh. The list always shows every link (~2,435 → pages 1–3 of 1000); the date filter only changes the numbers.
+- Each page gets a **full reload**; then the rows the page already loaded are read from the props of the table's React component (`memoizedProps.data` of the fiber that has `data` + `columns`) — memory only. Nothing else is touched: no network request, no cookies, localStorage, sessionStorage, tokens or headers, and no password is ever typed.
+- A page counts only when the two date inputs (`DD/MM/YYYY, 03:00`) equal D and D+1, the table's `pagination.page` equals N, and the row count is 1000 / 1000 / the rest (`pagination.rows` = total links). Page id sums must differ (a stale page from an earlier URL is rejected). The «المجموع» row (`id: customRow`) is dropped.
+- Rows kept: links with donations > 0 or amount > 0 → `[id, title, numberOfDonations, totalDonationAmount]`.
+- From Claude in Chrome the same reader is pasted with `javascript_tool` (runbook `daily_pull.md` §2), and the rows go to **`~/.gadlytics/khzama_ingest.py DAYS.json`** (copy in `skill/gadlytics/scripts/`), which parses the titles and sends them through `ingest`.
+
+### 34.2 The extension (`khzama-live/`)
+
+| File | Job |
+|---|---|
+| `manifest.json` | MV3, «GADLYTICS · خزامى لحظي». Permissions `alarms` `tabs` `scripting` `storage`; hosts `admin.molabi.sa`, the Supabase project, `mahmoudgadmediabuyer.github.io`. |
+| `background.js` | Service worker. Alarm every 2 min; keeps **one pinned tab of its own** on Khzama (re-created if closed, not auto-discarded). Loads today's pages with full reloads, runs `readKhzama` with `chrome.scripting.executeScript({world:'MAIN'})`, and only when every page validated sends `POST /khzama/push {date, complete:true, rows}`. 00:00–00:20 Riyadh: also a final pass for yesterday. Login page → `POST /khzama/status login_required`, then waits (checks every 10 min). Errors → backoff 0/2/6/14/16 min; after 3 in a row → `status error`. |
+| `reader.js` | `readKhzama()` — the page reader above (the exact function that was tested on the live page). |
+| `popup.html/js` | Status, today's totals as stored on the server, «سحب دلوقتي», on/off switch. |
+| `options.html/js` | Paste the key (password field, «حفظ») + the same status box (last success, today's totals, last error). |
+| `status.js`, `style.css` | Shared status box; Arabic RTL, no letter-spacing. |
+| `key.local.json` | **Git-ignored, never uploaded.** `{"key": "gad_…"}` — read once on first run into `chrome.storage.local`; can be deleted afterwards. |
+
+Keys: the public anon key is read from the site's `config.js`; the API key is a **khzama-scope** key: `python3 ~/.gadlytics/make_api_key.py khzama-live --khzama`. It can only call `/khzama/push` and `/khzama/status` (403 everywhere else), and read/refresh/edit keys get 403 on the Khzama routes.
+
+Install (once): `chrome://extensions` → Developer mode → Load unpacked → `gadlytics-site/khzama-live`. Chrome must stay open and signed in to Khzama. Badge: none = OK · `!` = errors · `دخول` = Khzama needs a login · `off` = switched off.
+
+### 34.3 Server side (`gad-api` v3 / 1.2.0)
+
+- `POST /khzama/push` — scope `khzama`. Body `{date: today | yesterday (Riyadh), complete: true, rows: [{link_id, title, donations, amount}]}`. The server parses each title exactly like `khzama_ingest.py` (regex `^-?([A-Z]{2,4}-\d{3,6})-(?:([A-Za-z0-9_]+)-)?(\d{14}(?:~\d{14})*)-([A-Za-z]{2,3})-(.+)$` and the same fallbacks; ME→meta, TT→tiktok, SC→snap, GG→google, WhatsApp/other links null) — the parsing lives in one place. Upsert with `pulled_at = now`; `complete: true` deletes that day's links missing from the push (a full snapshot). **Guard:** refused (409 `guard`, nothing changes) when the pushed donations are < 50 % of what is stored for that day, unless stored < 5 — protects against a half-loaded page. 1 push / 30 s per key (429). Returns `before`, `stored`, `deleted`, `unchanged`.
+- `POST /khzama/status` — scope `khzama`. `{state: ok | login_required | error, detail}`. login_required / error send **one** phone notification («خزامى محتاج تسجيل دخول — السحب اللحظي واقف» or the error) via `push`, at most once per state per 2 h.
+- Heartbeat: `docs` `sys/khzama_live` (`last_ok_at`, `last_state`, `last_detail`, `rows`, `totals` for today, `days`, `notified`). `/summary` shows it as `data_freshness.orders.khzama_live` (`last_ok_at`, `minutes_ago`, `state`, `today`).
+- Tested Nov 11 2026: 401 without a key; khzama key → 403 on `/summary`, `/mcp`, `/edit/preview`, `/report?key=`; read key → 403 on `/khzama/push`; re-push of 2026-11-10 (1 link, 1 donation, 100 SAR) → `unchanged: true`; second push within 30 s → 429; empty push over a 10-donation day → 409 guard; date outside today/yesterday → 400.

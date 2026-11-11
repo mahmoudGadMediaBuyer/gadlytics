@@ -4,3 +4,4 @@
 secrets/
 supabase/functions/media-sync/
 supabase/functions/ingest/
+khzama-live/key.local.json
