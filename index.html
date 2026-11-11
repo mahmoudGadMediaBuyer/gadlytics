@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="gad-build" content="20261111122140">
+<meta name="gad-build" content="20261111123513">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -16,7 +16,7 @@
 <script>
 /* تحديث تلقائي للتطبيق على الموبايل/الآيباد: مفيش service worker ولا كاش. كل ما التطبيق يتفتح أو يرجع للواجهة
    بيجيب index.html جديد (no-store) ويقارن رقم البيلد؛ لو فيه نسخة أحدث بيفتحها على طول. */
-(function(){ var B="20261111122140", last=0;
+(function(){ var B="20261111123513", last=0;
   function busy(){ return document.querySelector("#cpIn:focus, .ma-sheet, input:focus, textarea:focus"); }
   function chk(){ var n=Date.now(); if(n-last<20000) return; last=n; if(busy()) return;
     fetch(location.pathname+"?_b="+n,{cache:"no-store"}).then(function(r){ return r.ok? r.text() : ""; }).then(function(t){
@@ -1172,10 +1172,10 @@ html[data-theme="dark"]:not([data-skin]) .btn-p{background:linear-gradient(180de
 html[data-theme="dark"]:not([data-skin]) .btn-p:hover{background:linear-gradient(180deg,#908CFF,#6B66F7);filter:none}
 html[data-theme="dark"]:not([data-skin]) .btn-d{color:var(--bad);border-color:rgba(255,107,107,.35)}
 html[data-theme="dark"]:not([data-skin]) .btn[disabled],html[data-theme="dark"]:not([data-skin]) .btn:disabled{opacity:.55}
-html[data-theme="dark"]:not([data-skin]) .sel,html[data-theme="dark"]:not([data-skin]) .inp,html[data-theme="dark"]:not([data-skin]) textarea.inp{background-color:#0B1028;border-color:var(--line-2);color:var(--ink)}
-html[data-theme="dark"]:not([data-skin]) .sel:focus,html[data-theme="dark"]:not([data-skin]) .inp:focus{border-color:rgba(124,120,255,.6);box-shadow:0 0 0 4px rgba(124,120,255,.16)}
-html[data-theme="dark"]:not([data-skin]) .sel option{background:#10152D;color:var(--ink)}
-html[data-theme="dark"]:not([data-skin]) .sel{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239CA2CC' stroke-width='2.5'><path d='M6 9l6 6 6-6'/></svg>")}
+html[data-theme="dark"]:not([data-skin]) select.sel,html[data-theme="dark"]:not([data-skin]) .inp,html[data-theme="dark"]:not([data-skin]) textarea.inp{background-color:#0B1028;border-color:var(--line-2);color:var(--ink)}
+html[data-theme="dark"]:not([data-skin]) select.sel:focus,html[data-theme="dark"]:not([data-skin]) .inp:focus{border-color:rgba(124,120,255,.6);box-shadow:0 0 0 4px rgba(124,120,255,.16)}
+html[data-theme="dark"]:not([data-skin]) select.sel option{background:#10152D;color:var(--ink)}
+html[data-theme="dark"]:not([data-skin]) select.sel{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239CA2CC' stroke-width='2.5'><path d='M6 9l6 6 6-6'/></svg>")}
 html[data-theme="dark"]:not([data-skin]) .inp::placeholder,html[data-theme="dark"]:not([data-skin]) textarea::placeholder{color:var(--ink-3)}
 html[data-theme="dark"]:not([data-skin]) .chip{background:rgba(255,255,255,.03);border-color:var(--line-2);color:var(--ink-2)}
 html[data-theme="dark"]:not([data-skin]) .chip.on{background:rgba(124,120,255,.18);border-color:rgba(124,120,255,.4);color:#D9D8FF}
@@ -1230,6 +1230,7 @@ html[data-theme="dark"]:not([data-skin]) .toast-act button{background:rgba(124,1
 html[data-theme="dark"]:not([data-skin]) .toast-act button.x{background:transparent;color:var(--ink-3)}
 
 /* ── تطبيق الموبايل/الآيباد (نفس الهيكل؛ الألوان من التوكنز) ── */
+html[data-theme="dark"]:not([data-skin]) .ma-row.sel{background:rgba(124,120,255,.12)}
 html[data-theme="dark"]:not([data-skin]) .ma-k,html[data-theme="dark"]:not([data-skin]) .ma-strip,html[data-theme="dark"]:not([data-skin]) .ma-list,html[data-theme="dark"]:not([data-skin]) .ma-mc,html[data-theme="dark"]:not([data-skin]) .ma-card{border:1px solid var(--line);background:var(--bm-card)}
 html[data-theme="dark"]:not([data-skin]) .ma-nb{background:#090C1C}
 html[data-theme="dark"]:not([data-skin]) .ma.ma-sc .ma-nb,html[data-theme="dark"]:not([data-skin]) .ma-nb-d{background:rgba(9,12,28,.85)}
@@ -1258,6 +1259,18 @@ html[data-theme="dark"]:not([data-skin]) .ma-sheet{background:#0F1430;border-top
 @keyframes bmShim{to{transform:translateX(-100%)}}
 @media (max-width:760px){.bm-skel .bm-row{grid-template-columns:repeat(2,minmax(0,1fr))}.bm-skel .bm-c.big{height:220px}}
 @media (prefers-reduced-motion:reduce){.bm-skel .bm-c::after,.bm-sk::after{animation:none}*{scroll-behavior:auto!important}}
+
+/* «تحديث السيستم» على الموبايل: النص كان بيتعصر في عمود كلمة كلمة جنب الزرارين — دلوقتي بيلف تحتهم */
+.rf-top>div:first-child{flex:1 1 260px;min-width:0}
+/* شاشة الدخول (supa-db.js) بشكل Bramble — قبل كده الحقول كانت بتطلع غامقة جوه كارت أبيض */
+html[data-theme="dark"]:not([data-skin]) #gad-login{background:radial-gradient(60% 55% at 50% 100%,rgba(108,92,255,.26),transparent 75%),#090C1C;font-family:var(--f-ui)}
+html[data-theme="dark"]:not([data-skin]) #gad-login form{background:var(--bm-card);border:1px solid var(--line);border-radius:16px;color:var(--ink);box-shadow:0 30px 60px -20px rgba(0,0,0,.85)}
+html[data-theme="dark"]:not([data-skin]) #gad-login h1{color:var(--ink)}
+html[data-theme="dark"]:not([data-skin]) #gad-login p{color:var(--ink-3)}
+html[data-theme="dark"]:not([data-skin]) #gad-login input{background:#0B1028;border-color:var(--line-2);color:var(--ink)}
+html[data-theme="dark"]:not([data-skin]) #gad-login input::placeholder{color:var(--ink-3)}
+html[data-theme="dark"]:not([data-skin]) #gad-login button{background:linear-gradient(180deg,#8682FF,#625DF5);border-radius:999px;box-shadow:0 8px 20px -10px rgba(124,120,255,.9)}
+html[data-theme="dark"]:not([data-skin]) #gad-login .err{color:var(--bad)}
 </style>
 <script>/* Bramble: الغامق افتراضي من أول لحظة (قبل ما الإعدادات تتحمّل) */try{document.documentElement.dataset.theme=localStorage.getItem("gad.theme")==="light"?"light":"dark";}catch(e){document.documentElement.dataset.theme="dark";}</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" async crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -15374,19 +15387,22 @@ function bmCount(G,el){
   const dec=m[1]?m[1].length-1:0, grp=raw.indexOf(",")>=0, pre=txt.slice(0,m.index), post=txt.slice(m.index+raw.length);
   const fmt=v=>{ const s=Math.abs(v).toFixed(dec); const [a,b]=s.split("."); const ai=grp? a.replace(/\B(?=(\d{3})+(?!\d))/g,",") : a; return (v<0?"-":"")+ai+(b?"."+b:""); };
   const o={v:0}; node.nodeValue=pre+fmt(0)+post;
-  G.to(o,{v:to,duration:1.1,ease:"power3.out",onUpdate:()=>{ node.nodeValue=pre+fmt(o.v)+post; },onComplete:()=>{ node.nodeValue=txt; }});
+  return G.to(o,{v:to,duration:1.1,ease:"power3.out",onUpdate:()=>{ node.nodeValue=pre+fmt(o.v)+post; },onComplete:()=>{ node.nodeValue=txt; }});
 }
 function bmMotion(){
   if(!BOOTED) return; const v=$("#view"); if(!v) return;
   const key=S.view+"|"+(S.ws||"")+"|"+(S.view==="admin"?S.setupTab:"")+"|"+(maOn()?1:0);
   if(key===BM.key) return; BM.key=key;
-  const G=bmG(); if(!G||BM.rm) return;
+  const G=bmG(); if(!G||BM.rm||document.hidden) return;
+  const tw=[], add=t=>{ if(t) tw.push(t); return t; };
+  /* أمان: لو المتصفح وقّف الـ animation frames (تاب في الخلفية/توفير بطارية) كل حاجة بتوصل لحالتها النهائية بعد 2.5 ث — الرقم عمره ما يفضل صفر */
+  setTimeout(()=>{ tw.forEach(t=>{ try{ t.progress(1); }catch(e){} }); },2500);
   try{
     const cards=[...v.querySelectorAll(".card,.pm-kpis,.ma-k,.ma-list,.ma-strip")].filter(e=>e.getBoundingClientRect().top<innerHeight+200).slice(0,24);
-    if(cards.length) G.fromTo(cards,{opacity:0,y:10},{opacity:1,y:0,duration:.45,stagger:.025,ease:"power2.out",clearProps:"opacity,transform"});
-    v.querySelectorAll(".pm-kv .num,.kpi-v,.ma-k b,.tv-stat b,.ma-strip b").forEach(el=>bmCount(G,el));
-    v.querySelectorAll(".ch-p svg").forEach((s,i)=>{ G.fromTo(s,{clipPath:"inset(0 100% 0 0)"},{clipPath:"inset(0 0% 0 0)",duration:1.2,delay:.1+i*.06,ease:"power2.out",clearProps:"clipPath"}); });
-    v.querySelectorAll(".pm-bar i,.an-bar i,.an-share i").forEach(b=>G.fromTo(b,{scaleX:0},{scaleX:1,duration:.9,ease:"power3.out",transformOrigin:(document.documentElement.dir==="rtl"?"right":"left")+" center",clearProps:"transform"}));
+    if(cards.length) add(G.fromTo(cards,{opacity:0,y:10},{opacity:1,y:0,duration:.45,stagger:.025,ease:"power2.out",clearProps:"opacity,transform"}));
+    v.querySelectorAll(".pm-kv .num,.kpi-v,.ma-k b,.tv-stat b,.ma-strip b").forEach(el=>add(bmCount(G,el)));
+    v.querySelectorAll(".ch-p svg").forEach((s,i)=>{ add(G.fromTo(s,{clipPath:"inset(0 100% 0 0)"},{clipPath:"inset(0 0% 0 0)",duration:1.2,delay:.1+i*.06,ease:"power2.out",clearProps:"clipPath"})); });
+    v.querySelectorAll(".pm-bar i,.an-bar i,.an-share i").forEach(b=>add(G.fromTo(b,{scaleX:0},{scaleX:1,duration:.9,ease:"power3.out",transformOrigin:(document.documentElement.dir==="rtl"?"right":"left")+" center",clearProps:"transform"})));
   }catch(e){}
 }
 
