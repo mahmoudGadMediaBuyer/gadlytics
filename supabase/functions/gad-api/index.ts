@@ -19,10 +19,16 @@
 // Business logic mirrors the site's «أداء الحملات» page (cpRange / cpBuild / cpModel / cpKpis / cpVerdict) exactly:
 //   spend = ad_daily (platforms) · donations + revenue = khzama_link_daily (ملبي) or conv_daily (ديمان) — never platform purchases ·
 //   Smart+ = one ad (a multi-video link is never split across videos) · verdicts from config/app roasGood / roasMin / roasAlarm.
+// Khzama live (scope khzama ONLY — such a key is refused everywhere else, and read keys are refused here): the Chrome extension
+// gadlytics-site/khzama-live reads admin.molabi.sa/affiliateLinks every ~2 min and sends POST /khzama/push {date, complete, rows}
+// (today or yesterday, Riyadh). The title → camp/custom/creative/code/platform parsing lives HERE (same as khzama_ingest.py);
+// complete=true makes it a full snapshot of that day (links not in the push are deleted). Guard: a push whose donations are
+// < 50% of what's stored is refused (unless stored < 5). 1 push / 30 s per key. POST /khzama/status {state, detail} →
+// login_required / error push ONE notification per state per 2 h. Heartbeat: docs sys/khzama_live (→ /summary data_freshness).
 // Dates are Asia/Riyadh, money is SAR. Only /edit/apply writes to the ad platforms (through camp-apply); no key or token is ever logged or echoed.
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-const VERSION = "1.1.0";
+const VERSION = "1.2.0";
 const env = (k: string) => Deno.env.get(k) || "";
 const SB_URL = env("SUPABASE_URL"), SRK = env("SUPABASE_SERVICE_ROLE_KEY");
 const BASE = SB_URL + "/functions/v1/gad-api";
@@ -323,16 +329,20 @@ function thOut(m: any) {
 }
 async function freshness(cid: string, conv: boolean, struct: any[]) {
   const one = (t: string, col: string, extra?: (q: any) => any) => { let q = sb.from(t).select(col).eq("client_id", cid); if (extra) q = extra(q); return q.order(col, { ascending: false }).limit(1).maybeSingle(); };
-  const [adP, adD, kzP, kzD, req] = await Promise.all([
+  const [adP, adD, kzP, kzD, req, live] = await Promise.all([
     one("ad_daily", "pulled_at"), one("ad_daily", "date"),
     one(conv ? "conv_daily" : "khzama_link_daily", "pulled_at"), one(conv ? "conv_daily" : "khzama_link_daily", "date"),
-    sb.from("docs").select("data,updated_at").eq("path", "sys/campreq").maybeSingle()]);
+    sb.from("docs").select("data,updated_at").eq("path", "sys/campreq").maybeSingle(),
+    conv ? Promise.resolve({ data: null }) : sb.from("docs").select("data").eq("path", "sys/khzama_live").maybeSingle()]);
+  const kl: any = (live as any).data?.data;
   const stMax = struct.reduce((mx, x) => (x.updated_at && x.updated_at > mx ? x.updated_at : mx), "");
   const age = (t: string | null | undefined) => t ? Math.round((Date.now() - Date.parse(t)) / 60e3) : null;
   const rq: any = req.data?.data;
   return {
     spend: { source_ar: "المنصات (ad_daily)", source_en: "ad platforms (ad_daily)", last_pull: rTime(adP.data?.pulled_at), minutes_ago: age(adP.data?.pulled_at), latest_day: adD.data?.date || null },
-    orders: { source_ar: conv ? "AppsFlyer + سلة (conv_daily)" : "خزامى (khzama_link_daily)", source_en: conv ? "AppsFlyer + Salla (conv_daily)" : "Khzama (khzama_link_daily)", last_pull: rTime(kzP.data?.pulled_at), minutes_ago: age(kzP.data?.pulled_at), latest_day: kzD.data?.date || null },
+    orders: { source_ar: conv ? "AppsFlyer + سلة (conv_daily)" : "خزامى (khzama_link_daily)", source_en: conv ? "AppsFlyer + Salla (conv_daily)" : "Khzama (khzama_link_daily)", last_pull: rTime(kzP.data?.pulled_at), minutes_ago: age(kzP.data?.pulled_at), latest_day: kzD.data?.date || null,
+      ...(conv ? {} : { khzama_live: kl ? { source_ar: "إضافة كروم «خزامى لحظي» (كل ~2 دقيقة)", source_en: "Chrome extension «khzama-live» (every ~2 min)", last_ok_at: rTime(kl.last_ok_at), minutes_ago: age(kl.last_ok_at ? new Date(kl.last_ok_at).toISOString() : null),
+        state: kl.last_state || null, state_at: rTime(kl.last_state_at), detail: kl.last_state === "ok" ? undefined : (kl.last_detail || undefined), today: kl.totals || null } : null }) },
     status_budgets: { source_ar: "camp_struct", source_en: "camp_struct", last_update: rTime(stMax || null), minutes_ago: age(stMax || null) },
     last_refresh_request: rq && rq.client === cid ? { at: rTime(rq.at), status: rq.status || null, parts: rq.parts || null } : null,
   };
@@ -449,7 +459,7 @@ const RL = new Map<string, number[]>(), RL_BAD = new Map<string, number[]>(), RL
 const sha256 = async (s: string) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)))].map((b) => b.toString(16).padStart(2, "0")).join("");
 function hit(map: Map<string, number[]>, k: string, max: number, win: number) { const now = Date.now(), a = (map.get(k) || []).filter((t) => now - t < win); a.push(now); map.set(k, a); return a.length > max; }
 function bg(p: Promise<unknown>) { try { (globalThis as any).EdgeRuntime?.waitUntil?.(p); } catch { /* */ } }
-async function auth(req: Request, allowQuery = false): Promise<KeyRow> {
+async function auth(req: Request, allowQuery = false, need = "read"): Promise<KeyRow> {
   const ip = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || "?";
   if ((RL_BAD.get(ip) || []).filter((t) => Date.now() - t < 600e3).length >= 20) throw new ApiErr(429, "rate_limited", "محاولات كتير غلط — استنى 10 دقايق", "Too many failed attempts — wait 10 minutes");
   // the gateway checks JWTs (verify_jwt on), so Authorization usually carries the public anon JWT — that is never an API key
@@ -467,6 +477,8 @@ async function auth(req: Request, allowQuery = false): Promise<KeyRow> {
   if (fromQuery && c.row.scopes.indexOf("refresh") >= 0) throw new ApiErr(403, "scope", "المفتاح اللي فيه صلاحية التحديث مينفعش يتحط في لينك — اعمل مفتاح قراية بس للينكات", "A key with the refresh scope cannot be used in a link (?key=) — create a read-only key for links");
   // an edit key travels only in the x-api-key header (r.html keeps it in the URL hash, which never reaches a server)
   if (fromQuery && c.row.scopes.indexOf("edit") >= 0) throw new ApiErr(403, "scope", "مفتاح التعديل مينفعش يتحط في ?key= — استخدم لينك r.html#key=… (المفتاح بيتبعت في الهيدر)", "A key with the edit scope cannot be used in ?key= — use the r.html#key=… link (the key goes in the x-api-key header)");
+  // a khzama key (extension) can only push Khzama rows; a read / refresh / edit key can't push them
+  if (c.row.scopes.indexOf(need) < 0) throw new ApiErr(403, "scope", need === "khzama" ? "المفتاح ده مش مفتاح خزامى — اعمل واحد بـ --khzama" : "المفتاح ده مالوش صلاحية قراية (مفتاح خزامى بس)", need === "khzama" ? "This key has no khzama scope — create one with --khzama" : "This key has no read scope (Khzama push key only)");
   if (hit(RL, "k" + c.row.id, 120, 60e3)) throw new ApiErr(429, "rate_limited", "طلبات كتير — أقصى حاجة 120 في الدقيقة", "Too many requests — 120 per minute max");
   const id = c.row.id; if (Date.now() - (USED.get(id) || 0) > 60e3) { USED.set(id, Date.now()); bg(sb.from("api_keys").update({ last_used_at: new Date().toISOString() }).eq("id", id).then(() => {})); }
   return c.row;
@@ -758,6 +770,10 @@ function openapi() {
         requestBody: { required: true, content: { "application/json": { schema: { type: "object", required: ["confirm_token"], properties: { confirm_token: { type: "string" } } } } } }, responses: { ...resp, "403": { description: "Key lacks the edit scope" }, "409": { description: "duplicate | already_used | changed" }, "410": { description: "confirm_token expired" } } } },
       "/refresh": { post: { operationId: "refresh_numbers", summary: "Refresh today's numbers · تحديث الأرقام", description: TOOLS.find((t) => t.name === "refresh_numbers")?.description,
         requestBody: { required: false, content: { "application/json": { schema: { type: "object", properties: { client: P_CLIENT } } } } }, responses: { ...resp, "403": { description: "Key lacks the refresh scope" } } } },
+      "/khzama/push": { post: { operationId: "khzama_push", summary: "Khzama live snapshot (extension) · خزامى لحظي", description: "Scope khzama only (a khzama key can't call anything else). Body {date: today|yesterday (Riyadh), complete: true, rows: [{link_id, title, donations, amount}]}. The server parses the titles, upserts, and with complete=true deletes that day's links missing from the push. Refused (409 guard) when donations < 50% of the stored day (unless stored < 5). 1 push / 30 s. Returns before/stored totals.",
+        requestBody: { required: true, content: { "application/json": { schema: { type: "object", required: ["date", "rows"], properties: { date: { type: "string" }, complete: { type: "boolean" }, rows: { type: "array", items: { type: "object" } } } } } } }, responses: { ...resp, "403": { description: "Key lacks the khzama scope" }, "409": { description: "guard" } } } },
+      "/khzama/status": { post: { operationId: "khzama_status", summary: "Khzama live state · حالة السحب اللحظي", description: "Scope khzama only. Body {state: ok|login_required|error, detail}. login_required / error → one push notification per state per 2 h. Heartbeat in docs sys/khzama_live (→ /summary data_freshness.orders.khzama_live).",
+        requestBody: { required: true, content: { "application/json": { schema: { type: "object", required: ["state"], properties: { state: { type: "string", enum: ["ok", "login_required", "error"] }, detail: { type: "string" } } } } } }, responses: { ...resp, "403": { description: "Key lacks the khzama scope" } } } },
     },
   };
 }
@@ -825,6 +841,94 @@ function reportText(R: any, ms: number) {
   return L.join("\n") + "\n";
 }
 
+// ───────────── Khzama live (scope khzama) — POST /khzama/push · POST /khzama/status ─────────────
+// Title parsing = ~/.gadlytics/khzama_ingest.py conv() exactly (\p{Nd} = Python's Unicode \d). The extension sends raw rows only.
+const KZ_CID = "3sa3k1k", KZ_DOC = "sys/khzama_live";
+const KZ_RX = /^-?([A-Z]{2,4}-\p{Nd}{3,6})-(?:([A-Za-z0-9_]+)-)?(\p{Nd}{14}(?:~\p{Nd}{14})*)-([A-Za-z]{2,3})-(.+)$/u;
+const KZ_PLAT: Record<string, string> = { ME: "meta", TT: "tiktok", SC: "snap", GG: "google" };
+function kzConv(date: string, lid: string, title: string | null, d: number, a: number) {
+  const t = (title || "").trim();
+  const row: Record<string, any> = { client_id: KZ_CID, date, link_id: lid, title, camp_no: null, custom: null, creative_id: null, code: null,
+    platform: null, product: null, rest: null, donations: d, amount: a };
+  const m = KZ_RX.exec(t);
+  if (m) {
+    const [, camp, custom, cr, code, rest] = m;
+    Object.assign(row, { camp_no: camp, custom: custom ?? null, creative_id: cr.split("~")[0], code, platform: KZ_PLAT[code] ?? code, rest, product: rest.split("-")[0] });
+  } else {
+    const mc = /^-?([A-Z]{2,4}-\p{Nd}{3,6})/u.exec(t); if (mc) row.camp_no = mc[1];
+    const mk = /-(ME|TT|SC)-/.exec(t);
+    if (mk) row.code = mk[1]; else if (t === "bio" || t === "com" || t === "DM") row.code = t;
+    if (row.code) row.platform = KZ_PLAT[row.code] ?? row.code;
+    const mi = /\p{Nd}{14}/u.exec(t); if (mi) row.creative_id = mi[0];
+  }
+  return row;
+}
+const kzTot = (rs: any[]) => ({ links: rs.length, donations: rs.reduce((s, r) => s + (Number(r.donations) || 0), 0), amount: Math.round(rs.reduce((s, r) => s + (Number(r.amount) || 0), 0) * 100) / 100 });
+async function kzDoc() { const { data } = await sb.from("docs").select("data").eq("path", KZ_DOC).maybeSingle(); return (data?.data || {}) as Record<string, any>; }
+async function kzSave(d: Record<string, any>) {
+  const { error } = await sb.from("docs").upsert({ path: KZ_DOC, coll: "sys", data: d, updated_at: new Date().toISOString() });
+  if (error) throw new ApiErr(500, "db", "خطأ في قاعدة البيانات", "Database error: " + error.message);
+}
+async function kzStored(date: string) {
+  const r = await all((c) => sb.from("khzama_link_daily").select("link_id,donations,amount", c ? { count: "exact" } : undefined).eq("client_id", KZ_CID).eq("date", date));
+  return r;
+}
+const kzErr = (code: string, ar: string, en: string, status = 400, extra?: Record<string, unknown>) => new ApiErr(status, code, ar, en, extra);
+async function epKzPush(b: any, key: KeyRow) {
+  const T = today(), Y = addDays(T, -1), date = String(b?.date || "");
+  if (date !== T && date !== Y) throw kzErr("bad_date", "التاريخ لازم يبقى النهارده أو امبارح (الرياض): " + T + " / " + Y, "date must be today or yesterday (Riyadh): " + T + " / " + Y);
+  if (!Array.isArray(b?.rows) || b.rows.length > 5000) throw bad("rows لازم تبقى list (≤ 5000)", "rows must be an array (≤ 5000)");
+  const complete = b.complete === true, seen = new Set<string>(), rows: any[] = [];
+  for (const r of b.rows) {
+    const lid = String(r?.link_id ?? ""), d = Number(r?.donations ?? 0), a = Number(r?.amount ?? 0), title = r?.title ?? null;
+    if (!/^[0-9A-Za-z:_-]{1,40}$/.test(lid) || (title !== null && (typeof title !== "string" || title.length > 600)) || !Number.isInteger(d) || d < 0 || !isFinite(a) || a < 0)
+      throw bad("صف غلط: " + lid, "bad row: " + lid.slice(0, 40));
+    if (seen.has(lid)) throw bad("link_id متكرر: " + lid, "duplicate link_id: " + lid); seen.add(lid);
+    rows.push(kzConv(date, lid, title, d, a));
+  }
+  const doc = await kzDoc(), now = Date.now();
+  if (doc.last_push_key === key.name && now - Number(doc.last_push_at || 0) < 30e3) throw kzErr("rate_limited", "push واحد كل 30 ثانية", "One push per 30 s", 429);
+  const before = await kzStored(date), bt = kzTot(before), nt = kzTot(rows);
+  if (bt.donations >= 5 && nt.donations < bt.donations * 0.5)
+    throw kzErr("guard", "الأرقام الجديدة (" + nt.donations + " تبرع) أقل من نص المتخزن (" + bt.donations + ") — غالباً الصفحة مكملتش تحميل، مفيش حاجة اتغيرت", "Refused: " + nt.donations + " donations is below 50% of the stored " + bt.donations + " — probably a half-loaded page; nothing changed", 409, { stored: bt, pushed: nt });
+  const at = new Date(now).toISOString();
+  for (let i = 0; i < rows.length; i += 500) {
+    const { error } = await sb.from("khzama_link_daily").upsert(rows.slice(i, i + 500).map((r) => ({ ...r, pulled_at: at })), { onConflict: "client_id,date,link_id" });
+    if (error) throw new ApiErr(500, "db", "خطأ في قاعدة البيانات", "Database error: " + error.message);
+  }
+  let deleted = 0;
+  if (complete) {
+    const gone = before.map((r: any) => String(r.link_id)).filter((id: string) => !seen.has(id));
+    for (let i = 0; i < gone.length; i += 200) {
+      const { data, error } = await sb.from("khzama_link_daily").delete().eq("client_id", KZ_CID).eq("date", date).in("link_id", gone.slice(i, i + 200)).select("link_id");
+      if (error) throw new ApiErr(500, "db", "خطأ في قاعدة البيانات", "Database error: " + error.message); deleted += (data || []).length;
+    }
+  }
+  const st = kzTot(await kzStored(date));
+  const days = { ...(doc.days || {}) }; days[date] = { ...st, at: now, complete };
+  Object.keys(days).sort().slice(0, -4).forEach((k) => delete days[k]);
+  await kzSave({ ...doc, last_ok_at: now, last_state: "ok", last_state_at: now, last_detail: null, last_push_at: now, last_push_key: key.name,
+    rows: rows.length, date, totals: days[T] ? { date: T, links: days[T].links, donations: days[T].donations, amount: days[T].amount } : (doc.totals || null), days });
+  return { date, complete, upserted: rows.length, deleted, before: bt, stored: st, unchanged: bt.links === st.links && bt.donations === st.donations && bt.amount === st.amount };
+}
+async function epKzStatus(b: any, key: KeyRow) {
+  const state = String(b?.state || ""), detail = String(b?.detail ?? "").slice(0, 300);
+  if (["ok", "login_required", "error"].indexOf(state) < 0) throw bad("state: ok | login_required | error", "state must be ok | login_required | error");
+  const doc = await kzDoc(), now = Date.now(), notified = { ...(doc.notified || {}) };
+  let pushed = false;
+  if (state !== "ok" && now - Number(notified[state] || 0) >= 2 * 3600e3) {
+    const body = state === "login_required" ? "خزامى محتاج تسجيل دخول — السحب اللحظي واقف" : "السحب اللحظي من خزامى واقف: " + (detail || "خطأ");
+    try {
+      const r = await fetch(SB_URL + "/functions/v1/push", { method: "POST", headers: { Authorization: "Bearer " + SRK, apikey: SRK, "content-type": "application/json" },
+        body: JSON.stringify({ action: "send", to: "all", title: "GADLYTICS · خزامى لحظي", body, url: SITE + "?p=campperf", tag: "khzama-" + state, kind: "khzama", client: KZ_CID, urgency: "high" }) });
+      pushed = r.ok; await r.body?.cancel();
+    } catch { /* still recorded below */ }
+    notified[state] = now;
+  }
+  await kzSave({ ...doc, last_state: state, last_state_at: now, last_detail: state === "ok" ? null : detail, last_status_key: key.name, notified });
+  return { state, notified: pushed, last_ok_at: rTime(doc.last_ok_at) };
+}
+
 // ───────────── router ─────────────
 Deno.serve(async (req: Request) => {
   const t0 = Date.now();
@@ -839,7 +943,7 @@ Deno.serve(async (req: Request) => {
       auth: "Gateway: Authorization: Bearer <anon key> + apikey: <anon key> (public, from config.js). API key: x-api-key: <key> (or ?key=<read-only key> on GET; refresh / edit keys: header only).",
       report: RHTML + "#key=<KEY>&client=3sa3k1k&period=today", report_ar: "لينك التقرير لـ instinct: r.html بيحط المفتاح في الهيدر (المفتاح في الـ # ومبيوصلش لأي سيرفر). الفترات: today · yesterday · 7d · 30d · day:YYYY-MM-DD · range:A..B · نص: &text=1",
       edit: RHTML + "#key=<EDIT KEY>&client=3sa3k1k&edit=1&code=MGG-03059&field=budget&to=500", edit_ar: "لينك تعديل: edit=1&code=<كود الحملة>&field=budget|bid|status&to=<رقم بالريال أو on/off> (+ &adset=<id أو اسم> لو ABO، + &platform=meta|snap|tiktok لو الكود متكرر). اللينك بيعرض معاينة بس — مفيش حاجة بتتغير غير لما تدوس «تأكيد التعديل».",
-      endpoints: ["GET /report", "GET /clients", "GET /summary", "GET /campaigns", "GET /campaign?code=", "GET /alerts", "GET /changes", "POST /refresh", "GET /edit/preview", "POST /edit/apply", "POST /mcp"] });
+      endpoints: ["GET /report", "GET /clients", "GET /summary", "GET /campaigns", "GET /campaign?code=", "GET /alerts", "GET /changes", "POST /refresh", "GET /edit/preview", "POST /edit/apply", "POST /mcp", "POST /khzama/push (scope khzama)", "POST /khzama/status (scope khzama)"] });
     if (path === "/mcp") {
       if (req.method === "GET" || req.method === "DELETE") return new Response(null, { status: 405, headers: { ...cors, Allow: "POST" } });
       if (req.method !== "POST") return done({ ok: false, code: "method" }, 405);
@@ -856,6 +960,13 @@ Deno.serve(async (req: Request) => {
       const r = await report(q), text = String(q.format || "").toLowerCase() === "text";
       return new Response(text ? reportText(r, Date.now() - t0) : reportHtml(r, Date.now() - t0), { status: 200, headers: { ...cors, "content-type": (text ? "text/plain" : "text/html") + "; charset=utf-8",
         "cache-control": "no-store", "x-robots-tag": "noindex, nofollow", "referrer-policy": "no-referrer", "x-gad-ms": String(Date.now() - t0) } });
+    }
+    if (path === "/khzama/push" || path === "/khzama/status") {
+      if (req.method !== "POST") throw new ApiErr(405, "method", "استخدم POST", "Use POST");
+      const key = await auth(req, false, "khzama");                    // x-api-key header only, scope khzama
+      let b: any = null; try { b = await req.json(); } catch { /* bad_request below */ }
+      if (!b || typeof b !== "object" || Array.isArray(b)) throw bad("ابعت JSON object", "Send a JSON object");
+      return done({ ok: true, ...(path === "/khzama/push" ? await epKzPush(b, key) : await epKzStatus(b, key)), generated_at: rTime(Date.now()), ms: Date.now() - t0 });
     }
     if (path === "/edit/preview" || path === "/edit/apply") {
       const isApply = path === "/edit/apply";
