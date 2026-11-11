@@ -51,6 +51,8 @@ The site **only displays data**. It never writes to or changes an ad account. Al
 32. [AI assistants API (instinct / MCP) — `gad-api`](#32-ai-assistants-api-instinct--mcp--gad-api-nov-10-2026)
 33. [iPhone / iPad widget (Scriptable)](#33-iphone--ipad-widget-scriptable-nov-11-2026)
 34. [Khzama live sync (Chrome extension)](#34-khzama-live-sync-chrome-extension-nov-11-2026)
+35. [Season mode «وضع الموسم»](#35-season-mode-وضع-الموسم-nov-11-2026)
+36. [Design system «Bramble»](#36-design-system-bramble-nov-11-2026--phase-1-of-3)
 
 ---
 
@@ -981,6 +983,8 @@ Yes. They are stored separately in `media_notes`, and the sync never overwrites 
 
 ## 19) Look and feel (November 2026)
 
+> Superseded on Nov 11 2026 by the **Bramble** design system — see §36. The notes below describe the light theme and the Clay skins, which still exist.
+
 - **Calm palette** across the whole app: the same colour families, less saturated, no glow, no coloured page background; spend is always blue, revenue green, red only for problems.
 - **Soft charts** everywhere: smooth curves, thin lines, light fill, faint grid, rounded bars.
 - **Tasks** open on the board: four soft columns with white cards (title, priority, client, assignee, due date in red when late) and a joined KPI strip on top.
@@ -1237,6 +1241,7 @@ These tasks stop on a permission prompt when they hit a tool they haven't been a
 | Nov 11 | iPhone / iPad home-screen widget (Scriptable) `widget/GADLYTICS.js`: today's / yesterday's spend · donations · revenue · ROAS from `gad-api` `/summary`, per client and per platform (widget Parameter), small / medium / large + lock-screen widgets, «تحديث» button = `POST /refresh` then redraw. Key `make_api_key.py widget --refresh` in the iOS Keychain; file is pure ASCII (Arabic as `\u` escapes) after clipboard mojibake. §33. |
 | Nov 11 | Khzama live sync: Chrome extension `khzama-live/` (every 2 min, today's Khzama links → `gad-api` `POST /khzama/push`, full snapshot of the day, 50 % guard, login/error push notifications, heartbeat `sys/khzama_live` → `/summary` `data_freshness.orders.khzama_live`). `gad-api` v3 / 1.2.0, new key scope `khzama` (`make_api_key.py --khzama`; a khzama key can't read, a read key can't push), `ingest` v14 accepts `["khzama"]`. Khzama pull = screen read of `affiliateLinks` React props + `khzama_ingest.py`. |
 | Nov 11 | Season mode «وضع الموسم» (§35): edge fn `season-tick` v1 (verify_jwt on) + cron `gad-season-tick` every 2 min — when `config/app.season` is active, platform spend refreshes every 2 min 24 h and `camp-alerts` also runs 00:00–07:59 Riyadh; auto start 2027-01-09 (1 Sha'ban 1448); heartbeat `sys/season`. Tested on, then left **off** (waiting for 2027-01-09). |
+| Nov 11 | **Bramble look, phase 1** (§36): dark navy + violet glow, glass cards, indigo pill buttons, IBM Plex Sans Arabic; dark is the default, light still works; old Clay choice cleared once. Readability floor (12px phone / 11.5px elsewhere, no letter-spacing on Arabic, AA muted text). GSAP count-up / chart draw-in / card fade once per view open, shimmer while loading, reduced-motion respected. Bramble toasts incl. «تراجع». System health card at the end of «الإعدادات» (admins). Same content and order on every page. |
 
 ## 32) AI assistants API (instinct / MCP) — `gad-api` (Nov 10 2026)
 
@@ -1536,7 +1541,7 @@ Active = `!off && (on || today(Riyadh) >= auto_start)`. **Auto start: 1 Sha'ban 
 | «وقّف وضع الموسم» | same with `'{"on":false,"off":true}'` — stays off even after 2027-01-09 |
 | back to automatic | same with `'{"on":false,"off":false}'` |
 
-⚠️ The site's settings save (`normalizeCfg` → `Store.setConfig`) writes config/app with only the keys it knows, so a settings change from the site drops `.season`. Automatic start still happens (the 2027-01-09 fallback), but a manual on/off is lost — check the key after settings changes. Fix still open: keep `season` in `normalizeCfg`, or a `before update` trigger on `docs` that carries `season` over (proposed Nov 11, not applied).
+✅ Fixed Nov 11 (season-tick v2): the season config now lives in its own doc `config/season` (coll `sys`), not inside config/app, because the site's settings save (`normalizeCfg` → `Store.setConfig`) rewrites config/app with only the keys it knows. The old `config/app.season` key is ignored.
 
 ### 35.2 `season-tick` + cron
 
@@ -1553,3 +1558,38 @@ Active = `!off && (on || today(Riyadh) >= auto_start)`. **Auto start: 1 Sha'ban 
 - Cron tick 11:30 UTC: `succeeded`; tick ran 14.9 s (ملبي 12.2 s, ديمان 2.45 s), `ticks: 2`.
 - Back to `on: false` → `active:false, why:"waiting for 2027-01-09"` in 214–490 ms (function) / 0.5–0.8 s (round trip).
 - Cron tick 11:32 UTC with the season off: `succeeded`, function answered 200 about 1.3 s after the cron fired (cold start); `sys/season` shows `active:false`, `stopped_at` 11:30:49 UTC.
+
+## 36) Design system «Bramble» (Nov 11 2026 — phase 1 of 3)
+
+Mahmoud approved the Bramble look (prototype `gadlytics-design/bramble-me.html`) for the whole system. **Rule: same content, same order as before — Bramble is a restyle only.** No section was added, removed or moved on any page (لوحتي keeps pmHead → new media → «حدّث كل حاجة» → KPI tiles → chart → platforms + «محتاج تدخلك» → campaign table → brief → عملائي النهارده → مهامي → mentions → task mentions → approvals → team).
+
+**Where it lives.** One static block `<style id="bramble">` right before `<div class="shell">` in `mediabuyer-console.html` (moved to the end of `<body>` at start-up so it always wins), plus one JS block `/* ══ Bramble: حركة + شيمر + صحة السيستم */` right before `/* 20. الإقلاع */`. Dark selectors are scoped `html[data-theme="dark"]:not([data-skin])`, so light mode and an explicitly chosen Clay skin keep their old CSS.
+
+**Theme.** Dark is the default (`applyTheme`: anything but `"light"` → `data-theme="dark"`, mirrored to `localStorage gad.theme` and applied by a tiny inline script before the app loads, so there is no light flash). The theme button toggles dark ↔ light. On first load after the change, an old Clay / Clay+Glass choice is cleared once (`localStorage gad.bramble` = done); picking Clay again in Settings → Display still works. Skin list: «Bramble (الافتراضي)» / Clay / Clay + Glass.
+
+**Tokens (dark).**
+
+| Token | Value | Use |
+|---|---|---|
+| `--ground-0` | `#090C1C` | page (navy) + violet glow at the bottom (`body::before`) |
+| `--ground-1` / `--ground-2` | `#10152D` / `#151B38` | cards / raised controls |
+| `--bm-card` | white 2.8%→0.8% gradient over `#10152D` | glass cards |
+| `--line` / `--line-2` | `rgba(160,170,255,.11)` / `.18` | 1px card borders / inputs |
+| `--ink` / `--ink-2` / `--ink-3` | `#EEF0FF` / `#C2C7E8` / `#9CA2CC` | text; muted `--ink-3` is ≈6.5:1 on cards (WCAG AA) |
+| `--accent` / `--cyan` | `#7C78FF` / `#8B87FF` | indigo accent, active nav, focus ring, primary pills |
+| `--good` / `--bad` / `--warn` | `#3DDC97` / `#FF6B6B` / `#FFC15A` | delta chips, verdicts |
+| `--c-rev` / `--c-sp` | `#A3A0FF` / `#E7E9FF` | chart colours: revenue violet, spend white-blue (light mode falls back to teal / blue) |
+| `--r` | `14px` | card radius |
+| `--f-ui` | IBM Plex Sans Arabic → Almarai → Cairo | Arabic UI font (Google Fonts) |
+
+**Components.** Sidebar = dark rail with icons + labels, same groups (شغلي → الإدارة والتحليل → المتابعة → أدوات إضافية → الفريق → الإعدادات), active item tinted with an accent bar. Top bar = search, client picker, bell with red count, language/theme, avatar (unchanged content). Cards = glass, 1px faint border, 14px. Primary buttons (`.btn-p`) = indigo gradient pill; other buttons = faint outline. KPI tiles = small muted label, big number, green/red delta chip, sparkline. Toasts = dark pill with a green ✓ (or red ! for errors); the «تراجع» undo toast of أداء الحملات (`#toastAct`) uses the same style. Phone/iPad app shell (`.ma`, `.ap`) gets the same tokens, borders and font; layout, breakpoints and safe areas untouched.
+
+**Readability minimums.** Every `font-size` below 12px in the file became `max(var(--fs-min),Npx)`: `--fs-min` = 11.5px on iPad/Mac, **12px on phone (≤760)**; table cells and task/mention text ≥13px on phone. `letter-spacing: normal` on everything except the Latin «GADLYTICS» wordmark. Line-height 1.6 body / 1.65 hints / 1.35 headings. Numbers keep `.num` (LTR, isolated, tabular).
+
+**Motion (GSAP 3.12.5 from cdnjs, `async`).** `bmMotion()` runs at the end of `render()` but animates **once per view open** (key = view + client + settings tab + app mode): cards fade/slide in, KPI numbers count up (`.pm-kv .num`, `.kpi-v`, `.ma-k b`, `.ma-strip b`, `.tv-stat b` — the original text is restored at the end), charts draw in left→right (clip-path on `.ch-p svg`), progress bars grow. Every call checks `window.gsap` first, so if the CDN fails nothing animates and nothing breaks. `prefers-reduced-motion: reduce` turns all of it (and the shimmer) off. Boot shows a shimmer skeleton (`bmSkel()`) instead of «جارِ التحميل…».
+
+**System health (admins, end of «الإعدادات», every tab).** `sysHealthCard()` reads existing data only and never throws: Meta token days left (constant `META_TOKEN_EXP = 2027-01-07`; the token in `app_secrets` isn't readable from the browser), Khzama live last success (`sys/khzama_live.last_ok_at` + `last_state`), season mode (`config/season` + `sys/season.active`/`last_tick_at`), last platform pull (max `ad_daily.pulled_at`, falls back to the last `date`), TikTok «التطبيق اترفض — مستني تقديم جديد». Missing docs show «—». «↻ حدّث» reloads it.
+
+**Kept exactly as before:** every view, ACT handler and data source; breakpoints phone ≤760 / iPad 761–1180 (`html.ma-on`) / Mac >1180 (`html.ma-desk`); the 600 ms ghost-tap guards (`window.__shAt`); notifications as their own view `push`; no caching service worker + the build-id auto-update; pinch zoom; notch safe areas; the «بيانات تجريبية» banner.
+
+**Phases.** Phase 1 (this): global look + لوحتي. Phase 2: أداء الحملات (polish of `.ma-*` / desktop table in Bramble). Phase 3: other pages + polish.
