@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head><meta charset="utf-8"><title>إعدادات خزامى لحظي</title><link rel="stylesheet" href="style.css">
+<style>body { max-width: 520px; margin: 30px auto; padding: 0 16px; } label { display: block; margin-bottom: 6px; }</style></head>
+<body>
+  <h1>GADLYTICS · خزامى لحظي — الإعدادات</h1>
+  <div class="box">
+    <label for="key">مفتاح خزامى (من <span class="num">make_api_key.py khzama-live --khzama</span>)</label>
+    <input type="password" id="key" autocomplete="off" placeholder="gad_…">
+    <p class="mute" id="keyState"></p>
+    <button id="save">حفظ</button>
+  </div>
+  <div class="box" id="status"></div>
+  <p class="mute">الإضافة بتفتح تاب متثبّت لخزامى وبتقرا الأرقام اللي ظاهرة في الجدول بس — مبتلمسش الكوكيز ولا الباسورد. لو خزامى طلب تسجيل دخول، سجّل دخول بنفسك والسحب هيرجع لوحده خلال 10 دقايق.</p>
+  <script src="status.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

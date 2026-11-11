@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "GADLYTICS · خزامى لحظي",
+  "description": "بيقرا روابط خزامى (admin.molabi.sa) كل دقيقتين من الشاشة ويبعت تبرعات النهارده لـ GADLYTICS.",
+  "version": "1.0.0",
+  "permissions": [
+    "alarms",
+    "tabs",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://admin.molabi.sa/*",
+    "https://ibpwudzjwjraqhfdmzet.supabase.co/*",
+    "https://mahmoudgadmediabuyer.github.io/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "GADLYTICS · خزامى لحظي",
+    "default_popup": "popup.html"
+  },
+  "options_page": "options.html"
+}
