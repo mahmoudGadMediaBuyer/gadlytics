@@ -1,5 +1,5 @@
 // GADLYTICS widget for Scriptable (iPhone / iPad) \u2014 today's spend \u00b7 donations \u00b7 revenue \u00b7 ROAS from gad-api.
-// Widget parameter (long-press the widget \u2192 Edit Widget \u2192 Parameter), optional:  meta | tiktok | snap (or \u0645\u064a\u062a\u0627 | \u062a\u064a\u0643 \u062a\u0648\u0643 | \u0633\u0646\u0627\u0628) for one platform,  \u0645\u0644\u0628\u064a | \u062f\u064a\u0645\u0627\u0646  and  today | yesterday
+// Widget parameter (long-press the widget \u2192 Edit Widget \u2192 Parameter), optional:  meta | tiktok | snap (or \u0645\u064a\u062a\u0627 | \u062a\u064a\u0643 \u062a\u0648\u0643 | \u0633\u0646\u0627\u0628) for one platform,  \u0645\u0644\u0628\u064a | \u062f\u064a\u0645\u0627\u0646  and  today | yesterday | a date like 2026-05-20
 //   e.g.  \u0645\u0644\u0628\u064a   or   \u062f\u064a\u0645\u0627\u0646,yesterday
 // Tap \u00ab\u062a\u062d\u062f\u064a\u062b\u00bb \u2192 pulls today's spend from the platforms now (camp-refresh) and redraws. Tap elsewhere \u2192 opens GADLYTICS.
 // The API key is asked once and kept in the iOS Keychain (never in this file). Key needs scopes read + refresh:
@@ -16,7 +16,8 @@ const q = args.queryParameters || {};
 const CLIENT = q.client || (p.find((x) => /\u062f\u064a\u0645\u0627\u0646|deiman|dm1n4an/i.test(x)) ? "dm1n4an" : "3sa3k1k");
 const PLAT = q.platform || (p.find((x) => /meta|facebook|\u0645\u064a\u062a\u0627|\u0641\u064a\u0633/i.test(x)) ? "meta" : p.find((x) => /tiktok|\u062a\u064a\u0643/i.test(x)) ? "tiktok" : p.find((x) => /snap|\u0633\u0646\u0627\u0628/i.test(x)) ? "snap" : "");
 const PLAT_AR = { meta: "\u0645\u064a\u062a\u0627", tiktok: "\u062a\u064a\u0643 \u062a\u0648\u0643", snap: "\u0633\u0646\u0627\u0628" };
-const PERIOD = q.period || (p.find((x) => /yesterday|\u0627\u0645\u0628\u0627\u0631\u062d/i.test(x)) ? "yesterday" : "today");
+const DAY = p.find((x) => /^\d{4}-\d{2}-\d{2}$/.test(x));
+const PERIOD = q.period || (DAY ? "day:" + DAY : null) || (p.find((x) => /yesterday|\u0627\u0645\u0628\u0627\u0631\u062d/i.test(x)) ? "yesterday" : "today");
 
 async function anonKey() {
   try {
@@ -65,14 +66,14 @@ function cell(row, label, value, color) {
   const a = s.addStack(); a.addSpacer(); text(a, label, 11, C.dim);
   const b = s.addStack(); b.addSpacer(); text(b, value, 18, color, true);
 }
-const runURL = (extra) => "scriptable:///run/" + encodeURIComponent(Script.name()) + "?refresh=1&client=" + CLIENT + "&period=" + PERIOD + (PLAT ? "&platform=" + PLAT : "") + (extra || "");
+const runURL = (extra) => "scriptable:///run/" + encodeURIComponent(Script.name()) + "?refresh=1&client=" + CLIENT + "&period=" + encodeURIComponent(PERIOD) + (PLAT ? "&platform=" + PLAT : "") + (extra || "");
 
 function build(d, family, note) {
   const w = new ListWidget(); w.backgroundColor = C.bg; w.url = SITE + "#campperf";
   w.refreshAfterDate = new Date(Date.now() + 15 * 60e3);
   const k = {}; (d.kpis || []).forEach((x) => { k[x.key] = x.value; });
   const v = verdict(k.roas, d.roas_rules), roasCol = v ? v[1] : C.txt;
-  const who = (d.client && d.client.name || "") + (PLAT ? " \u00b7 " + PLAT_AR[PLAT] : "") + " \u00b7 " + (PERIOD === "today" ? "\u0627\u0644\u0646\u0647\u0627\u0631\u062f\u0647" : "\u0627\u0645\u0628\u0627\u0631\u062d");
+  const who = (d.client && d.client.name || "") + (PLAT ? " \u00b7 " + PLAT_AR[PLAT] : "") + " \u00b7 " + (PERIOD === "today" ? "\u0627\u0644\u0646\u0647\u0627\u0631\u062f\u0647" : PERIOD === "yesterday" ? "\u0627\u0645\u0628\u0627\u0631\u062d" : PERIOD.replace("day:", ""));
   const upd = hhmm(new Date());
 
   if (family === "accessoryRectangular" || family === "accessoryInline" || family === "accessoryCircular") {
@@ -146,7 +147,7 @@ async function main() {
   }
   let w;
   try {
-    const d = await call("/summary?client=" + CLIENT + "&period=" + PERIOD + (PLAT ? "&platform=" + PLAT : ""));
+    const d = await call("/summary?client=" + CLIENT + "&period=" + encodeURIComponent(PERIOD) + (PLAT ? "&platform=" + PLAT : ""));
     const fam = config.runsInWidget ? config.widgetFamily : "medium";
     w = build(d, fam, note);
   } catch (e) {
