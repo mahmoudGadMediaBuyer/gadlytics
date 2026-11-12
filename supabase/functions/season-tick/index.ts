@@ -1,6 +1,6 @@
 // GADLYTICS «وضع الموسم» (season mode) — pg_cron job gad-season-tick calls this every 2 minutes, 24 h a day (anon key header, like
 // gad-camp-alerts; verify_jwt ON). The gateway check is the only gate, so every call must be harmless: it throttles itself.
-// Config: docs config/app .season = {auto_start:'2027-01-09', on, off, label, note}. Active = !off && (on || today(Riyadh) >= auto_start).
+// Config: its own doc config/season = {auto_start:'2027-01-09', on, off, label, note} (NOT inside config/app — the site's settings save rewrites config/app and would drop it). Active = !off && (on || today(Riyadh) >= auto_start).
 // If the key is missing (a settings save from the site rewrites config/app with only the keys it knows), auto_start falls back to 2027-01-09.
 // Inactive → returns at once (one tiny read). Active → for each client in config/app .clients, one after the other (they share the Snap
 // token refresh), POST camp-refresh {client, from: today, to: today} with the service role (00:00–00:10 Riyadh: from = yesterday, once a night).
@@ -43,7 +43,7 @@ Deno.serve(async (req: Request) => {
   const sb = createClient(SB_URL, SRK, { auth: { persistSession: false } });
   const day = riyDay(t0);
   const [{ data: app }, { data: hbRow }] = await Promise.all([
-    sb.from("docs").select("s:data->season").eq("path", "config/app").maybeSingle(),
+    sb.from("docs").select("s:data").eq("path", "config/season").maybeSingle(),
     sb.from("docs").select("data").eq("path", "sys/season").maybeSingle(),
   ]);
   const S = seasonState((app as any)?.s, day);
