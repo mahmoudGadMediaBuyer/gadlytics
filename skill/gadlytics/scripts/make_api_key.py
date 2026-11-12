@@ -7,6 +7,9 @@ Run it yourself in Terminal.app:
                                                            #   in the URL hash and goes in the x-api-key header — never ?key=)
   python3 ~/.gadlytics/make_api_key.py khzama-live --khzama  # ONLY POST /khzama/push + /khzama/status (the Chrome extension
                                                            #   gadlytics-site/khzama-live) — can't read anything else
+  python3 ~/.gadlytics/make_api_key.py launch-mac --launch   # ONLY the launch queue of «إطلاق الحملات» (launch-api + rpc launch_poll):
+                                                           #   claim requests + report build state. Saved straight into
+                                                           #   ~/.gadlytics/launch.key (mode 600) — never printed, never in the clipboard
 The key is printed ONCE and copied to the clipboard. Only its SHA-256 hash is stored (Supabase public.api_keys, through
 the ingest function). Same name again = the old key with that name stops working and the new one replaces it.
 Revoke: python3 ~/.gadlytics/revoke_api_key.py <name>"""
@@ -16,15 +19,40 @@ args = [a for a in sys.argv[1:] if not a.startswith("--")]
 refresh = "--refresh" in sys.argv[1:]
 edit = "--edit" in sys.argv[1:]
 khzama = "--khzama" in sys.argv[1:]
+launch = "--launch" in sys.argv[1:]
+if launch and (refresh or edit or khzama):
+    raise SystemExit("--launch مينفعش مع --refresh أو --edit أو --khzama (مفتاح الإطلاق لطابور الإطلاق بس)")
 if khzama and (refresh or edit):
     raise SystemExit("--khzama مينفعش مع --refresh أو --edit (مفتاح خزامى بيبعت صفوف خزامى بس)")
 if len(args) != 1 or not re.fullmatch(r"[A-Za-z0-9 _.-]{1,60}", args[0]):
-    raise SystemExit("الصيغة: python3 ~/.gadlytics/make_api_key.py <اسم بالإنجليزي زي instinct> [--refresh] [--edit] | --khzama")
+    raise SystemExit("الصيغة: python3 ~/.gadlytics/make_api_key.py <اسم بالإنجليزي زي instinct> [--refresh] [--edit] | --khzama | --launch")
 name = args[0].strip()
 key = "gad_" + secrets.token_urlsafe(32)
 row = {"name": name, "key_hash": hashlib.sha256(key.encode()).hexdigest(), "scopes": ["khzama"] if khzama else ["read"] + (["refresh"] if refresh else []) + (["edit"] if edit else [])}
 
 ingest = open(os.path.expanduser("~/.gadlytics/ingest.key")).read().strip()
+if launch:
+    # launch keys are registered by the launch-api function itself (admin route, same ingest-key check) — ingest stays untouched.
+    cfg = open(os.path.expanduser("~/Desktop/claude/gadlytics-site/config.js"), encoding="utf-8").read()
+    anon = re.search(r'supabaseAnonKey\s*:\s*"([^"]+)"', cfg).group(1)        # public key, needed by the gateway (verify_jwt on)
+    req = urllib.request.Request("https://ibpwudzjwjraqhfdmzet.supabase.co/functions/v1/launch-api/key", method="POST",
+          data=json.dumps({"name": name, "key_hash": row["key_hash"]}).encode(),
+          headers={"content-type": "application/json", "x-ingest-key": ingest, "Authorization": "Bearer " + anon, "apikey": anon})
+    try:
+        res = json.load(urllib.request.urlopen(req, timeout=30))
+    except urllib.error.HTTPError as e:
+        raise SystemExit("السيرفر رفض (HTTP %s): %s" % (e.code, e.read().decode()[:200]))
+    if not res.get("ok"):
+        raise SystemExit("مااتحفظش: %s" % res)
+    kf = os.path.expanduser("~/.gadlytics/launch.key")
+    fd = os.open(kf, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w") as f:
+        f.write(key + "\n")
+    os.chmod(kf, 0o600)
+    print("تمام ✓ مفتاح الإطلاق «%s» اتعمل واتحفظ في %s (صلاحيات 600). مش ظاهر هنا ومش في الحافظة." % (name, kf))
+    print("بيشتغل مع طابور «إطلاق الحملات» بس (launch-api + rpc launch_poll) — مبيقراش أرقام ولا بيعدّل حملات.")
+    print("جرّبه: python3 ~/.gadlytics/launch_watcher.py --status      ·   الإلغاء: python3 ~/.gadlytics/revoke_api_key.py %s" % name)
+    raise SystemExit(0)
 req = urllib.request.Request("https://ibpwudzjwjraqhfdmzet.supabase.co/functions/v1/ingest", method="POST",
       data=json.dumps({"table": "api_keys", "rows": [row]}).encode(),
       headers={"content-type": "application/json", "x-ingest-key": ingest})
