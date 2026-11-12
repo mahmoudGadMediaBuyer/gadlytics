@@ -1,7 +1,8 @@
 // GADLYTICS · خزامى لحظي — every 2 minutes: load today's Khzama links (pages 1..3, full reload each), read the rows the page
 // already rendered (reader.js, world MAIN), and POST them to gad-api /khzama/push as a complete snapshot of the day.
-// Never touches Khzama cookies, storage, tokens or headers. Never types anything into Khzama.
-importScripts('reader.js');
+// Never touches Khzama cookies, storage, tokens or headers. This loop never types anything into Khzama.
+// links.js (v1.1.0) is the second job: it registers the affiliate links of a campaign build in a SECOND tab of its own.
+importScripts('reader.js', 'links.js');
 
 const API = 'https://ibpwudzjwjraqhfdmzet.supabase.co/functions/v1/gad-api';
 const CONFIG_JS = 'https://mahmoudgadmediabuyer.github.io/gadlytics/config.js';

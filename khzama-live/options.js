@@ -7,5 +7,9 @@ document.getElementById('save').onclick = async () => {
   key.value = ''; await showKey();
   chrome.runtime.sendMessage({ cmd: 'run' });
 };
-chrome.storage.onChanged.addListener(() => renderStatus(box));
-showKey(); renderStatus(box);
+const linksBox = document.getElementById('links'), linksTest = document.getElementById('linksTest');
+const refresh = () => { renderStatus(box); renderLinks(linksBox); };
+chrome.storage.local.get('linksTest').then((s) => { linksTest.checked = s.linksTest === true; });
+linksTest.onchange = async () => { await chrome.storage.local.set({ linksTest: linksTest.checked }); chrome.runtime.sendMessage({ cmd: 'links' }).catch(() => {}); };
+chrome.storage.onChanged.addListener(refresh);
+showKey(); refresh();

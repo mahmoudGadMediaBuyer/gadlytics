@@ -1,5 +1,8 @@
 const box = document.getElementById('status'), run = document.getElementById('run'), on = document.getElementById('on');
-const refresh = () => renderStatus(box);
+const linksBox = document.getElementById('links'), linksOn = document.getElementById('linksOn');
+const refresh = () => { renderStatus(box); if (linksBox && typeof renderLinks === 'function') renderLinks(linksBox); };
+chrome.storage.local.get('linksOn').then((s) => { linksOn.checked = s.linksOn !== false; });
+linksOn.onchange = async () => { await chrome.storage.local.set({ linksOn: linksOn.checked }); chrome.runtime.sendMessage({ cmd: 'links' }).catch(() => {}); };
 chrome.storage.local.get('enabled').then((s) => { on.checked = s.enabled !== false; });
 on.onchange = async () => { await chrome.storage.local.set({ enabled: on.checked }); chrome.runtime.sendMessage({ cmd: 'badge' }); };
 run.onclick = async () => { run.disabled = true; run.textContent = 'جاري السحب…'; await chrome.runtime.sendMessage({ cmd: 'run' }); run.disabled = false; run.textContent = 'سحب دلوقتي'; };
