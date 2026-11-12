@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="gad-build" content="20261111123513">
+<meta name="gad-build" content="20261112134434">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -16,7 +16,7 @@
 <script>
 /* تحديث تلقائي للتطبيق على الموبايل/الآيباد: مفيش service worker ولا كاش. كل ما التطبيق يتفتح أو يرجع للواجهة
    بيجيب index.html جديد (no-store) ويقارن رقم البيلد؛ لو فيه نسخة أحدث بيفتحها على طول. */
-(function(){ var B="20261111123513", last=0;
+(function(){ var B="20261112134434", last=0;
   function busy(){ return document.querySelector("#cpIn:focus, .ma-sheet, input:focus, textarea:focus"); }
   function chk(){ var n=Date.now(); if(n-last<20000) return; last=n; if(busy()) return;
     fetch(location.pathname+"?_b="+n,{cache:"no-store"}).then(function(r){ return r.ok? r.text() : ""; }).then(function(t){
@@ -1089,6 +1089,237 @@ html.ma-on .cp-bbar{bottom:calc(10px + env(safe-area-inset-bottom));inset-inline
 html.ma-on #maRoot{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
 @media (max-width:400px){.ma-tbtn,.ma-xbtn{font-size:12.5px;padding:0 6px}}
 </style>
+<style id="lc-css">
+/* ══ إطلاق الحملات (view "launch") — كل الكلاسات بتبدأ بـ lc- ؛ الألوان من توكنز Bramble ══ */
+.lc,.lc-modal{--p-meta:#6C8CFF;--p-tt:#FF5FA2;--p-snap:#F4E06D;--lc-in:#0B1028;--lc-raise:#151B38;--lc-acc:#7C78FF;--lc-acc-bg:rgba(124,120,255,.16);--lc-acc-ink:#D9D8FF;--lc-soft:rgba(255,255,255,.03);--lc-soft2:rgba(255,255,255,.06);--lc-ink4:#7D84B4}
+html:not([data-theme="dark"]) .lc,html:not([data-theme="dark"]) .lc-modal,html[data-skin] .lc,html[data-skin] .lc-modal{--lc-in:var(--ground-1);--lc-raise:var(--ground-1);--lc-acc:var(--cyan);--lc-acc-bg:var(--brand-50);--lc-acc-ink:var(--cyan);--lc-soft:rgba(16,24,40,.03);--lc-soft2:rgba(16,24,40,.06);--lc-ink4:var(--ink-3);--p-snap:#B58900}
+.lc .ltr,.lc-modal .ltr{direction:ltr;unicode-bidi:isolate;display:inline-block;text-align:start}
+.lc-grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(330px,1fr);gap:18px;align-items:start}
+.lc-formcol{display:flex;flex-direction:column;gap:14px;min-width:0;scroll-margin-top:92px}
+.lc-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.lc-top .lc-sp{flex:1}
+.lc-plat{display:flex}
+.lc-plat button{padding:8px 13px;font-size:13.5px;min-height:38px;display:inline-flex;align-items:center;justify-content:center;gap:7px}
+.lc-dot{width:9px;height:9px;border-radius:50%;flex:none;background:var(--ink-3);display:inline-block}
+[data-p="Meta"]>.lc-dot{background:var(--p-meta)}[data-p="TikTok"]>.lc-dot{background:var(--p-tt)}[data-p="Snapchat"]>.lc-dot{background:var(--p-snap)}
+.lc-mac{display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;font-size:13px;color:var(--ink-2);padding:9px 14px;border-radius:12px;border:1px solid var(--line);background:var(--lc-soft)}
+.lc-mac i{width:9px;height:9px;border-radius:50%;flex:none;background:var(--ink-3)}
+.lc-mac.on i{background:var(--good);box-shadow:0 0 0 4px color-mix(in srgb,var(--good) 22%,transparent)}
+.lc-mac.off{border-color:color-mix(in srgb,var(--warn) 55%,transparent);background:color-mix(in srgb,var(--warn) 12%,transparent);color:var(--ink)}
+.lc-mac.off i{background:var(--warn)}
+.lc-mac b{font-weight:700;color:var(--ink)}
+.lc-mac small{color:var(--ink-3);font-size:12.5px}
+.lc-blk{padding:18px}
+.lc-bh{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.lc-bn{width:24px;height:24px;border-radius:8px;display:grid;place-items:center;flex:none;font-size:12.5px;font-weight:700;background:var(--lc-acc-bg);color:var(--lc-acc-ink)}
+.lc-bh h2{font-size:15px;font-weight:700;margin:0}
+.lc-bh small{color:var(--ink-3);font-size:12.5px;margin-inline-start:auto;text-align:end}
+.lc-fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px 14px}
+.lc-wide{grid-column:1/-1}
+.lc-req{color:var(--warn);font-style:normal;margin-inline-start:4px}
+.lc .fld label,.lc-modal .fld label{font-size:12.5px;color:var(--ink-2);font-weight:600}
+.lc .fld label small{font-weight:400;color:var(--ink-3);margin-inline-start:6px}
+[dir="rtl"] .lc .inp{text-align:right}
+.lc .inp[dir="ltr"],.lc-modal .inp[dir="ltr"]{text-align:left}
+.lc textarea.inp{resize:vertical;line-height:1.6}
+.lc .hint,.lc-modal .hint{color:var(--ink-3);font-size:max(var(--fs-min,11.5px),12px);line-height:1.65;margin:0}
+.lc-err{display:none;color:var(--bad);font-size:12.5px;line-height:1.5;margin:0}
+.fld.bad .lc-err{display:block}
+.lc .fld.bad .inp,.lc .fld.bad .sel,.lc .fld.bad .lc-chipbox{border-color:color-mix(in srgb,var(--bad) 70%,transparent)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--bad) 12%,transparent)!important}
+.lc-pair{display:flex;gap:6px;align-items:center}
+.lc-pair .inp{flex:1 1 90px;min-width:0}.lc-pair .sel{flex:1 1 120px;width:auto;min-width:0}
+.lc-unit{color:var(--ink-3);font-size:12.5px;font-weight:600}
+.lc-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.lc textarea.lc-ids{min-height:108px;font-variant-numeric:tabular-nums;direction:ltr;text-align:left}
+.lc .fld>.seg{align-self:flex-start}
+.lc .fld .seg{flex-wrap:nowrap;max-width:100%}
+.lc .fld .seg button{white-space:nowrap;padding-inline:10px}
+.lc-idm{display:flex;gap:6px 10px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:var(--ink-3)}
+.lc-idm b{color:var(--ink);font-weight:600}
+.lc-chipbox{border:1px solid var(--line-2);border-radius:12px;background:var(--lc-in);padding:8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.lc-chipbox .inp{flex:1 1 130px;border:0!important;background:transparent!important;box-shadow:none!important;padding:6px 8px;min-width:110px}
+.lc-chip{padding:3px 4px 3px 10px;gap:4px;display:inline-flex;align-items:center}
+[dir="rtl"] .lc-chip{padding:3px 10px 3px 4px}
+.lc-chip button{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:var(--ink-3);background:none;border:0;cursor:pointer}
+.lc-chip button:hover{background:var(--lc-soft2);color:var(--ink)}
+.lc-chip button svg{width:12px;height:12px}
+.lc-chip .lc-ct{width:auto;height:24px;border-radius:7px;padding:0 7px;font-size:11.5px;font-weight:600;background:var(--lc-soft2);color:var(--ink-2)}
+.lc-pre{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.lc-pre .chip{cursor:pointer}
+.lc-count{font-size:14px;color:var(--ink-2)}
+.lc-count b{color:var(--ink);font-weight:700}
+.lc-count .lc-eq{color:var(--lc-acc-ink);font-weight:700}
+.lc-notes{padding:12px 16px;display:flex;flex-direction:column;gap:4px;font-size:13px}
+.lc-notes:empty{display:none}
+.lc-n{display:flex;gap:8px;align-items:flex-start;color:var(--ink-3)}
+.lc-n i{flex:none;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:11px;font-weight:700;margin-top:2px;background:var(--lc-soft2)}
+.lc-n.warn{color:var(--warn)}.lc-n.warn i{background:color-mix(in srgb,var(--warn) 16%,transparent)}
+.lc-go{position:sticky;bottom:12px;z-index:5;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 12px 10px 16px;border-radius:16px;background:var(--lc-raise);border:1px solid var(--line-2);box-shadow:0 18px 40px -14px rgba(0,0,0,.55)}
+[dir="rtl"] .lc-go{padding:10px 16px 10px 12px}
+.lc-go .lc-sp{flex:1}
+.lc-miss{color:var(--bad);font-size:13px;font-weight:600}
+.lc-kbd{font-family:var(--f-ui);font-size:11.5px;color:var(--lc-ink4);border:1px solid var(--line-2);border-radius:6px;padding:1px 7px}
+.lc-gobtn{padding:11px 26px!important;font-size:15px!important;font-weight:700;min-height:44px;display:inline-flex;align-items:center;gap:8px}
+.lc-gobtn svg{width:17px;height:17px}
+.lc-gobtn[disabled]{opacity:.6}
+.lc-side{position:sticky;top:86px;max-height:calc(100vh - 104px);display:flex;flex-direction:column;padding:0!important;overflow:hidden}
+.lc-sh{padding:18px 18px 12px;border-bottom:1px solid var(--line)}
+.lc-sh .card-h{margin-bottom:8px}
+.lc-sum{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 12px}
+.lc-sum:empty{display:none}
+.lc-sum .chip{font-weight:600;padding:3px 10px}
+.lc-set{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.lc-set label{font-size:13px;font-weight:600;color:var(--ink-2)}
+.lc-step{display:inline-flex;align-items:center;border:1px solid var(--line-2);border-radius:10px;background:var(--lc-in);margin-inline-start:auto}
+.lc-step button{width:36px;height:36px;display:grid;place-items:center;color:var(--ink-2);font-size:18px;font-weight:600;border-radius:9px;background:none;border:0;cursor:pointer}
+.lc-step button:hover{background:var(--lc-soft2);color:var(--ink)}
+.lc-step output{min-width:30px;text-align:center;font-weight:700;font-size:15px}
+.lc-list{overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px;overscroll-behavior:contain}
+.lc-foot{padding:10px 12px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.lc-card{border:1px solid var(--line);border-radius:12px;background:var(--lc-soft);padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.lc-card.new{animation:lcIn .35s cubic-bezier(.2,.8,.2,1)}
+.lc-card.hot{border-color:var(--lc-acc);box-shadow:0 0 0 3px var(--lc-acc-bg)}
+@keyframes lcIn{from{opacity:0;transform:translateY(-8px)}}
+.lc-ch{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.lc-pl{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--ink-2)}
+.lc-time{font-size:12px;color:var(--ink-3)}
+.lc-st{margin-inline-start:auto;display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;font-size:12.5px;font-weight:600;border:1px solid transparent}
+.lc-st.queue,.lc-st.cancel{background:var(--lc-soft2);color:var(--ink-2);border-color:var(--line-2)}
+.lc-st.build{background:var(--lc-acc-bg);color:var(--lc-acc-ink)}
+.lc-st.done{background:color-mix(in srgb,var(--good) 14%,transparent);color:var(--good)}
+.lc-st.stop{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
+.lc-spin{width:11px;height:11px;border-radius:50%;border:2px solid color-mix(in srgb,var(--lc-acc-ink) 30%,transparent);border-top-color:var(--lc-acc-ink);animation:lcSpin .8s linear infinite}
+@keyframes lcSpin{to{transform:rotate(360deg)}}
+.lc-tt{font-weight:700;font-size:14.5px;line-height:1.4;overflow-wrap:anywhere}
+[dir="rtl"] .lc-tt,[dir="rtl"] .lc-name{text-align:right}
+.lc-meta{font-size:12.5px;color:var(--ink-3)}
+.lc-prog{height:6px;border-radius:4px;background:var(--lc-soft2);overflow:hidden}
+.lc-prog i{display:block;height:100%;width:100%;border-radius:4px;background:linear-gradient(90deg,#625DF5,#8B87FF);transform-origin:right center;transition:transform .7s cubic-bezier(.2,.8,.2,1);will-change:transform}
+[dir="ltr"] .lc-prog i{transform-origin:left center}
+.lc-prog.done i{background:var(--good)}
+.lc-prog.stop i{background:color-mix(in srgb,var(--bad) 65%,transparent)}
+.lc-pct{font-weight:700;color:var(--ink)}
+.lc-code{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.lc-code code{font-family:var(--f-ui);font-weight:800;font-size:20px;line-height:1.25;padding:2px 10px;border-radius:9px;background:var(--lc-acc-bg);color:var(--lc-acc-ink)}
+.lc-code small{font-size:11.5px;color:var(--lc-ink4)}
+.lc-sub{font-size:12.5px;color:var(--ink-3);overflow-wrap:anywhere}
+[dir="rtl"] .lc-sub{text-align:right}
+.lc-stepl{font-size:12.5px;color:var(--ink-2)}
+.lc-no{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}
+.lc-no code{font-family:var(--f-ui);font-weight:700;font-size:13.5px;padding:1px 9px;border-radius:7px;background:var(--lc-acc-bg);color:var(--lc-acc-ink)}
+.lc-no small{font-size:11.5px;color:var(--lc-ink4)}
+.lc-name{display:block;font-size:12.5px;color:var(--ink-2);overflow-wrap:anywhere;max-width:100%}
+.lc-why{font-size:13px;color:var(--bad);background:color-mix(in srgb,var(--bad) 8%,transparent);border-radius:9px;padding:6px 10px;line-height:1.6}
+.lc-rep{border:1px solid var(--line);border-radius:10px;background:var(--lc-soft)}
+.lc-rep>button{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;font-size:13px;font-weight:700;color:var(--ink);background:none;border:0;cursor:pointer;min-height:40px;text-align:start}
+.lc-rep>button svg{width:14px;height:14px;flex:none;transition:transform .15s;color:var(--ink-3)}
+.lc-rep.open>button svg{transform:rotate(180deg)}
+.lc-rept{display:none;padding:0 12px 12px;font-size:13px;line-height:1.75;color:var(--ink-2);white-space:pre-wrap;overflow-wrap:anywhere;unicode-bidi:plaintext;text-align:start}
+.lc-rep.open .lc-rept{display:block}
+.lc-acts{display:flex;gap:6px;flex-wrap:wrap}
+.lc-chat{border-top:1px dashed var(--line-2);padding-top:8px;display:flex;flex-direction:column;gap:7px}
+.lc-chat-h{font-size:12.5px;font-weight:700;color:var(--ink-2);display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.lc-chat-h small{font-weight:400;color:var(--ink-3);font-size:12px}
+.lc-thread{display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto;overscroll-behavior:contain;padding:2px}
+.lc-b{max-width:88%;padding:7px 11px;border-radius:13px;font-size:13px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere;unicode-bidi:plaintext;text-align:start;color:var(--ink)}
+.lc-b.me{align-self:flex-start;background:var(--lc-acc-bg);border-end-start-radius:4px}
+.lc-b.ag{align-self:flex-end;background:var(--lc-soft2);border-end-end-radius:4px}
+.lc-b small{display:block;font-size:11.5px;color:var(--ink-3);margin-top:2px;unicode-bidi:isolate}
+.lc-b small.wait{color:var(--warn)}
+.lc-qr{display:flex;gap:6px;flex-wrap:wrap}
+.lc-qr .chip{cursor:pointer}
+.lc-say{display:flex;gap:6px;align-items:flex-end}
+.lc-say textarea.inp{flex:1;min-width:0;min-height:40px;max-height:120px;resize:none;line-height:1.5}
+.lc-mh{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.lc-mh h2{font-size:17px;margin:0}
+.lc-x{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;color:var(--ink-3);background:none;border:0;cursor:pointer}
+.lc-x:hover{background:var(--lc-soft2);color:var(--ink)}
+.lc-x svg{width:18px;height:18px}
+.lc-mf{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap;margin-top:14px}
+.lc-mf .hint{margin-inline-end:auto}
+.lc-modal .modal{width:min(640px,100%);max-height:86vh;overflow-y:auto}
+.lc-brief{direction:ltr;text-align:left;white-space:pre-wrap;overflow-wrap:anywhere;font-family:ui-monospace,"SF Mono",Menlo,monospace,var(--f-ui);font-size:12.5px;line-height:1.7;background:var(--lc-in);border:1px solid var(--line);border-radius:12px;padding:12px 14px;max-height:56vh;overflow:auto;unicode-bidi:plaintext;margin:0}
+.lc-paste{width:100%;min-height:240px;direction:ltr;text-align:left!important;font-family:ui-monospace,"SF Mono",Menlo,monospace,var(--f-ui);font-size:12.5px;unicode-bidi:plaintext}
+.lc-lib{display:flex;flex-direction:column;gap:4px;max-height:52vh;overflow:auto;margin-top:10px}
+.lc-lr{display:grid;grid-template-columns:22px minmax(0,auto) minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:8px 10px;border-radius:10px;border:1px solid transparent;min-height:48px;cursor:pointer;flex:none;width:100%;background:none;color:inherit;font:inherit;text-align:start}
+.lc-lr:hover{background:var(--lc-soft)}
+.lc-lr.sel{background:var(--lc-acc-bg);border-color:color-mix(in srgb,var(--lc-acc) 35%,transparent)}
+.lc-lr.off{opacity:.55;cursor:not-allowed}
+.lc-ck{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--line-2);display:grid;place-items:center;color:transparent;font-size:12px;font-weight:700}
+.lc-lr.sel .lc-ck{background:var(--lc-acc);border-color:var(--lc-acc);color:#fff}
+.lc-lr .lc-lid{font-weight:600;font-size:13px}
+.lc-lr .lc-lw{min-width:0}
+.lc-lr .lc-lw b{font-weight:600;font-size:13.5px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lc-lr .lc-lw small{color:var(--ink-3);font-size:12.5px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lc-ls{font-size:12px;font-weight:600;padding:1px 9px;border-radius:999px;background:var(--lc-soft2);color:var(--ink-3);white-space:nowrap}
+.lc-ls.ok{background:color-mix(in srgb,var(--good) 14%,transparent);color:var(--good)}
+.lc-ls.warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+.lc-ptabs{flex-wrap:wrap}
+.lc-ptabs button{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.lc-lt{display:inline-flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.lc-ptabs b{min-width:20px;padding:0 6px;height:20px;border-radius:10px;display:inline-grid;place-items:center;font-size:11.5px;background:var(--lc-soft2)}
+.lc-tl{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow:auto}
+.lc-tr{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:var(--lc-soft)}
+.lc-tr.cur{border-color:color-mix(in srgb,var(--lc-acc) 45%,transparent)}
+.lc-tn{flex:1 1 150px;min-width:0;display:flex;flex-direction:column;gap:1px;background:none;border:0;color:inherit;font:inherit;text-align:start;cursor:pointer;padding:2px 0;min-height:40px;justify-content:center}
+.lc-tn b{font-weight:700;font-size:14px;overflow-wrap:anywhere}
+.lc-tn small{font-size:12px;color:var(--ink-3);display:inline-flex;align-items:center;gap:6px}
+.lc-ta{display:flex;gap:4px;flex-wrap:wrap}
+.lc-skip{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.lc-skip .chip{cursor:pointer}
+.lc-mbar{display:none}
+@media (min-width:761px){.lc-formcol>.lc-mac{display:none}}
+@media (max-width:1180px){
+  .lc-kbd{display:none}
+  .lc-grid{grid-template-columns:minmax(0,1.3fr) minmax(280px,1fr);gap:14px}
+  .lc-side{top:calc(70px + env(safe-area-inset-top));max-height:calc(100vh - 88px - env(safe-area-inset-top))}
+  .lc-blk{padding:16px}
+  .lc-plat{flex:1 1 100%}.lc-plat button{flex:1}
+  .lc-top .btn{flex:1 1 auto}.lc-top .lc-sp{display:none}
+  .lc-fields{grid-template-columns:repeat(auto-fill,minmax(185px,1fr))}
+  .lc-bh{flex-wrap:wrap}.lc-bh small{margin-inline-start:34px;width:100%;text-align:start}
+  .lc .btn,.lc .seg button,.lc-modal .btn{min-height:40px}
+  .lc .btn-s,.lc-modal .btn-s{min-height:38px}
+}
+@media (max-width:760px){
+  .lc-grid{display:block}
+  .lc[data-tab="form"] .lc-side{display:none}
+  .lc[data-tab="list"] .lc-formcol{display:none}
+  .lc{padding-bottom:calc(132px + env(safe-area-inset-bottom))}
+  .lc-side{position:static;max-height:none;overflow:visible}
+  .lc-list{overflow:visible}
+  .lc-top{gap:8px}
+  .lc-plat{width:100%}.lc-plat button{flex:1;min-height:44px;padding:8px 6px}
+  .lc-top .btn{flex:1 1 auto;min-height:44px}
+  .lc-fields{grid-template-columns:1fr}
+  .lc .inp,.lc .sel,.lc-modal .inp,.lc-modal .sel{font-size:16px;min-height:44px}
+  .lc .btn,.lc .btn-s,.lc .seg button,.lc-modal .btn,.lc-modal .btn-s{min-height:44px}
+  .lc-chip button{width:36px;height:36px}.lc-chip .lc-ct{height:32px}
+  .lc-say textarea.inp{min-height:44px}
+  .lc-pre .chip,.lc-skip .chip,.lc-qr .chip{min-height:44px;padding-inline:14px;display:inline-flex;align-items:center}
+  .lc-step button{width:44px;height:44px}
+  .lc-go{position:static;box-shadow:none;background:transparent;border:0;padding:0}
+  .lc-go .lc-gobtn,.lc-go .lc-count{display:none}
+  .lc-x{width:44px;height:44px}
+  .lc-lr{grid-template-columns:22px minmax(0,1fr) auto;min-height:56px}
+  .lc-lr .lc-lw{grid-column:2/4;grid-row:2}
+  .modal-bg.lc-modal{padding:0;place-items:end stretch;align-items:end}
+  .lc-modal .modal{width:100%;max-width:none;max-height:90dvh;border-radius:18px 18px 0 0;border-bottom:0;padding:16px max(16px,env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+  .lc-mf .btn{flex:1 1 auto}
+  html.lc-on .toast,html.lc-on .toast-act{bottom:calc(126px + env(safe-area-inset-bottom))!important}
+  html.lc-on .ai-fab{bottom:calc(132px + env(safe-area-inset-bottom))!important}
+  .lc-mbar{display:block;position:fixed;inset-inline:0;bottom:0;z-index:60;background:color-mix(in srgb,var(--ground-1) 94%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line-2);
+    padding:8px max(12px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
+  .lc-mcount{font-size:12.5px;color:var(--ink-2);margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:20px}
+  .lc-mrow{display:flex;gap:8px;align-items:center}
+  .lc-mtabs{flex:1;display:flex}
+  .lc-mtabs button{flex:1;min-height:46px;font-size:13.5px;padding:6px 8px;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:7px}
+  .lc-mtabs b{min-width:22px;height:22px;border-radius:11px;padding:0 6px;display:inline-grid;place-items:center;font-size:12px;background:var(--lc-acc-bg);color:var(--lc-acc-ink)}
+  .lc-mtabs b.live{background:#7C78FF;color:#fff;box-shadow:0 0 0 4px rgba(124,120,255,.2)}
+  .lc-mbar .lc-gobtn{min-height:46px;padding:10px 22px!important}
+}
+@media (prefers-reduced-motion:reduce){.lc-card.new,.lc-spin{animation:none}.lc-prog i{transition:none}}
+</style>
 <style id="bramble">
 /* ══ GADLYTICS · Bramble (نوفمبر 2026) — الشكل الجديد: كحلي غامق + توهج بنفسجي + كروت زجاج + أزرار حبّاية indigo.
    طبقة CSS بس فوق كل اللي قبلها: مفيش أي تغيير في المحتوى أو الترتيب. الغامق هو الافتراضي؛ الفاتح لسه شغال من زرار الثيم.
@@ -1619,7 +1850,7 @@ function defaultConfig(){
 
 /* ── الوضع البسيط: نفس السيستم بشاشات وأقسام أقل — التبديل بيرجّع كل حاجة زي ما هي ── */
 const SIMPLE = () => ((S.cfg.settings&&S.cfg.settings.mode)||"simple")!=="pro";
-const SIMPLE_VIEWS={cppanel:1,push:1,campperf:1,snapboard:1,explorer:1,analyze:1,overview:1,live:1,entry:1,tasks:1,admin:1,me:1,chat:1,team:1,pending:1,plans:1,creatives:1,library:1,approvals:1,perf:1,reports:1,portal:1};
+const SIMPLE_VIEWS={launch:1,cppanel:1,push:1,campperf:1,snapboard:1,explorer:1,analyze:1,overview:1,live:1,entry:1,tasks:1,admin:1,me:1,chat:1,team:1,pending:1,plans:1,creatives:1,library:1,approvals:1,perf:1,reports:1,portal:1};
 const SIMPLE_SEC_ID={s_kpi:1,s_health:1,s_trend:1,s_bspend:1,s_broas:1,s_sheet:1,s_lkpi:1,s_lcurve:1,s_lcmp:1};
 const SIMPLE_SEC_TYPE={brief:1,eod:1};
 let _defIds=null;   // أقسام السيستم الافتراضية — أي قسم تاني إنت اللي ضايفه فبيفضل ظاهر
@@ -3112,6 +3343,7 @@ const ICON={
   ai:'<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/>',
   creatives:'<path d="M15 10l4.55-2.28A1 1 0 0 1 21 8.62v6.76a1 1 0 0 1-1.45.9L15 14"/><rect x="3" y="6" width="12" height="12" rx="2"/>',
   roster:'<path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/>',
+  launch:'<path d="M4.5 16.5c-1.5 1.3-2 5-2 5s3.7-.5 5-2c.7-.8.7-2.1-.1-2.9a2.2 2.2 0 0 0-2.9-.1z"/><path d="M12 15l-3-3a22 22 0 0 1 2-4A12.9 12.9 0 0 1 22 2c0 2.7-.8 7.5-6 11a22 22 0 0 1-4 2z"/><path d="M9 12H4s.5-3 2-4c1.6-1 5 0 5 0"/><path d="M12 15v5s3-.5 4-2c1-1.6 0-5 0-5"/>',
   changes:'<path d="M12 8v4l3 3"/><path d="M3.05 11a9 9 0 1 1 .5 4"/><path d="M3 4v5h5"/>',
   experiments:'<path d="M10 2v7.5L4.6 19a2 2 0 0 0 1.7 3h11.4a2 2 0 0 0 1.7-3L14 9.5V2"/><path d="M8.5 2h7M7 14h10"/>',
   library:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M10 12l4-2.5v5z"/>',
@@ -3152,7 +3384,7 @@ const CMPS=[["prev","الفترة السابقة","Previous period"],["prevmonth
 function renderFBar(){
   const host=$("#fbar");
   if(isWelcome()){ host.innerHTML=""; return; }
-  if(["cppanel","push","campperf","entry","admin","actions","roster","creatives","changes","experiments","brief","me","chat","team","pending","tasks","plans","approvals","perf","reports","portal","library","site"].indexOf(S.view)>=0||isPending()||isClient()){ host.innerHTML=""; return; }
+  if(["launch","cppanel","push","campperf","entry","admin","actions","roster","creatives","changes","experiments","brief","me","chat","team","pending","tasks","plans","approvals","perf","reports","portal","library","site"].indexOf(S.view)>=0||isPending()||isClient()){ host.innerHTML=""; return; }
   if(S.view==="live"){
     host.innerHTML='<div class="fbar"><div class="fgrp"><span class="flab">'+esc(L("اليوم","Day"))+'</span>'+
       '<input class="inp" type="date" data-c="liveDate" value="'+S.liveDate+'" max="'+todayISO()+'"></div>'+
@@ -12890,6 +13122,7 @@ function renderViewRaw(){
       case "analyze":  return renderAnalyze();
       case "explorer": return renderExplorer();
       case "campperf": return renderCampPerf();
+      case "launch": return LC.view();
       case "push": return renderPushPage();
       case "cppanel": return renderCpPanelPage();
       case "snapboard": return renderSnapSheet();
@@ -12953,6 +13186,7 @@ function headerFor(){
     site:[L("الموقع والقمع","Site & funnel"),L("سلوك الزوار على الموقع من ميكس بانل: القمع والمصادر والحملات والأجهزة وطرق الدفع والساعات","How visitors behave on the site (Mixpanel): funnel, sources, campaigns, devices, payments, hours")],
     cppanel:[L("أداء الحملات","Campaign performance"),""],
     push:[L("التنبيهات","Notifications"),L("إشعارات الحملات على الجهاز ده — وقتها وأنواعها","Campaign alerts on this device — when and which")],
+    launch:[L("إطلاق الحملات","Launch campaigns"),L("املأ القالب واضغط «اطلق»: الحملة تبدأ على طول على الماك وتكمّل أنت على اللي بعدها. تقدر تطلق 6 أو 7 حملات ورا بعض وكلها تتبني مع بعض، وكل واحدة بتتساب درافت تراجعها بنفسك.","Fill the brief and press «اطلق»: the campaign starts building on the Mac right away, each one left as a draft for you to review.")],
     campperf:[L("أداء الحملات","Campaign performance"),L("كل حملة ← Ad Set ← إعلان: الصرف من المنصة والتبرعات من خزامى، والميزانية والمزايدة تتعدل من هنا","Campaign → ad set → ad: spend from the platform, donations from Khzama; edit budgets and bids here")],
     explorer:[L("المحلل","Analyzer"),L("كل إعلان وفيديو ومشهور على كل المنصات — قسّم وقارن ودوس على أي سطر للتفاصيل","Every ad, video and influencer across platforms — break down, compare, drill in")],
     analyze:[L("تحليل الحملات","Campaign analysis"),L("كل أرقام الحملة في مكان واحد: المسار، الأيام، الساعات، المنصات","Every number for a campaign: funnel, days, hours, platforms")],
@@ -12974,7 +13208,7 @@ function headerFor(){
     (sectionScreen()&&!isMember()? (S.edit
         ? '<button class="btn btn-p" data-a="editOff">'+esc(L("خلصت التعديل","Done editing"))+"</button>"
         : '<button class="btn" data-a="editOn">'+esc(L("✎ عدّل الصفحة","✎ Edit page"))+"</button>") : "")+
-    (isClient()||["entry","admin","chat","team","plans","approvals","perf","reports","portal","creatives","library","tasks"].indexOf(S.view)>=0 ? ""
+    (isClient()||["launch","entry","admin","chat","team","plans","approvals","perf","reports","portal","creatives","library","tasks"].indexOf(S.view)>=0 ? ""
       : syncBtn()+' <button class="btn" data-a="snapNew">'+esc(L("+ لقطة يدوي","+ Manual snapshot"))+"</button>"+
         (S.view==="live"||S.view==="overview"?' <button class="btn" data-a="repNew">'+esc(L("+ تقرير اليوم","+ Daily report"))+"</button>":"")+
         (SIMPLE()?"":' <button class="btn" data-a="go" data-v="entry">'+esc(L("إدخال البيانات","Data entry"))+"</button>"))+"</div></div>"+(S.view==="admin"?"":syncPanel())+fbarSlot();
@@ -13001,7 +13235,7 @@ function navHTML(){
   const work=grp(L("شغلي","My work"),[I.me,I.tasks,I.chat]);
   const G=[
     [L("الإدارة والتحليل","Manage & analyze"),[["overview",it("overview",L("نظرة عامة","Overview"))],["campperf",it("campperf",L("أداء الحملات","Campaign performance"),"roster")],
-      ["roster",it("roster",L("إدارة الحملات","Campaign roster"))],["creatives",I.media],["library",I.cr],["explorer",it("explorer",L("المحلل","Analyzer"),"insights")],["site",it("site",L("الموقع والقمع","Site & funnel"),"cart")]]],
+      ["roster",it("roster",L("إدارة الحملات","Campaign roster"))],["launch",it("launch",L("إطلاق الحملات","Launch campaigns"))],["creatives",I.media],["library",I.cr],["explorer",it("explorer",L("المحلل","Analyzer"),"insights")],["site",it("site",L("الموقع والقمع","Site & funnel"),"cart")]]],
     [L("المتابعة","Monitor"),[["actions",it("actions",L("مركز الإجراءات","Action Center"))],["live",it("live",L("اليوم المباشر","Live Today"))],["reports",I.rep],["entry",I.entry]]],
     [L("أدوات إضافية","More tools"),[["plans",I.plans],["approvals",I.ap],["experiments",it("experiments",L("التجارب","Experiments"))],["changes",it("changes",L("سجل التغييرات","Change log"))]]]];
   const simple=SIMPLE(), member=isMember();
@@ -14290,6 +14524,7 @@ function alHistHTML(p){ if(!p||!p.st) return ""; const H=p.hist; if(!H){ setTime
 /* الضغط على تنبيه: يفتح العميل والحملة في «أداء الحملات» — على الموبايل/الآيباد شاشة الحملة، على الكمبيوتر الصف مفتوح ومتعلّم */
 ACT.alOpen=t=>{ const p=CP.panel, r=p&&p.hist&&p.hist.rows[+t.dataset.i]; if(!r) return;
   if(r.client_id&&clientById(r.client_id)&&S.ws!==r.client_id&&!isClient()){ S.ws=r.client_id; S.wsInit=1; try{ lsSet("gad.ws",r.client_id); }catch(e){} CP.key=""; }
+  if((r.kind||r.rule)==="launch"){ CP.panel=null; CP.sheet=null; CP.mnav=[]; window.__shK=null; S.view="launch"; LC.focus(String(r.obj||"").replace(/^launch:/,"")); try{ window.scrollTo(0,0); }catch(e){} refresh(); return; }
   if((r.kind||r.rule)==="media"){ CP.panel=null; CP.sheet=null; CP.mnav=[]; window.__shK=null; S.view="library"; try{ window.scrollTo(0,0); }catch(e){} refresh(); return; }
   CP.focus= r.campaign||r.obj? {code:r.campaign||"",pl:r.platform||"",id:r.obj||""} : null;
   if(CP.focus&&CP.focus.pl&&CP.plats&&CP.plats.length&&CP.plats.indexOf(CP.focus.pl)<0) CP.plats=CP.plats.concat([CP.focus.pl]);
@@ -15086,12 +15321,772 @@ document.addEventListener("keydown",e=>{ const t=e.target;
   if(t&&t.id==="navQ"&&e.key==="Enter"){ const b=document.querySelector("#nav .nav-i:not(.q-no)"); if(b){ e.preventDefault(); t.value=""; b.click(); } return; }
   if(e.key==="/"&&!/INPUT|TEXTAREA|SELECT/.test((t&&t.tagName)||"")&&!(t&&t.isContentEditable)){ const q=document.getElementById("navQ"); if(q){ e.preventDefault(); q.focus(); } } });
 (function(){ try{ const q=new URLSearchParams(location.search).get("skin"); /* Bramble: الشكل الجديد بيمسح اختيار Clay القديم مرة واحدة */ if(!localStorage.getItem("gad.bramble")){ localStorage.setItem("gad.bramble","1"); if(!q) localStorage.removeItem("gad.skin"); } if(q) localStorage.setItem("gad.skin",q==="off"?"":q); const v=localStorage.getItem("gad.skin"); if(v){ document.documentElement.setAttribute("data-skin",v==="clayglass"?"clay":v); if(v==="clayglass") document.documentElement.setAttribute("data-glass","1"); } }catch(e){} })();
+/* ══════════════════ إطلاق الحملات — view "launch" (نوفمبر 2026) ══════════════════
+   القالب بيتملى هنا ← «اطلق» بيكتب طلب في public.launch_queue (المستخدم المسجّل بس) ← الماك (launch_watcher.py + شات «مراقب الإطلاق»)
+   بيستلمه ويشغّل لكل حملة agent في الخلفية جوه نفس الشات (مش سيشن جديدة) ← الـ agent بيبني الحملة درافت بـ skill «tamkeen-launch» ويبلّغ حالتها
+   بـ launch_status.py ← الصفحة بتقرا الحالة كل كام ثانية. الصفحة نفسها مبتكلمش أي منصة إعلانية.
+   ملبي بس · فيديو بس · درافت/Paused بس. الحقول والافتراضيات من tamkeen-launch (SKILL.md «The brief» + القالبين). */
+const LC=(function(){
+/* ── تبويبات اختيار الفيديو من المكتبة — غيّر السطرين دول بس لو حبيت تغيّر التبويبات.
+      LC_PICK_TABS: كل تبويب = حالة من Airtable «حالة الإعلان» (الأول هو الافتراضي)، و {all:true} = كل الحالات.
+      LC_LICENSE_OK: قيم الترخيص السليمة — أي قيمة تانية بتتعلّم بـ ⚠ للعلم بس.
+      مفيش حاجة بتتمنع ولا بتتفحص بالحالة: محمود بيطلق على أي حالة، وأي فيديو في المكتبة بيتختار، والأرقام اللي بتتلصق بتتقبل دايماً. ── */
+const LC_PICK_TABS=[
+  {status:"معتمد للتشغيل",empty:"مفيش فيديو معتمد للتشغيل دلوقتي — اعتمده من Airtable ودوس حدّث"},
+  {status:"تم التقييم",empty:"مفيش فيديو حالته «تم التقييم»"},
+  {all:true,label:"كل الحالات",empty:"مفيش فيديوهات في المكتبة"}];
+const LC_LICENSE_OK=["فعال","لا يتطلب"];
+const PICK_KIND="Video", LIB_CLIENT="ملبي", CID="3sa3k1k";
+const MAC_FRESH_MS=30000, DRAFT_KEY="gad.lc.draft", LAST_KEY="gad.lc.last", TAB_KEY="gad.lc.tab";
+const COLS="id,platform,title,kind,n_videos,n_adsets,n_ads,state,step,step_no,progress,campaign_no,campaign_name,stop_reason,session_title,is_test,has_report,created_by_name,created_at,claimed_at,started_at,finished_at,updated_at,result_kind,pause_requested";
+const PLATS=["Meta","TikTok","Snapchat"];
+const KINDS={Meta:["Single","Bulk"],TikTok:["Smart","Bulk","Single"],Snapchat:["Single","Bulk"]};
+const OBJECTIVES=["Conversion","Awareness","Traffic","Engagement","Reach","Install","Lead","Retargeting","Views"];
+const CITY_RE=/^(riyadh|jeddah|dammam|medina|makkah|mecca|khobar|taif|الرياض|جدة|الدمام|المدينة|مكة)$/i;
+const CPA_RE=/^cpa\s*\d+/i;
+const PRESETS=[["مدن",["Riyadh","Jeddah","Dammam","Medina"]],["CPA25–50",["CPA25","CPA30","CPA35","CPA40","CPA45","CPA50"]],["SV + Story",["SV","Story"]]];
+const E=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const ltr=s=>'<span class="ltr">'+E(s)+"</span>";
+const LT=s=>'<span class="ltr">'+s+"</span>";
+const cl=o=>JSON.parse(JSON.stringify(o));
+const uid=()=>(Date.now().toString(36)+Math.random().toString(36).slice(2,7)).toLowerCase().replace(/[^a-z0-9]/g,"");
+const IC={x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  down:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>',
+  go:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>',
+  vid:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9.5l5 2.5-5 2.5z"/></svg>'};
+
+/* ── الحقول: l = الاسم زي ما هو في القالب · def = الافتراضي · req = إجباري · list = اقتراحات · a = أسامي بديلة وقت لصق بريف · carry = يتنقل لما المنصة تتغير ── */
+const BUDGET=levels=>({k:"budget",l:"Budget",t:"budget",req:1,levels,carry:1,ar:"لكل يوم"});
+const COMMON_AUD=(age,lang)=>[
+  {k:"location",l:"Target Location",def:"Saudi Arabia",req:1,carry:1,hint:"لو "+LT("Custom")+" اسمه مدينة، كل "+LT("Ad Set")+" بيتحدد بمدينته — "+LT("current city")},
+  {k:"lang",l:"Languages",def:lang||"",req:1,list:["Arabic - English"],carry:1},
+  {k:"age",l:"age",def:age,req:1,carry:1},
+  {k:"gender",l:"gender",def:"All",req:1,carry:1}];
+const SCHEMA={
+ Meta:{adsetTitle:"Campaign- Adset Level",adset:[
+   {k:"campObj",l:"Campaign Objective",def:"Sales"},
+   {k:"lifecycle",l:"Customer lifecycle strategy",def:"Get conversions from all audiences"},
+   {k:"convLoc",l:"Conversion location",def:"Website"},
+   {k:"goal",l:"Performance goal",t:"select",req:1,opts:["Maximize number of conversions","Maximize value of conversions"],a:["performance goal","optimization goal"],hint:"بيتحدد مع إنشاء كل "+LT("Ad Set")+" ومابيتغيرش بعدها."},
+   {k:"dataset",l:"Dataset",list:["Molabi [1]"],a:["dataset","data connection","dataset (pixel)","pixel"]},
+   {k:"event",l:"Conversion event",list:["Purchase"]},
+   {k:"attrModel",l:"Attribution model",def:"Standard"},
+   {k:"bid",l:"Bid Strategy",t:"bid",list:["Highest volume","Highest value","Cost per result goal"],tcl:"Cost per result goal"},
+   {k:"attr",l:"Attribution settings",def:"7-day click, None, 1-day view",a:["attribution settings","attribution"]},
+   BUDGET(["Every Adset","Campaign"]),
+   ...COMMON_AUD("23+"),
+   {k:"placement",l:"Placement",def:"All",req:1}],
+  ad:[
+   {k:"page",l:"Facebook Page",list:["جمعية ملبي"]},
+   {k:"ig",l:"Instagram profile",list:["جمعية ملبي"]},
+   {k:"dest",l:"Main destination",def:"Website URL (UTM)"},
+   {k:"creative",l:"Ad creative",def:"from Tamkeen Ads Manager",a:["ad creative","ad creatives"]},
+   {k:"text",l:"Primary text",t:"area",req:1,carry:1,wide:1},
+   {k:"headline",l:"Headline",req:1,carry:1},
+   {k:"cta",l:"Call to action",req:1,list:["Donate now"]}]},
+ TikTok:{adsetTitle:"Campaign- Adset Level",adset:[
+   {k:"campObj",l:"Campaign Objective",def:"Sales"},
+   {k:"salesDest",l:"Sales destination",def:"Website - Turn OFF Search Campaign"},
+   {k:"prodSource",l:"Product source",def:"catalog campaign OFF"},
+   {k:"goal",l:"Optimization goal",t:"select",req:1,opts:["Maximize conversions","Maximize value of conversions"],a:["optimization goal","performance goal"],hint:"بيتحدد مع إنشاء كل "+LT("Ad Group")+" ومابيتغيرش بعدها."},
+   {k:"dataset",l:"Data connection",list:["el-Rayan [1]"],a:["data connection","dataset","data connection (dataset)"]},
+   {k:"event",l:"Conversion event",list:["Purchase"]},
+   {k:"bid",l:"Bid Strategy",t:"bid",list:["Highest value","Maximum results","Target cost per result"],tcl:"Target cost per result"},
+   {k:"attr",l:"Attribution settings",def:"7-day click, 1-day view",a:["attribution settings","attribution"]},
+   BUDGET(["Every Adset","Campaign"]),
+   ...COMMON_AUD("23+"),
+   {k:"placement",l:"Placement",def:"TikTok Only",req:1}],
+  ad:[
+   {k:"identity",l:"Identity",list:["جمعية ملبي"]},
+   {k:"dest",l:"Main destination",def:"Website URL (UTM)"},
+   {k:"creative",l:"Ad creative",def:"from Tamkeen Ads Manager",a:["ad creative","ad creatives"]},
+   {k:"text",l:"Primary text",t:"area",req:1,carry:1,wide:1},
+   {k:"cta",l:"Call to action",req:1,list:["Donate now"]}],
+  fixed:"Auto-add assets OFF · Auto-add newly generated assets OFF · Shopping Assistant OFF · Automatic enhancements: All OFF"},
+ Snapchat:{adsetTitle:"Campaign- Adset Level",adset:[
+   {k:"campObj",l:"Campaign Objective",def:"Sales"},
+   {k:"dataset",l:"Dataset (Pixel)",def:"Molabi [1] Pixel",a:["dataset (pixel)","dataset","pixel"]},
+   {k:"goal",l:"Performance Goal",req:1,def:"Maximize number of website conversions",a:["performance goal","optimization goal"]},
+   {k:"event",l:"Conversion Event",def:"Pixel Purchase"},
+   {k:"attr",l:"Optimization Window",def:"7 days click"},
+   BUDGET(["AdSet","Campaign"]),
+   {k:"bid",l:"Bid strategy",t:"bid",def:"Target Cost",tcDef:"20",list:["Target Cost","Max bid (Lowest cost)"],tcl:"Target Cost"},
+   ...COMMON_AUD("25 - 55+","Arabic - English"),
+   {k:"segments",l:"Audiences (Segments)",def:"broad"},
+   {k:"placement",l:"Placement",def:"All",req:1}],
+  ad:[
+   {k:"adName",l:"Ad Name",def:"From Tamkeen Ads Manager"},
+   {k:"creative",l:"Ad Creatives",def:"From Tamkeen Ads Manager (search Creative ID in Snapchat media library)",a:["ad creatives","ad creative"],wide:1},
+   {k:"headline",l:"Headline",req:1,carry:1},
+   {k:"brand",l:"Brand Name",def:"No Fill"},
+   {k:"profile",l:"Public Profile",def:"جمعية ملبي"},
+   {k:"dest",l:"Website URL",def:"UTM from Tamkeen Ads Manager",a:["website url","main destination"]},
+   {k:"cta",l:"Call To Action",def:"Donate",req:1},
+   {k:"msgDesign",l:"Message Design",def:"OFF"},
+   {k:"discover",l:"Discover Tile",def:"OFF",ar:"لإعلان Story بس"}]}
+};
+const fieldsOf=p=>SCHEMA[p].adset.concat(SCHEMA[p].ad);
+
+/* ── الحالة ── */
+const ST={pickTab:0,pct:{},msgs:{},say:{},rows:[],loaded:false,err:"",limit:7,mac:null,macSeenAt:0,macChgAt:0,tab:"form",focus:"",hot:"",open:{},rep:{},lib:null,libMap:{},libAt:0,libErr:"",tpls:null,tplId:"",sig:"",busy:false};
+let F=null, touched=false, newId=null, pickSel=null, pollT=null, liveT=null, tplDraft=null;
+const cloud=()=>RT.cloud()&&!!window.SUPA_DB&&!!SUPA_DB.client;
+const sb=()=>SUPA_DB.client;
+const pickOk=r=>!!r&&r.kind===PICK_KIND;   /* أي فيديو في المكتبة يتختار — الحالة للعرض بس */
+const licOk=r=>!!r&&LC_LICENSE_OK.indexOf(r.license)>=0;
+
+function blank(p){
+  const f={platform:p,title:"",client:"Molabi",kind:KINDS[p][0],kindManual:false,ids:"",campMode:"New",campNum:"",country:"Saudi Arabia",
+    objective:p==="Snapchat"?"Conversion":"",link:"",customs:p==="Snapchat"?["SV","Story"]:[],ctype:{},v:{},snapAcc:""};   /* snapAcc = حساب سناب الإعلاني: بيتملى بحساب الريال أول ما القائمة تتحمّل (snapAccOpts) */
+  fieldsOf(p).forEach(d=>{ f.v[d.k]=d.def||""; if(d.t==="budget") f.v.budgetLevel=d.levels[0]; if(d.t==="bid") f.v.targetCost=d.tcDef||""; });
+  autoKind(f); return f; }
+function normalize(f){ const b=blank(PLATS.includes(f&&f.platform)?f.platform:"Meta"); if(!f) return b;
+  Object.keys(b).forEach(k=>{ if(k!=="v"&&f[k]!=null) b[k]=cl(f[k]); }); Object.keys(b.v).forEach(k=>{ if(f.v&&f.v[k]!=null) b.v[k]=f.v[k]; });
+  if(!Array.isArray(b.customs)) b.customs=[]; if(!b.ctype||typeof b.ctype!=="object") b.ctype={}; return b; }
+
+/* ── قراءة الـ IDs: أي مقطع أرقام/شرط 6+، ولازم يطلع 14 رقم ── */
+function idInfo(t){ const raw=(String(t||"").match(/[-\d]{6,}/g)||[]).map(r=>r.replace(/-/g,"")).filter(Boolean);
+  const ids=[],bad=[],dup=[]; raw.forEach(r=>{ if(!/^\d{14}$/.test(r)){ bad.push(r); return; } if(ids.includes(r)){ if(!dup.includes(r)) dup.push(r); } else ids.push(r); });
+  return {ids,bad,dup}; }
+function autoKind(f){ if(f.kindManual&&KINDS[f.platform].includes(f.kind)) return; f.kindManual=false;
+  f.kind=f.platform==="TikTok"?"Smart":f.platform==="Snapchat"?"Bulk":(idInfo(f.ids).ids.length>1?"Bulk":"Single"); }
+const snapType=(f,c)=>f.ctype[c]||(/story/i.test(c)?"Story":"Single Video");
+const cpaCustoms=f=>f.customs.filter(x=>CPA_RE.test(x));
+const hasTC=f=>/target|cost/i.test(f.v.bid||"");
+function counts(f){ const n=idInfo(f.ids).ids.length,m=f.customs.length; return {n,m,ads:f.kind==="Smart"?m:n*m}; }
+function countHTML(n,m,kind){ const a=ltr(n)+" فيديو × "+ltr(m+" Ad Set");
+  return kind==="Smart"? a+' = <span class="lc-eq">'+ltr(m)+" إعلان "+ltr("Smart+")+"</span>، كل إعلان فيه "+ltr(n)+" فيديو"
+                       : a+' = <span class="lc-eq">'+ltr(n*m)+" إعلان</span>"; }
+function autoTitle(f){ const g=(f.v.goal||"").toLowerCase(); let t="";
+  if(f.platform==="Snapchat") t=f.customs.join(" + "); else if(cpaCustoms(f).length) t="CPA"; else if(/value/.test(g)) t="Value"; else if(g) t="Conversions";
+  return f.platform+(t?" - "+t:""); }
+const titleOf=f=>f.title.trim()||autoTitle(f);
+function guessPlat(s){ s=(s||"").toLowerCase(); if(/tik\s*tok|tiktok/.test(s))return"TikTok"; if(/snap/.test(s))return"Snapchat"; if(/meta|facebook|\bfb\b|instagram/.test(s))return"Meta"; return""; }
+
+/* ═════════ الفحص: الحقول الإجبارية في SKILL.md + فحوص لوحة الإطلاق القديمة ═════════ */
+function check(f){
+  const Er={},N=[],W=m=>N.push({s:"warn",m}),I=m=>N.push({s:"info",m}),v=f.v,p=f.platform,X=idInfo(f.ids),cu=f.customs;
+  const miss=l=>"حقل ناقص: "+ltr(l);
+  if(!f.client.trim()) Er.client=miss("Client"); else if(!/molabi|ملبي/i.test(f.client)) Er.client="البناء شغّال لملبي بس دلوقتي";
+  if(X.bad.length) Er.ids="ID مش "+ltr(14)+" رقم: "+X.bad.map(ltr).join("، ");
+  else if(!X.ids.length) Er.ids="مفيش "+ltr("Creative IDs");
+  else if(X.dup.length) Er.ids="ID مكرر: "+X.dup.map(ltr).join("، ");
+  const n=X.ids.length;
+  if(f.kind==="Single"&&n>1) Er.kind=ltr("Single")+" لفيديو واحد بس — اختار "+ltr("Bulk");
+  else if(f.kind==="Smart"&&n>10) Er.kind=ltr("Smart")+" أقصاه "+ltr(10)+" فيديوهات في الإعلان";
+  else if(f.kind==="Bulk"&&n>50) Er.kind=ltr("Bulk")+" أقصاه "+ltr(50)+" فيديو";
+  if(f.campMode==="Select"&&!f.campNum.trim()) Er.campaign="اكتب رقم الحملة";
+  else if(f.campMode==="Same"&&f.kind!=="Single") Er.campaign=ltr("Same")+" متاح مع "+ltr("Single")+" بس";
+  if(!f.country.trim()) Er.country=miss("Country");
+  if(!f.objective) Er.objective=miss("Objective");
+  const link=f.link.trim();
+  if(!link) Er.link=miss("Product Link"); else if(!/^https?:\/\/\S+\.\S+/.test(link)) Er.link="رابط المنتج مش صحيح (لازم يبدأ بـ "+ltr("https://")+")";
+  if(!cu.length) Er.customs="مفيش "+ltr("Adsets (Custom)")+" — ضيف واحد على الأقل";
+  else{ const dc=cu.filter((x,i)=>cu.findIndex(y=>y.toLowerCase()===x.toLowerCase())!==i); if(dc.length) Er.customs="Adset مكرر: "+[...new Set(dc)].map(ltr).join("، "); }
+  fieldsOf(p).forEach(d=>{ if(d.req&&!String(v[d.k]||"").trim()) Er[d.k]=miss(d.l); });
+  if(!Er.budget&&!(parseFloat(v.budget)>0)) Er.budget="اكتب الميزانية رقم";
+  const cpa=cpaCustoms(f);
+  if(!Er.bid&&hasTC(f)&&!cpa.length&&v.targetCost!==""&&!(parseFloat(v.targetCost)>0)) Er.bid="اكتب "+ltr("Target cost")+" رقم";
+  /* تحذيرات ومعلومات (مش بتمنع الإطلاق) */
+  const goal=(v.goal||"").toLowerCase(),bid=(v.bid||"").toLowerCase(),ttl=f.title.trim();
+  const tp=guessPlat(ttl); if(tp&&tp!==p) W("العنوان بيقول "+ltr(tp)+" لكن المنصة المختارة "+ltr(p));
+  if(/value/.test(goal)&&/target cost|cost per|max.*results/.test(bid)) W("الهدف "+ltr("Value")+" لكن "+ltr("Bid Strategy")+" مكتوب «"+ltr(v.bid)+"» — المفروض "+ltr("Highest value"));
+  if(/conversion/.test(goal)&&!/value/.test(goal)&&/highest value|roas/.test(bid)) W("الهدف "+ltr("Conversions")+" لكن "+ltr("Bid Strategy")+" مكتوب «"+ltr(v.bid)+"»");
+  if(cpa.length){ I(ltr("CPA")+": "+ltr("Target CPA")+" لكل "+ltr("Ad Set")+" = الرقم اللي في اسمه ("+ltr(cpa.map(x=>x.replace(/\D/g,"")).join(" / "))+")، وأي رقم تاني في "+ltr("Bid Strategy")+" بيتجاهل");
+    if(cpa.length!==cu.length) W("بعض أسامي "+ltr("Custom")+" فيها "+ltr("CPA")+" وبعضها لأ");
+    if(bid&&!/target|cost/.test(bid)) W(ltr("Custom CPA")+" لكن "+ltr("Bid Strategy")+" مش "+ltr("Target cost")); }
+  const cities=cu.filter(x=>CITY_RE.test(x));
+  if(cities.length) I("أسامي "+ltr("Custom")+" مدن — "+ltr(cities.join(", "))+": كل "+ltr("Ad Set")+" هيتحدد بمدينته، "+ltr("current city"));
+  if(p==="TikTok"&&f.kind!=="Smart") W(ltr("TikTok")+" لازم "+ltr("Launch kind = Smart"));
+  if(p==="Snapchat"&&/value/.test(goal)) W(ltr("Snapchat")+": هدف "+ltr("Value")+" مش مدعوم في القالب");
+  if(p==="Snapchat"){ const al=snapAccs(),a=snapAcc(f);
+    if(!al.length) Er.snapAcc="قائمة حسابات سناب لسه ما اتحمّلتش — استنى لحظة أو حدّث الصفحة";
+    else if(!a) Er.snapAcc="اختار الحساب الإعلاني: ريال ولا دولار";
+    else { const bd=parseFloat(v.budget),usd=a.fx>0&&a.fx!==1;
+      if(a.buildable===false) W("حساب "+ltr(a.account_name)+": البناء بالـ "+ltr("API")+" هيقف عليه دلوقتي — "+ltr(a.blocked_reason||"محتاج تأكيد"));
+      if(bd>0&&a.min_daily_budget_sar&&bd<a.min_daily_budget_sar) W("الميزانية أقل من أقل ميزانية يومية في سناب على الحساب ده ("+ltr(a.min_daily_budget_sar+" SAR")+(usd?" = "+ltr("$"+a.min_daily_budget):"")+")");
+      if(usd) I("حساب دولار: بتكتب بالريال والبناء بيحوّل ÷ "+ltr(a.fx)+" — الميزانية "+ltr(v.budget+" SAR "+fxTxt(f,v.budget))+(cpaCustoms(f).length?" · "+ltr("Target Cost")+": "+ltr(cpaCustoms(f).map(x=>{ const n=x.replace(/\D/g,""); return n+" SAR "+fxTxt(f,n); }).join(" / ")):hasTC(f)&&v.targetCost?" · "+ltr("Target Cost "+v.targetCost+" SAR "+fxTxt(f,v.targetCost)):"")); } }
+  if(p!=="Snapchat"&&!String(v.event||"").trim()) W(ltr("Conversion event")+" فاضي");
+  if(ttl&&/value/i.test(ttl)&&goal&&!/value/.test(goal)) W("العنوان فيه "+ltr("Value")+" لكن الهدف «"+ltr(v.goal)+"»");
+  if(ttl&&/cpa/i.test(ttl)&&cu.length&&!cpa.length) W("العنوان فيه "+ltr("CPA")+" لكن أسامي "+ltr("Custom")+" مفيهاش "+ltr("CPA25"));
+  if(p==="TikTok"){ if(v.cta&&!/donate/i.test(v.cta)) I(ltr("TikTok")+": زرار "+ltr("CTA")+" هيتحط "+ltr("Donate now")+" بس (قاعدة ثابتة)");
+    I(ltr("TikTok")+": "+ltr("Auto-add assets")+" وكل "+ltr("enhancements")+" هتتقفل في كل إعلان (قاعدة ثابتة)"); }
+  /* حالة الفيديو في المكتبة للعلم بس — الأرقام اللي بتتلصق بتتقبل أياً كانت حالتها */
+  /* الترخيص للعلم بس (مش تحذير ومش مانع)، والحالة مبتتفحصش خالص */
+  X.ids.forEach(id=>{ const r=ST.libMap[id]; if(r&&!licOk(r)) I("⚠ "+ltr(id)+" ترخيصه في المكتبة «"+E(r.license||"مش متسجل")+"» — للعلم"); });
+  return {E:Er,N,n,m:cu.length};
+}
+
+/* ═════════ نص البريف (نفس شكل القالبين) ═════════ */
+/* حسابات سناب بتاعة ملبي: docs config/snap_accounts — الماك بيحدّثها من الـ API (‎~/.gadlytics/snap_accounts_sync.py)، مفيش حاجة مكتوبة باليد هنا */
+function snapAccs(){ return (ST.snapAcc||[]).filter(a=>a&&a.account_id); }
+function snapAcc(f){ return snapAccs().find(a=>a.account_id===f.snapAcc)||null; }
+function snapAccOpts(f){ if(f.platform==="Snapchat"&&!f.snapAcc){ const d0=snapAccs().find(a=>a.currency==="SAR"); if(d0) f.snapAcc=d0.account_id; }   /* الافتراضي: حساب الريال (الأساسي) — وبيتغيّر للدولار عادي */
+  return '<option value="">— اختار —</option>'+snapAccs().map(a=>'<option value="'+E(a.account_id)+'"'+(f.snapAcc===a.account_id?" selected":"")+">"+E(a.account_name+" · "+(a.currency==="SAR"?"ريال":a.currency==="USD"?"دولار":a.currency)+" ("+a.currency+")")+"</option>").join(""); }
+/* المبالغ بتتكتب بالريال دايماً؛ على حساب الدولار بتتحول بنفس سعر camp-apply الثابت (÷ 3.75) */
+function fxTxt(f,sar){ const a=snapAcc(f),n=parseFloat(String(sar==null?"":sar).replace(/,/g,"")); if(f.platform!=="Snapchat"||!a||!(a.fx>0)||a.fx===1||!(n>0)) return ""; return "= "+(a.currency==="USD"?"$":"")+(n/a.fx).toFixed(2)+(a.currency==="USD"?"":" "+a.currency); }
+function intro(p){ const w={TikTok:"ابنيها من TikTok Ads Manager في Chrome وسيبها درافت",Snapchat:"ابنيها على Snapchat بالـ Marketing API وسيبها Paused (من غير ما تنشر)، ولو الـ API ماينفعش يبقى من Snap Ads Manager في Chrome وسيبها درافت",Meta:"ابنيها على Meta بالـ connector وسيبها Paused (من غير ما تنشر)"}[p];
+  return "اعمل الحملة دي من تمكين ادز مانجر. "+w+". ما تستناش موافقات: انطلق على طول، وما تنشرش ولا تفعّل حاجة.\n\n"; }
+function bidText(f){ const v=f.v; if(!hasTC(f)) return v.bid||""; if(cpaCustoms(f).length) return v.bid+" ( من اسم كل Custom )"; return v.targetCost?v.bid+" ( "+v.targetCost+" SAR )":v.bid; }
+function buildBrief(f){
+  const ids=idInfo(f.ids).ids,cu=f.customs,v=f.v,Ln=[],A=(k,x)=>Ln.push(k+": "+(x==null?"":x)),S2=SCHEMA[f.platform];
+  Ln.push(titleOf(f),"","Tamkeen Ads Manager Level (airtable)");
+  A("Client",f.client.trim());A("Platform",f.platform);A("Launch kind",f.kind);
+  Ln.push("Creatives ID:");ids.forEach(i=>Ln.push(i));
+  A("Campaign",f.campMode==="Select"?"Select (campaign number: "+f.campNum.trim()+")":f.campMode);
+  A("Country",f.country);A("Objective",f.objective);A("Product Link",f.link.trim());
+  Ln.push("Adsets ( Custom ):");cu.forEach((x,i)=>Ln.push((i+1)+"- "+x));Ln.push("");
+  const line=d=>{ if(d.t==="budget"){ if(f.platform==="Snapchat"){ A("Budget level",v.budgetLevel);A("Budget",v.budget+" SAR"); } else A("Budget",v.budget+" SAR "+(v.budgetLevel==="Campaign"?"Campaign":"Every Adset")); }
+    else if(d.t==="bid") A(d.l,bidText(f)); else A(d.l,v[d.k]); };
+  if(f.platform==="Snapchat"){
+    Ln.push("Campaign Level:","");
+    { const a=snapAcc(f); A("Ad Account",a?a.account_name+" ("+a.account_id+")":""); }
+    S2.adset.slice(0,2).forEach(line);
+    cu.forEach((c,i)=>{ const st=snapType(f,c)==="Story";
+      Ln.push("","Adset "+(i+1)+" ("+c+"):","");A("Ad type",st?"Story":"Single Video");
+      S2.adset.slice(2).forEach(line);
+      Ln.push("","AD Level:","");
+      S2.ad.forEach(d=>{ if(d.k==="discover"){ if(st) line(d); return; } line(d); if(d.k==="adName") A("Ad Format",st?"Story Ad":"Single Video"); }); });
+  } else {
+    Ln.push("Campaign- Adset Level:","");S2.adset.forEach(line);
+    Ln.push("","AD Level:");S2.ad.forEach(line);
+    if(S2.fixed) A("ملاحظات",S2.fixed);
+  }
+  return Ln.join("\n");
+}
+/* اختبار الربط: نص ثابت بالحرف — launch_watcher.py بيرفض أي طلب تجريبي نصه مختلف عنه */
+const testBrief=id=>"اختبار ربط GADLYTICS — مفيش حملة هتتبني، ومفيش متصفح ولا أداة إطلاق. نفّذ الأمرين دول بالترتيب وبس، وبعدين رد بكلمة «تم»:\n"+
+  "python3 ~/.gadlytics/launch_status.py "+id+" building --step-no 2 --step \"اختبار ربط\"\n"+
+  "python3 ~/.gadlytics/launch_status.py "+id+" draft --campaign MGG-00000 --name \"تجريبي — اختبار ربط (مفيش حملة)\" --report-file ~/.gadlytics/launch_queue/test_report.txt";
+
+/* ═════════ لصق بريف جاهز ═════════ */
+function parseBrief(t){
+  t=t.replace(/\r/g,""); const lines=t.split("\n"),f={};
+  let title=""; for(const l of lines){ if(l.trim()){ title=l.trim(); break; } }
+  if(/tamkeen ads manager|^اعمل الحملة/i.test(title)){ const i=lines.findIndex(l=>/tamkeen ads manager level/i.test(l)); title="";
+    for(let j=i-1;j>=0;j--){ const s=lines[j].trim(); if(s&&!/^اعمل الحملة/.test(s)){ title=s; break; } } }
+  const m=t.match(/Creatives?\s*ID\s*:?([\s\S]*?)(?=\n\s*(?:Country|Objective|Product Link|Adsets)\s*[:(]|Campaign\s*:)/i);
+  const idText=m?m[1]:"";
+  for(const l of lines){ const mm=l.match(/^\s*([A-Za-z][A-Za-z ()\/\-]{1,40}?)\s*:\s*(.*)$/); if(mm){ const k=mm[1].trim().toLowerCase().replace(/\s+/g," "); if(!(k in f)) f[k]=mm[2].trim(); } }
+  const cm=t.match(/Campaign\s*:\s*([^\n]*)/i); if(cm) f["campaign"]=cm[1].trim();
+  const am=t.match(/Adsets?\s*\(\s*Custom\s*\)\s*:?([\s\S]*?)(?=\n\s*\n|Campaign\s*-?\s*(?:Adset\s*)?Level|Campaign Level)/i);
+  const customs=am?am[1].split(/(?:^|\s)\d+\s*-\s*/).map(x=>x.trim()).filter(Boolean):[];
+  const ctype={}; t.replace(/Adset\s*\d+\s*\(([^)\n]+)\)\s*:\s*\n+\s*Ad type\s*:\s*([^\n]+)/gi,(a,c,y)=>{ ctype[c.trim()]=/story/i.test(y)?"Story":"Single Video"; return a; });
+  return {title,f,idText,customs,ctype};
+}
+const oneOf=(val,opts)=>{ const hit=opts.filter(o=>new RegExp("(^|[^a-z])"+o.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"($|[^a-z])","i").test(val||"")); return hit.length===1?hit[0]:""; };
+function briefToForm(t){
+  const P=parseBrief(t),pf=P.f,notes=[];
+  if(Object.keys(pf).length<3&&!/\d{14}/.test(P.idText)) return null;
+  const tp=guessPlat(P.title),bp=guessPlat(pf["platform"]); let plat=bp||tp||F.platform;
+  if(tp&&bp&&tp!==bp){ plat=tp; notes.push("العنوان بيقول "+tp+" لكن Platform مكتوب "+pf["platform"]+" (صححتها)"); }
+  else if(!tp&&!bp) notes.push("المنصة مش واضحة في البريف، سبتها "+plat);
+  const f=blank(plat); f.title=P.title;
+  if(pf["client"]) f.client=pf["client"];
+  const toks=(P.idText.match(/[-\d]{6,}/g)||[]); f.ids=toks.map(x=>x.replace(/-/g,"")).filter(Boolean).join("\n");
+  const k=oneOf(pf["launch kind"],["Single","Bulk","Smart"]); if(k&&KINDS[plat].includes(k)){ f.kind=k; f.kindManual=true; }
+  const cv=pf["campaign"]||"",cmode=oneOf(cv,["New","Same","Select"]);
+  if(cmode){ f.campMode=cmode; if(cmode==="Select"){ const nm=cv.match(/(?:MGG-)?\d{3,6}/i); f.campNum=nm?nm[0]:""; } }
+  if(pf["country"]) f.country=pf["country"];
+  const ob=(pf["objective"]||"").replace(/^conversions$/i,"Conversion"); const oh=OBJECTIVES.find(o=>o.toLowerCase()===ob.toLowerCase()); if(oh) f.objective=oh;
+  if(pf["product link"]) f.link=pf["product link"];
+  if(P.customs.length){ f.customs=P.customs; f.ctype=P.ctype; }
+  fieldsOf(plat).forEach(d=>{ const keys=(d.a||[]).concat(d.l.toLowerCase()); let val; for(const key of keys){ if(pf[key]!=null&&pf[key]!==""){ val=pf[key]; break; } } if(val==null) return;
+    if(d.t==="select"){ const h=d.opts.filter(o=>val.toLowerCase().includes(o.toLowerCase())); if(h.length===1) f.v[d.k]=h[0]; else if(val.toLowerCase()==="maximize conversions"||val.toLowerCase()==="maximize number of conversions") f.v[d.k]=d.opts[0]; }
+    else if(d.t==="budget"){ const nm=val.match(/[\d.,]+/); if(nm) f.v.budget=nm[0].replace(/,/g,""); if(/campaign|cbo/i.test(val)) f.v.budgetLevel="Campaign"; }
+    else if(d.t==="bid"){ const bm=val.match(/^(.*?)\s*\(\s*([\d.]+)\s*SAR\s*\)\s*$/i); if(bm){ f.v.bid=bm[1].trim(); f.v.targetCost=bm[2]; } else f.v.bid=val.replace(/\s*\(.*\)\s*$/,"").trim(); }
+    else f.v[d.k]=val; });
+  if(pf["budget level"]&&/campaign/i.test(pf["budget level"])) f.v.budgetLevel="Campaign";
+  if(pf["ad account"]){ const s0=pf["ad account"].toLowerCase(),a=snapAccs().find(x=>s0.indexOf(x.account_id)>=0)||snapAccs().find(x=>s0.indexOf(x.account_name.toLowerCase())===0); if(a) f.snapAcc=a.account_id; }
+  autoKind(f); return {f,notes};
+}
+
+/* ═════════ رسم القالب ═════════ */
+function fldHTML(d,f){
+  const v=f.v,id="lcf_"+d.k,lab='<label for="'+id+'">'+ltr(d.l)+(d.req?'<i class="lc-req" title="إجباري">*</i>':"")+(d.ar?"<small>"+E(d.ar)+"</small>":"")+"</label>";
+  let c;
+  if(d.t==="select") c='<select class="sel" id="'+id+'" data-lk="'+d.k+'" data-ls="v"><option value="">— اختار —</option>'+d.opts.map(o=>'<option'+(v[d.k]===o?" selected":"")+">"+E(o)+"</option>").join("")+"</select>";
+  else if(d.t==="area") c='<textarea class="inp" id="'+id+'" data-lk="'+d.k+'" data-ls="v" rows="2" dir="auto">'+E(v[d.k])+"</textarea>";
+  else if(d.t==="budget") c='<div class="lc-pair"><input class="inp num" id="'+id+'" data-lk="budget" data-ls="v" inputmode="decimal" autocomplete="off" value="'+E(v.budget)+'" placeholder="0"><span class="lc-unit ltr">SAR</span>'+
+      '<select class="sel" data-lk="budgetLevel" data-ls="v" aria-label="Budget level">'+d.levels.map(o=>'<option'+(v.budgetLevel===o?" selected":"")+">"+E(o)+"</option>").join("")+"</select></div>";
+  else if(d.t==="bid") c='<div class="lc-pair"><input class="inp" id="'+id+'" data-lk="bid" data-ls="v" dir="auto" autocomplete="off" list="lcdl_bid" value="'+E(v.bid)+'"><datalist id="lcdl_bid">'+d.list.map(o=>'<option value="'+E(o)+'">').join("")+"</datalist>"+
+      '<input class="inp num" id="lcf_tc" data-lk="targetCost" data-ls="v" inputmode="decimal" autocomplete="off" style="flex:0 1 84px" value="'+E(v.targetCost)+'" placeholder="SAR" aria-label="'+E(d.tcl)+' (SAR)"></div>';
+  else c='<input class="inp" id="'+id+'" data-lk="'+d.k+'" data-ls="v" dir="auto" autocomplete="off" value="'+E(v[d.k])+'"'+(d.list?' list="lcdl_'+d.k+'"':"")+">"+(d.list?'<datalist id="lcdl_'+d.k+'">'+d.list.map(o=>'<option value="'+E(o)+'">').join("")+"</datalist>":"");
+  return '<div class="fld'+(d.wide?" lc-wide":"")+'" data-f="'+d.k+'">'+lab+c+(d.hint?'<p class="hint">'+d.hint+"</p>":"")+(d.t==="bid"?'<p class="hint" id="lcTcH"></p>':"")+(d.t==="budget"?'<p class="hint" id="lcFxB"></p>':"")+'<p class="lc-err" role="alert"></p></div>';
+}
+function chipsHTML(f){ return f.customs.map((c,i)=>'<span class="chip on lc-chip">'+ltr(c)+
+    (f.platform==="Snapchat"?'<button type="button" class="lc-ct" data-a="lcCtype" data-i="'+i+'" title="بدّل نوع الإعلان" aria-label="نوع الإعلان: '+E(snapType(f,c))+'">'+ltr(snapType(f,c)==="Story"?"Story":"Single Video")+"</button>":"")+
+    '<button type="button" data-a="lcChipDel" data-i="'+i+'" aria-label="شيل '+E(c)+'">'+IC.x+"</button></span>").join(""); }
+function blkHead(n,t,sub){ return '<div class="lc-bh"><span class="lc-bn num">'+n+"</span><h2>"+ltr(t)+"</h2><small>"+sub+"</small></div>"; }
+function renderForm(){
+  if(!$("#lcBlocks")) return;
+  const f=F,S2=SCHEMA[f.platform];
+  $("#lcPlat").innerHTML=PLATS.map(p=>'<button type="button" role="radio" aria-checked="'+(p===f.platform)+'" class="'+(p===f.platform?"on":"")+'" data-a="lcPlat" data-v="'+p+'" data-p="'+p+'"><i class="lc-dot"></i>'+ltr(p)+"</button>").join("");
+  const seg=(opts,val,act)=>'<div class="seg" role="radiogroup">'+opts.map(o=>'<button type="button" role="radio" aria-checked="'+(o===val)+'" class="'+(o===val?"on":"")+'" data-a="'+act+'" data-v="'+o+'">'+ltr(o)+"</button>").join("")+"</div>";
+  const b1='<section class="card lc-blk">'+blkHead(1,"Tamkeen Ads Manager Level (airtable)","اللي بيتبعت لأداة الإطلاق")+'<div class="lc-fields">'+
+    '<div class="fld lc-wide" data-f="title"><label for="lcf_title">عنوان الحملة<small>أول سطر في البريف — بيظهر على الكارت وفي شات مراقب الإطلاق</small></label><input class="inp" id="lcf_title" data-lk="title" data-ls="top" dir="auto" autocomplete="off" value="'+E(f.title)+'"><p class="lc-err" role="alert"></p></div>'+
+    '<div class="fld" data-f="client"><label for="lcf_client">'+ltr("Client")+'<i class="lc-req">*</i></label><input class="inp" id="lcf_client" data-lk="client" data-ls="top" dir="auto" autocomplete="off" value="'+E(f.client)+'"><p class="lc-err" role="alert"></p></div>'+
+    (f.platform==="Snapchat"?'<div class="fld" data-f="snapAcc"><label for="lcf_snapAcc">الحساب الإعلاني<i class="lc-req" title="إجباري">*</i><small>'+ltr("Snapchat")+' — الافتراضي حساب الريال، وتقدر تغيّره للدولار</small></label><select class="sel" id="lcf_snapAcc" data-lk="snapAcc" data-ls="top">'+snapAccOpts(f)+'</select><p class="lc-err" role="alert"></p></div>':"")+
+    '<div class="fld" data-f="kind"><label>'+ltr("Launch kind")+"<small>"+(f.kindManual?"اختيارك":f.platform==="Meta"?"تلقائي حسب عدد الفيديوهات":"الافتراضي للمنصة دي")+"</small></label>"+seg(KINDS[f.platform],f.kind,"lcKind")+'<p class="lc-err" role="alert"></p></div>'+
+    '<div class="fld lc-wide" data-f="ids"><label for="lcf_ids">'+ltr("Creatives ID")+'<i class="lc-req">*</i><small>الصق الأرقام (كل رقم '+ltr(14)+' خانة) أو اختار من المكتبة</small></label>'+
+      '<textarea class="inp num lc-ids" id="lcf_ids" data-lk="ids" data-ls="top" dir="ltr" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="الصق الأرقام هنا — رقم في كل سطر">'+E(f.ids)+"</textarea>"+
+      '<div class="lc-row"><button type="button" class="btn btn-s" data-a="lcPickOpen">'+IC.vid+'اختار من المكتبة</button><span class="lc-idm" id="lcIdm"></span></div><p class="lc-err" role="alert"></p></div>'+
+    '<div class="fld" data-f="campaign"><label>'+ltr("Campaign")+'</label><div class="lc-row">'+seg(["New","Same","Select"],f.campMode,"lcCamp")+
+      (f.campMode==="Select"?'<input class="inp num" data-lk="campNum" data-ls="top" dir="ltr" autocomplete="off" style="flex:1 1 110px" value="'+E(f.campNum)+'" placeholder="MGG-03071" aria-label="campaign number">':"")+'</div><p class="lc-err" role="alert"></p></div>'+
+    '<div class="fld" data-f="country"><label for="lcf_country">'+ltr("Country")+'</label><input class="inp" id="lcf_country" data-lk="country" data-ls="top" dir="auto" autocomplete="off" value="'+E(f.country)+'"><p class="lc-err" role="alert"></p></div>'+
+    '<div class="fld" data-f="objective"><label for="lcf_objective">'+ltr("Objective")+'<i class="lc-req">*</i></label><select class="sel" id="lcf_objective" data-lk="objective" data-ls="top"><option value="">— اختار —</option>'+OBJECTIVES.map(o=>'<option'+(f.objective===o?" selected":"")+">"+o+"</option>").join("")+'</select><p class="lc-err" role="alert"></p></div>'+
+    '<div class="fld lc-wide" data-f="link"><label for="lcf_link">'+ltr("Product Link")+'<i class="lc-req">*</i></label><input class="inp" id="lcf_link" data-lk="link" data-ls="top" dir="ltr" type="url" inputmode="url" autocomplete="off" value="'+E(f.link)+'" placeholder="https://"><p class="lc-err" role="alert"></p></div>'+
+    '<div class="fld lc-wide" data-f="customs"><label for="lcf_custom">'+ltr("Adsets ( Custom )")+'<i class="lc-req">*</i><small>كل اسم = '+ltr("Ad Set")+' لوحده بروابطه</small></label>'+
+      '<div class="lc-chipbox"><span id="lcChips" style="display:contents">'+chipsHTML(f)+'</span><input class="inp" id="lcf_custom" autocomplete="off" enterkeyhint="done" placeholder="اكتب اسم واضغط Enter" aria-label="اسم جديد"><button type="button" class="btn btn-s" data-a="lcChipAdd">ضيف</button></div>'+
+      '<div class="lc-pre"><span class="hint">ضيف بسرعة:</span>'+PRESETS.map((g,i)=>'<button type="button" class="chip" data-a="lcPreset" data-i="'+i+'">+ '+(/[A-Za-z]/.test(g[0])?ltr(g[0]):E(g[0]))+"</button>").join("")+'<button type="button" class="chip" data-a="lcChipClear">شيل الكل</button></div>'+
+      '<p class="lc-err" role="alert"></p></div>'+
+    "</div></section>";
+  const b2='<section class="card lc-blk">'+blkHead(2,S2.adsetTitle,f.platform==="Snapchat"?"إعدادات الحملة، وبتتطبق على كل "+ltr("Ad Set"):"إعدادات الحملة وكل "+ltr("Ad Set")+" على المنصة")+'<div class="lc-fields">'+S2.adset.map(d=>fldHTML(d,f)).join("")+"</div></section>";
+  const b3='<section class="card lc-blk">'+blkHead(3,"AD Level","إعدادات كل إعلان")+'<div class="lc-fields">'+S2.ad.map(d=>fldHTML(d,f)).join("")+"</div>"+
+    (S2.fixed?'<p class="hint" style="margin-top:12px">ثوابت '+ltr("TikTok")+" في كل إعلان: "+ltr(S2.fixed)+"</p>":"")+
+    (f.platform==="Snapchat"?'<p class="hint" style="margin-top:12px">'+ltr("Ad type")+" و"+ltr("Ad Format")+" بيتحددوا من نوع كل "+ltr("Ad Set")+" (اضغط على النوع جوه الاسم فوق عشان تبدّله).</p>":"")+"</section>";
+  $("#lcBlocks").innerHTML=b1+b2+b3;
+  live();
+}
+/* ── التحديث الحي: العدّاد، الملاحظات، والأخطاء لو اتضغط «اطلق» قبل كده ── */
+function live(){
+  const f=F; if(!$("#lcBlocks")) return check(f); autoKind(f);
+  document.querySelectorAll('#lcBlocks [data-a="lcKind"]').forEach(b=>{ const on=b.dataset.v===f.kind; b.classList.toggle("on",on); b.setAttribute("aria-checked",on); });
+  const R=check(f),X=idInfo(f.ids),c=counts(f);
+  const names=[...new Set(X.ids.map(i=>ST.libMap[i]&&ST.libMap[i].advertiser).filter(Boolean))];
+  const idm=$("#lcIdm"); if(idm) idm.innerHTML=X.ids.length?"<b>"+ltr(X.ids.length)+" فيديو</b>"+(names.length?"<span>"+E(names.slice(0,3).join("، "))+(names.length>3?"…":"")+"</span>":""):"";
+  const tc=$("#lcf_tc"),cpa=cpaCustoms(f).length; if(tc){ tc.style.display=hasTC(f)?"":"none"; tc.disabled=!!cpa; const h=$("#lcTcH"); if(h) h.innerHTML=hasTC(f)&&cpa?"الرقم بييجي من اسم كل "+ltr("Custom")+" — "+ltr("CPA25 = 25")+".":""; }
+  { const fb=$("#lcFxB"),fh=$("#lcTcH"),b$=fxTxt(f,f.v.budget),t$=hasTC(f)&&!cpa?fxTxt(f,f.v.targetCost):"";
+    if(fb) fb.innerHTML=b$?ltr(b$)+" على حساب الدولار":""; if(fh&&t$) fh.innerHTML=ltr(t$)+" على حساب الدولار"; }
+  const ti=$("#lcf_title"); if(ti) ti.placeholder=autoTitle(f);
+  const ch=countHTML(c.n,c.m,f.kind); $("#lcCount").innerHTML=ch;
+  const errs=Object.keys(R.E).length, missT=touched&&errs?ltr(errs)+" حاجة ناقصة":"";
+  $("#lcMiss").innerHTML=missT; const cm=$("#lcCountM"); if(cm) cm.innerHTML=missT?'<span class="lc-miss">'+missT+"</span> · "+ch:ch;
+  $("#lcNotes").innerHTML=R.N.map(x=>'<div class="lc-n '+x.s+'"><i>'+(x.s==="warn"?"!":"·")+"</i><span>"+x.m+"</span></div>").join("");
+  if(touched) paintErrors(R.E);
+  clearTimeout(liveT); liveT=setTimeout(()=>{ lsSet(DRAFT_KEY,F); },300);
+  return R;
+}
+function paintErrors(Er){ document.querySelectorAll("#lcBlocks .fld").forEach(el=>{ const k=el.dataset.f,m=Er[k]||"",pe=el.querySelector(".lc-err");
+    el.classList.toggle("bad",!!m); if(pe) pe.innerHTML=m; el.querySelectorAll(".inp,.sel").forEach(i=>{ if(m) i.setAttribute("aria-invalid","true"); else i.removeAttribute("aria-invalid"); }); }); }
+function setForm(f){ F=normalize(f); touched=false; renderForm(); }
+function switchPlat(p){ if(p===F.platform) return; const old=F,ob=blank(old.platform),nf=blank(p);
+  ["title","client","ids","campMode","campNum","country","link"].forEach(k=>nf[k]=old[k]);
+  if(old.objective) nf.objective=old.objective;
+  if(old.customs.length&&old.customs.join("|")!==ob.customs.join("|")){ nf.customs=old.customs.slice(); nf.ctype=cl(old.ctype); }
+  fieldsOf(p).forEach(d=>{ if(d.carry&&old.v[d.k]!=null&&old.v[d.k]!==""&&old.v[d.k]!==ob.v[d.k]) nf.v[d.k]=old.v[d.k]; });
+  if(guessPlat(nf.title)===old.platform) nf.title=nf.title.replace({Meta:/meta|facebook|\bfb\b|instagram/i,TikTok:/tik\s*tok/i,Snapchat:/snapchat|snap/i}[old.platform],p);
+  const keep=touched; F=nf; autoKind(F); renderForm(); touched=keep; live(); }
+function addCustoms(list){ let added=0,dupe=0; list.map(s=>s.trim()).filter(Boolean).forEach(c=>{ if(F.customs.some(x=>x.toLowerCase()===c.toLowerCase())) dupe++; else{ F.customs.push(c); added++; } });
+  $("#lcChips").innerHTML=chipsHTML(F); live(); if(dupe&&!added) toast("الاسم ده موجود قبل كده",true); }
+
+/* ═════════ الطابور المشترك (Supabase) + حالة الماك ═════════ */
+const macOn=()=>{ const m=ST.mac; if(!m||!m.at) return false; const now=Date.now(); return Math.abs(now-m.at)<MAC_FRESH_MS||(ST.macChgAt&&now-ST.macChgAt<MAC_FRESH_MS); };
+const isActive=r=>r.state==="queued"||r.state==="starting"||r.state==="building"||(ST.msgs[r.id]||[]).some(x=>x.who==="user"&&!x.handled_at);   /* رسالة مستنية = تحديث سريع برضه */
+async function load(){
+  if(!cloud()){ ST.loaded=true; ST.err="local"; paintList(); paintMac(); return; }
+  try{
+    const [q,hb,cf,sa,kz]=await Promise.all([
+      sb().from("launch_queue").select(COLS).eq("hidden",false).order("created_at",{ascending:false}).limit(80),
+      sb().from("docs").select("data").eq("path","sys/launch_mac").maybeSingle(),
+      sb().from("docs").select("data").eq("path","config/launch").maybeSingle(),
+      sb().from("docs").select("data").eq("path","config/snap_accounts").maybeSingle(),
+      sb().from("docs").select("path,data").in("path",["sys/khzama_live","sys/khzama_links"])]);
+    /* خزامى: محتاج تسجيل دخول؟ إضافة الروابط شغالة؟ — تحذير قبل الإطلاق (نبض الإضافة كل 30 ثانية) */
+    { const kd={}; ((kz&&kz.data)||[]).forEach(x=>{ kd[x.path]=x.data||{}; }); const lv=kd["sys/khzama_live"]||{},hb=kd["sys/khzama_links"];
+      ST.kz=kz&&!kz.error?{login:lv.last_state==="login_required",off:!!hb&&hb.on===false,stale:!hb||!(hb.at>0)||Date.now()-hb.at>150e3}:null; }
+    { const sl=(sa&&sa.data&&sa.data.data&&Array.isArray(sa.data.data.list))?sa.data.data.list:[],was=JSON.stringify(ST.snapAcc||[]);
+      if(sl.length&&JSON.stringify(sl)!==was){ ST.snapAcc=sl; const se=$("#lcf_snapAcc"); if(se&&document.activeElement!==se){ se.innerHTML=snapAccOpts(F); live(); } } }
+    if(q.error) throw q.error;
+    const m=(hb.data&&hb.data.data)||null;
+    if(m&&m.at&&(!ST.mac||ST.mac.at!==m.at)){ if(ST.mac) ST.macChgAt=Date.now(); }
+    ST.mac=m; ST.rows=q.data||[]; ST.loaded=true; ST.err="";
+    /* شات كل حملة: رسايل الكروت اللي بتتبني / وقفت / جاهزة — استعلام واحد خفيف مع كل تحديث */
+    const cids=ST.rows.filter(chatOn).map(r=>r.id).slice(0,60);
+    if(cids.length){ const mq=await sb().from("launch_msgs").select("id,launch_id,who,body,created_at,handled_at").in("launch_id",cids).order("id",{ascending:true}).limit(600);
+      if(!mq.error){ const g={}; (mq.data||[]).forEach(x=>{ (g[x.launch_id]=g[x.launch_id]||[]).push(x); }); ST.msgs=g; } } else ST.msgs={};
+    const lim=cf.data&&cf.data.data&&+cf.data.data.limit; if(lim&&!ST.limBusy) ST.limit=Math.min(10,Math.max(1,lim));
+  }catch(e){ ST.err=(e&&e.message)||String(e); ST.loaded=true; }
+  const sig=JSON.stringify([ST.rows.map(r=>[r.id,r.updated_at,r.state]),ST.limit,macOn(),ST.err,Object.keys(ST.msgs).map(k=>[k,ST.msgs[k].length,ST.msgs[k].filter(x=>x.handled_at).length]),!!(ST.mac&&ST.mac.msgs)]);
+  if(sig!==ST.sig){ ST.sig=sig; paintList(); paintMac(); } else paintTimes();
+  if(ST.focus&&ST.rows.some(r=>r.id===ST.focus)){ const id=ST.focus; ST.focus=""; ST.hot=id; ST.open[id]=true; setTab("list"); paintList(); loadReport(id);
+    setTimeout(()=>{ const el=document.querySelector('.lc-card[data-id="'+id+'"]'); if(el) el.scrollIntoView({block:"center",behavior:"smooth"}); },120); }
+}
+function poll(){ clearTimeout(pollT); if(S.view!=="launch"||!$("#lcRoot")){ pollT=null; return; }
+  const run=()=>{ if(S.view!=="launch"||!$("#lcRoot")){ pollT=null; return; } (document.hidden?Promise.resolve():load()).then(()=>{ pollT=setTimeout(run,ST.rows.some(isActive)?2500:8000); }); };
+  pollT=setTimeout(run,ST.rows.some(isActive)?2500:8000); }
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden&&S.view==="launch"&&$("#lcRoot")) load(); });
+function paintMac(){
+  const on=macOn(), q=ST.rows.filter(r=>r.state==="queued").length;
+  const html= ST.err==="local"? '<i></i><span><b>الإطلاق محتاج تسجيل الدخول</b> — الطلبات بتتسجل على حسابك في GADLYTICS.</span>'
+    : !ST.loaded? '<i></i><span>بشوف الماك متصل ولا لأ…</span>'
+    : on? '<i></i><span><b>الماك متصل</b> — أي حملة تطلقها بتبدأ تتبني على الماك خلال ثواني.</span>'
+    : '<i></i><span><b>الماك مش متصل — الحملة هتستنى لحد ما يتصل.</b> '+(q?ltr(q)+" مستنية دلوقتي. ":"")+'<small>افتح Claude على الماك وشغّل «مراقب إطلاق الحملات».</small></span>';
+  document.querySelectorAll(".lc-mac").forEach(el=>{ el.className="lc-mac "+(ST.err==="local"||!ST.loaded?"":on?"on":"off"); el.innerHTML=html; });
+  const k=ST.kz, kw=!k||ST.err==="local"?"":k.login?"<b>خزامى محتاج تسجيل دخول — روابط الحملة مش هتتسجّل.</b> <small>سجّل دخول في "+ltr("admin.molabi.sa")+" على كروم الماك قبل ما تطلق.</small>"
+    :k.off?"<b>إضافة روابط الحملات مقفولة</b> (من زرار الإضافة في كروم) — الروابط هتتسجّل بإيد الوكيل، أبطأ."
+    :k.stale?"<b>إضافة خزامى مش متصلة</b> — كروم مقفول أو الإضافة محتاجة تحديث: الروابط هتتسجّل بإيد الوكيل، أبطأ.":"";
+  document.querySelectorAll(".lc-mac").forEach(el=>{ let w=el.nextElementSibling; if(!w||!w.classList.contains("lc-kzw")){ if(!kw) return; w=document.createElement("div"); w.className="lc-kzw"; w.setAttribute("role","alert");
+      w.style.cssText="margin-top:8px;padding:10px 12px;border-radius:12px;border:1px solid currentColor;color:var(--bad,#d93025);font-size:13px;line-height:1.7"; el.insertAdjacentElement("afterend",w); }
+    w.style.display=kw?"":"none"; w.innerHTML=kw; });
+}
+const ST_AR={queued:"في الطابور",starting:"بتبدأ",building:"بتتبني",draft:"جاهزة درافت",stopped:"وقفت",cancelled:"اتلغت",paused:"متوقفة مؤقتاً"};
+/* الحالة النهائية: «درافت» لما البناء من واجهة المنصة (TikTok)، و«موقوفة» لما اتبنت بالـ API وموجودة فعلاً Paused (Snap API · Meta) — result_kind من launch_status.py */
+/* إيقاف مؤقت: الطلب بيتسجّل فوراً، والبناء بيقف عند أقرب نقطة آمنة (الوكيل بيشوفه مع أول تبليغ حالة) — مش فوري */
+function stAr(r){ if(r.pause_requested&&(r.state==="starting"||r.state==="building")) return "هتقف عند أقرب نقطة آمنة…";
+  if(r.pause_requested&&r.state==="queued") return "متوقفة مؤقتاً — مكانها في الطابور محفوظ";
+  if(r.state!=="draft") return ST_AR[r.state]; const pz=r.result_kind==="paused"||(!r.result_kind&&r.platform==="Meta");
+  return pz?"جاهزة — موقوفة على "+({Snapchat:"سناب",Meta:"ميتا",TikTok:"تيك توك"}[r.platform]||r.platform):ST_AR.draft; }
+const ST_CLS={queued:"queue",starting:"build",building:"build",draft:"done",stopped:"stop",cancelled:"cancel",paused:"queue"};
+const hm=iso=>{ const t=new Date(iso); return String(t.getHours()).padStart(2,"0")+":"+String(t.getMinutes()).padStart(2,"0"); };
+const dayLbl=iso=>{ const t=new Date(iso), n=new Date(); if(t.toDateString()===n.toDateString()) return ""; return t.getDate()+"/"+(t.getMonth()+1)+" "; };
+const mins=(a,b)=>Math.max(0,Math.round((new Date(b||Date.now())-new Date(a))/60000));
+function ageTxt(r){ if(r.state==="building"||r.state==="starting") return "من "+ltr(mins(r.started_at||r.claimed_at||r.created_at))+" دقيقة";
+  if((r.state==="draft"||r.state==="stopped")&&r.finished_at) return "أخدت "+ltr(mins(r.started_at||r.claimed_at||r.created_at,r.finished_at))+" دقيقة"; return ""; }
+/* ── شات الحملة: محمود بيكتب على الكارت، «مراقب الإطلاق» على الماك بيسمع، والحملة بتكمّل وترد هنا ── */
+const chatOn=r=>r.state==="building"||r.state==="draft"||r.state==="stopped";
+const QUICK=["كمّل من مكان ما وقفت","رفعت الفيديو — كمّل","الغي الباقي وسيبها زي ما هي"];
+function waitTxt(){ return !macOn()? "الماك مش متصل — الرسالة هتستنى لحد ما يتصل" : (ST.mac&&ST.mac.msgs===false)? "المراقب الشغّال مش بيسمع الرسايل — وقّفه وشغّله تاني" : "مستني المراقب"; }
+function chatHTML(r){ if(!chatOn(r)) return "";
+  const T=ST.msgs[r.id]||[];
+  return '<div class="lc-chat"><div class="lc-chat-h">كلّم الحملة<small>'+(r.state==="building"?"بتتبني دلوقتي — رسالتك توصلها أول ما تتسلّم":"اكتب المطلوب والحملة تكمّل أو تعدّل")+"</small></div>"+
+    (T.length?'<div class="lc-thread" id="lcTh_'+r.id+'">'+T.map(x=>{ const me=x.who==="user", wait=me&&!x.handled_at;
+        return '<div class="lc-b '+(me?"me":"ag")+'" dir="auto">'+E(x.body)+'<small class="'+(wait?"wait":"")+'">'+(me?"إنت":"الحملة")+" · "+hm(x.created_at)+(me?" · "+(wait?waitTxt():"وصلت للمراقب"):"")+"</small></div>"; }).join("")+"</div>":"")+
+    (r.state==="stopped"?'<div class="lc-qr">'+QUICK.map((t,i)=>'<button type="button" class="chip" data-a="lcSayQ" data-id="'+r.id+'" data-i="'+i+'">'+E(t)+"</button>").join("")+"</div>":"")+
+    '<div class="lc-say"><textarea class="inp lc-sayt" id="lcSay_'+r.id+'" data-id="'+r.id+'" rows="1" dir="auto" maxlength="2000" enterkeyhint="send" placeholder="اكتب للحملة…" title="مثلاً: رفعت الفيديو، كمّل — أو: غيّر الميزانية لـ 300" aria-label="رسالة للحملة">'+E(ST.say[r.id]||"")+'</textarea><button type="button" class="btn btn-s btn-p" data-a="lcSay" data-id="'+r.id+'">ابعت</button></div></div>'; }
+async function sayTo(id,text){ text=(text||"").trim(); const r=ST.rows.find(x=>x.id===id); if(!r||!text) return;
+  if(!cloud()){ toast("الرسايل محتاجة تسجيل الدخول",true); return; }
+  if(ST.sayBusy) return; ST.sayBusy=true; let err=null;
+  try{ const q=await sb().from("launch_msgs").insert({launch_id:id,who:"user",body:text.slice(0,2000)}); err=q.error; }catch(e){ err=e; }
+  ST.sayBusy=false;
+  if(err){ toast("الرسالة ماتبعتتش: "+String(err.message||err).slice(0,110),true); return; }
+  ST.say[id]=""; (ST.msgs[id]=ST.msgs[id]||[]).push({id:"t"+Date.now(),launch_id:id,who:"user",body:text,created_at:new Date().toISOString(),handled_at:null}); ST.sig="";
+  paintList(); toast(!macOn()?"الرسالة اتسجلت — الماك مش متصل، هتستنى لحد ما يتصل":"الرسالة اتبعتت للحملة"); setTimeout(load,800); poll(); }
+function cardHTML(r){
+  const stp=Math.max(0,Math.min(4,+r.step_no||0)), act=r.state==="starting"||r.state==="building", fin=r.state==="draft"||r.state==="stopped";
+  /* النسبة: من progress اللي السيرفر بيحسبه من العدّادات (launches 20% · ad sets 10% · ads 35% · خزامى 30% · المراجعة آخر 5%)؛ الصفوف القديمة من غيره ← رقم الخطوة ÷ 4 */
+  const pct=r.state==="draft"?100:Math.max(0,Math.min(r.state==="stopped"?100:99,r.progress!=null?+r.progress:r.state==="starting"?2:Math.min(95,Math.round(stp/4*100))));
+  const qhint= !macOn()? "الماك مش متصل — هتستنى لحد ما يتصل." : ST.rows.filter(x=>x.state==="starting"||x.state==="building").length>=ST.limit? "مستنية مكان يفضى — هتبدأ لوحدها." : "الماك هيستلمها خلال ثواني.";
+  return '<article class="lc-card'+(r.id===newId?" new":"")+(r.id===ST.hot?" hot":"")+'" data-id="'+r.id+'">'+
+    '<div class="lc-ch"><span class="lc-pl" data-p="'+E(r.platform)+'"><i class="lc-dot"></i>'+ltr(r.platform)+'</span><span class="lc-time num">'+E(dayLbl(r.created_at))+hm(r.created_at)+"</span>"+
+      '<span class="lc-st '+ST_CLS[r.state]+'">'+(act?'<i class="lc-spin"></i>':"")+stAr(r)+"</span></div>"+
+    /* الاسم: أول ما رقم الحملة يتعرف، الكود هو العنوان الكبير وتحته الاسم الكامل، وعنوان البريف يبقى سطر صغير */
+    (r.campaign_no? '<div class="lc-code"><code class="ltr">'+E(r.campaign_no)+"</code>"+(r.is_test?"<small>رقم تجريبي</small>":"")+"</div>"+
+        (r.campaign_name?'<div class="lc-name ltr">'+E(r.campaign_name)+"</div>":"")+
+        '<div class="lc-sub" dir="auto">'+E(r.title)+(r.is_test?" · تجريبي":"")+"</div>"
+      : '<div class="lc-tt" dir="auto">'+E(r.title)+(r.is_test?' <small style="color:var(--ink-3);font-weight:600">· تجريبي</small>':"")+"</div>")+
+    (r.is_test?"":'<div class="lc-meta">'+countHTML(r.n_videos,r.n_adsets,r.kind)+"</div>")+
+    (r.state==="queued"?'<div class="lc-stepl">'+qhint+"</div>":"")+
+    (act||fin||r.state==="paused"?'<div class="lc-prog'+(r.state==="draft"?" done":r.state==="stopped"?" stop":"")+'" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+pct+'"><i data-p="'+(pct/100).toFixed(3)+'" style="transform:scaleX('+((ST.pct[r.id]!=null?ST.pct[r.id]:pct)/100).toFixed(3)+')"></i></div>':"")+
+    (act?'<div class="lc-stepl"><b class="lc-pct num">'+ltr(pct+"%")+"</b> · "+E(r.step||(r.state==="starting"?"الماك استلمها — بتبدأ تتبني":"بتتبني على الماك"))+' <span class="lc-age" style="color:var(--ink-3)">· '+ageTxt(r)+"</span></div>":"")+
+    (fin?'<div class="lc-stepl">'+(r.state==="stopped"?'<b class="lc-pct num">'+ltr(pct+"%")+"</b> · وقفت هنا":'<b class="lc-pct num">'+ltr("100%")+"</b> · خلصت")+(ageTxt(r)?' <span style="color:var(--ink-3)">· '+ageTxt(r)+"</span>":"")+"</div>":"")+
+    (r.state==="stopped"?'<div class="lc-why"><b>السبب:</b> '+E(r.stop_reason||"—").replace(/\d{14}/g,m=>ltr(m))+"</div>":"")+
+    (r.has_report?'<div class="lc-rep'+(ST.open[r.id]?" open":"")+'"><button type="button" data-a="lcRep" data-id="'+r.id+'" aria-expanded="'+(!!ST.open[r.id])+'"><span>التقرير</span>'+IC.down+'</button><div class="lc-rept" dir="auto">'+E(ST.rep[r.id]!=null?ST.rep[r.id]:"بيحمّل…")+"</div></div>":"")+
+    chatHTML(r)+
+    '<div class="lc-acts"><button type="button" class="btn btn-s" data-a="lcBrief" data-id="'+r.id+'">البريف</button>'+(r.is_test?"":'<button type="button" class="btn btn-s" data-a="lcRepeat" data-id="'+r.id+'">كرّر</button>')+
+      ((act||r.state==="queued")&&!r.is_test?(r.pause_requested?'<button type="button" class="btn btn-s" data-a="lcPause" data-v="resume" data-id="'+r.id+'">'+(r.state==="queued"?"كمّل":"الغي الإيقاف المؤقت")+"</button>":'<button type="button" class="btn btn-s" data-a="lcPause" data-v="pause" data-id="'+r.id+'">إيقاف مؤقت</button>'):"")+
+      (r.state==="paused"?'<button type="button" class="btn btn-s btn-p" data-a="lcPause" data-v="resume" data-id="'+r.id+'">كمّل</button><button type="button" class="btn btn-s btn-d" data-a="lcPause" data-v="cancel_rest" data-id="'+r.id+'">الغي الباقي</button>':"")+
+      (r.state==="queued"?'<button type="button" class="btn btn-s btn-d" data-a="lcCancel" data-id="'+r.id+'">إلغاء</button>':"")+"</div></article>";
+}
+function paintTimes(){ document.querySelectorAll(".lc-card").forEach(el=>{ const r=ST.rows.find(x=>x.id===el.dataset.id), a=el.querySelector(".lc-age"); if(r&&a) a.innerHTML="· "+ageTxt(r); }); }
+function paintList(){
+  const host=$("#lcList"); if(!host) return;
+  const Lr=ST.rows,by=s=>Lr.filter(x=>x.state===s).length,q=by("queued"),b=by("building")+by("starting"),d=by("draft"),s=by("stopped");
+  /* اللي بيتكتب في خانة الشات يفضل زي ما هو (والمؤشر مكانه) لما القايمة تترسم من جديد */
+  host.querySelectorAll("textarea.lc-sayt").forEach(t=>{ ST.say[t.dataset.id]=t.value; });
+  const fa=document.activeElement, fk=fa&&fa.classList&&fa.classList.contains("lc-sayt")?{id:fa.id,a:fa.selectionStart,b:fa.selectionEnd}:null;
+  const ths={}; host.querySelectorAll(".lc-thread").forEach(t=>{ ths[t.id]=[t.scrollTop,t.scrollHeight-t.clientHeight-t.scrollTop<8]; });
+  host.innerHTML= ST.err&&ST.err!=="local"? '<div class="empty">مش قادر أقرا الطابور دلوقتي.<br><small>'+E(ST.err)+"</small></div>"
+    : !ST.loaded? '<div class="empty">بيحمّل…</div>'
+    : Lr.length? Lr.map(cardHTML).join("") : '<div class="empty">لسه مفيش حملات.<br>املأ القالب واضغط «اطلق» — الحملة هتظهر هنا على طول.</div>';
+  newId=null;
+  if(fk){ const t=document.getElementById(fk.id); if(t){ try{ t.focus({preventScroll:true}); t.setSelectionRange(fk.a,fk.b); }catch(e){} } }
+  host.querySelectorAll(".lc-thread").forEach(t=>{ const o=ths[t.id]; t.scrollTop=(!o||o[1])?t.scrollHeight:o[0]; });
+  /* البار بيتحرك بـ transform من آخر نسبة كانت ظاهرة للنسبة الجديدة */
+  const bars=[...host.querySelectorAll(".lc-prog i[data-p]")]; bars.forEach(i=>{ const c=i.closest(".lc-card"); if(c) ST.pct[c.dataset.id]=Math.round(+i.dataset.p*100); });
+  if(bars.length){ const go=()=>bars.forEach(i=>{ i.style.transform="scaleX("+i.dataset.p+")"; }); if(window.requestAnimationFrame&&!document.hidden) requestAnimationFrame(()=>requestAnimationFrame(go)); else go(); }
+  $("#lcTotal").innerHTML=Lr.length?ltr(Lr.length)+" حملة":"";
+  $("#lcSum").innerHTML=[[b,"بتتبني","on"],[q,"في الطابور",""],[d,"جاهزة",""],[s,"وقفت",""]].concat([[ST.rows.filter(x=>x.state==="paused"||(x.pause_requested&&x.state==="queued")).length,"متوقفة مؤقتاً",""]]).filter(x=>x[0]).map(x=>'<span class="chip '+x[2]+'">'+ltr(x[0])+" "+x[1]+"</span>").join("")+
+    (ST.rows.some(x=>!x.is_test&&!x.pause_requested&&(x.state==="queued"||x.state==="starting"||x.state==="building"))?'<button type="button" class="btn btn-s" data-a="lcPauseAll" data-v="pause">وقّف الكل مؤقتاً</button>':"")+
+    (ST.rows.some(x=>x.state==="paused"||(x.pause_requested&&(x.state==="queued"||x.state==="starting"||x.state==="building")))?'<button type="button" class="btn btn-s" data-a="lcPauseAll" data-v="resume">كمّل الكل</button>':"");
+  $("#lcLim").textContent=ST.limit;
+  const bd=$("#lcBadge"); if(bd){ bd.textContent=Lr.length; bd.classList.toggle("live",q+b>0); }
+  const c2=$("#lcClear"); if(c2){ c2.disabled=!(d+s+by("cancelled")); if(!c2.dataset.armed) c2.textContent="امسح السجل"; }
+  const rp=$("#lcRepeatB"); if(rp) rp.disabled=!(Lr.some(x=>!x.is_test)||lsGet(LAST_KEY,null));
+}
+async function loadReport(id){ if(ST.rep[id]!=null&&ST.rep["@"+id]===(ST.rows.find(r=>r.id===id)||{}).updated_at) return;
+  try{ const q=await sb().from("launch_queue").select("report,updated_at").eq("id",id).maybeSingle(); ST.rep[id]=(q.data&&q.data.report)||"مفيش تقرير."; ST.rep["@"+id]=q.data&&q.data.updated_at; }
+  catch(e){ ST.rep[id]="مش قادر أحمّل التقرير."; }
+  const el=document.querySelector('.lc-card[data-id="'+id+'"] .lc-rept'); if(el) el.textContent=ST.rep[id]; }
+
+/* ═════════ الإطلاق ═════════ */
+async function launch(){
+  touched=true; const R=live();
+  if(Object.keys(R.E).length){ setTab("form"); const el=document.querySelector("#lcBlocks .fld.bad");
+    if(el){ el.scrollIntoView({block:"center",behavior:"smooth"}); const i=el.querySelector(".inp,.sel"); if(i) setTimeout(()=>i.focus({preventScroll:true}),350); }
+    toast("صلّح الناقص الأول ("+Object.keys(R.E).length+")",true); return; }
+  if(!cloud()){ toast("الإطلاق محتاج تسجيل الدخول",true); return; }
+  if(typeof READONLY!=="undefined"&&READONLY){ toast("وضع المشاهدة — الإطلاق مقفول",true); return; }
+  if(ST.busy) return; ST.busy=true; document.querySelectorAll(".lc-gobtn").forEach(b=>b.disabled=true);
+  const c=counts(F), id=uid(), title=titleOf(F).slice(0,190);
+  const row={id,client:F.client.trim(),client_id:CID,platform:F.platform,title,brief:intro(F.platform)+buildBrief(F),form:cl(F),kind:F.kind,n_videos:c.n,n_adsets:c.m,n_ads:c.ads,created_by_name:pname(ME.id)};   /* created_by بيتحط في السيرفر = auth.uid() */
+  let err=null;
+  try{ const r=await sb().from("launch_queue").insert(row); err=r.error; }catch(e){ err=e; }
+  ST.busy=false; document.querySelectorAll(".lc-gobtn").forEach(b=>b.disabled=false);
+  if(err){ toast("الحملة ماتبعتتش: "+String(err.message||err).slice(0,120),true); return; }
+  const now=new Date().toISOString();
+  ST.rows.unshift({id,platform:row.platform,title,kind:row.kind,n_videos:c.n,n_adsets:c.m,n_ads:c.ads,state:"queued",is_test:false,created_at:now,updated_at:now}); newId=id; ST.sig="";
+  lsSet(LAST_KEY,Object.assign(cl(F),{snapAcc:""})); F=blank(F.platform); touched=false; lsSet(DRAFT_KEY,null); ST.tplId="";
+  renderForm(); paintList(); paintMac();
+  const full=ST.rows.filter(x=>x.state==="starting"||x.state==="building").length>=ST.limit;
+  toast(!macOn()?"اتسجلت — الماك مش متصل، الحملة هتستنى لحد ما يتصل":full?"اتبعتت — مستنية دورها في الطابور":"اتبعتت — هتبدأ تتبني على الماك خلال ثواني");
+  if(matchMedia("(max-width:760px)").matches) window.scrollTo({top:0,behavior:"smooth"}); else { const fc=$(".lc-formcol"); if(fc) fc.scrollIntoView({block:"start",behavior:"smooth"}); }
+  setTimeout(load,900); poll();
+}
+async function testLaunch(){ if(!cloud()||ST.busy) return; ST.busy=true; const id=uid();
+  let err=null; try{ const r=await sb().from("launch_queue").insert({id,client:"Molabi",client_id:CID,platform:"Meta",title:"اختبار ربط",brief:testBrief(id),is_test:true,kind:"Single",created_by_name:pname(ME.id)}); err=r.error; }catch(e){ err=e; }
+  ST.busy=false; if(err){ toast("الاختبار ماتبعتش: "+String(err.message||err).slice(0,120),true); return; }
+  newId=id; ST.sig=""; toast("اختبار الربط اتبعت — مفيش حملة هتتبني"); await load(); poll(); }
+
+/* ═════════ نوافذ (في #modalHost بتاع الموقع، بنفس حماية الـ 600ms من اللمسة الشبح على iOS) ═════════ */
+let modalBack=null;
+function openModal(html,label){ modalBack=document.activeElement; window.__shAt=Date.now();
+  $("#modalHost").innerHTML='<div class="modal-bg lc-modal" data-a="lcModalBg"><div class="modal" role="dialog" aria-modal="true" aria-label="'+E(label)+'">'+html+"</div></div>";
+  const f=$("#modalHost [data-focus]"); if(f&&!matchMedia("(max-width:760px)").matches) f.focus({preventScroll:true}); }
+function closeLc(){ if($("#modalHost .lc-modal")) $("#modalHost").innerHTML=""; if(modalBack&&modalBack.isConnected) try{ modalBack.focus({preventScroll:true}); }catch(e){} modalBack=null; }
+const mHead=t=>'<div class="lc-mh"><h2>'+t+'</h2><button type="button" class="lc-x" data-a="lcModalClose" aria-label="اقفل">'+IC.x+"</button></div>";
+async function briefModal(id){ const r=ST.rows.find(x=>x.id===id); if(!r) return;
+  openModal(mHead("البريف اللي اتبعت")+'<p class="hint" style="margin-bottom:10px">ده النص اللي الحملة بتتبني منه على الماك بالحرف (وبعده سطر '+ltr("GADLYTICS launch id")+") — "+ltr(r.platform)+" · "+E(ST_AR[r.state])+'.</p><pre class="lc-brief" id="lcBriefT" tabindex="0">بيحمّل…</pre>'+
+    '<div class="lc-mf"><button type="button" class="btn" data-a="lcCopyBrief">انسخ</button>'+(r.is_test?"":'<button type="button" class="btn" data-a="lcRepeat" data-id="'+r.id+'">كرّر الحملة دي</button>')+'<button type="button" class="btn btn-p" data-a="lcModalClose">تمام</button></div>',"البريف");
+  let t="مش قادر أحمّل البريف."; try{ const q=await sb().from("launch_queue").select("brief").eq("id",id).maybeSingle(); if(q.data&&q.data.brief) t=q.data.brief; }catch(e){}
+  const el=$("#lcBriefT"); if(el) el.textContent=t; }
+function pasteModal(){ openModal(mHead("الصق بريف جاهز")+'<p class="hint" style="margin-bottom:10px">الصق القالب متملّي زي ما بتبعته في الشات؛ الحقول هتتملى منه وتقدر تعدّل قبل ما تطلق.</p>'+
+    '<textarea class="inp lc-paste" id="lcPasteT" data-focus spellcheck="false" placeholder="TikTok - Value&#10;&#10;Tamkeen Ads Manager Level (airtable)&#10;Client: Molabi&#10;Platform: TikTok&#10;…"></textarea><p class="lc-err" id="lcPasteE" style="display:block;min-height:20px;margin-top:6px" role="alert"></p>'+
+    '<div class="lc-mf"><button type="button" class="btn" data-a="lcModalClose">إلغاء</button><button type="button" class="btn btn-p" data-a="lcPasteFill">املأ القالب</button></div>',"الصق بريف جاهز"); }
+
+/* ── المكتبة: نفس جدول media بتاع «مكتبة الكريتيف» (فيديوهات ملبي) ── */
+async function loadLib(force){
+  if(!cloud()) return; if(ST.lib&&!force&&Date.now()-ST.libAt<300000) return;
+  try{ let rows=[]; for(let i=0;i<6;i++){ const q=await sb().from("media").select("creative_id,advertiser,product,project,status,license,kind,created_at").eq("client",LIB_CLIENT).order("created_at",{ascending:false}).order("creative_id",{ascending:false}).range(i*1000,i*1000+999);
+      if(q.error) throw q.error; rows=rows.concat(q.data||[]); if((q.data||[]).length<1000) break; }
+    ST.lib=rows.filter(r=>/^\d{14}$/.test(r.creative_id||"")); ST.libMap={}; ST.lib.forEach(r=>{ ST.libMap[r.creative_id]=r; }); ST.libAt=Date.now(); ST.libErr="";
+  }catch(e){ ST.libErr=(e&&e.message)||String(e); }
+  if($("#lcBlocks")&&F) live(); if($("#lcLib")) pickPaint(); }
+const tabName=t=>t.all?(t.label||"كل الحالات"):t.status, inTab=(t,r)=>r.kind===PICK_KIND&&(t.all||r.status===t.status);
+function pickRows(q){ q=(q||"").trim().toLowerCase();
+  if(!ST.lib) return '<div class="empty">'+(ST.libErr?"مش قادر أقرا المكتبة: "+E(ST.libErr):"بيحمّل المكتبة…")+"</div>";
+  const tab=LC_PICK_TABS[ST.pickTab]||LC_PICK_TABS[0];
+  const all=ST.lib.filter(r=>inTab(tab,r)), hit=all.filter(r=>!q||((r.creative_id||"")+" "+(r.advertiser||"")+" "+(r.product||"")+" "+(r.project||"")+" "+(r.status||"")+" "+(r.license||"")).toLowerCase().includes(q));
+  if(!all.length) return '<div class="empty">'+E(tab.empty||"مفيش فيديوهات")+"</div>";
+  if(!hit.length) return '<div class="empty">مفيش نتيجة في «'+E(tabName(tab))+"».</div>";
+  return hit.slice(0,300).map(r=>{ const on=pickSel.has(r.creative_id), lo=licOk(r);
+    return '<button type="button" role="checkbox" aria-checked="'+on+'" class="lc-lr'+(on?" sel":"")+'" data-a="lcPick" data-id="'+r.creative_id+'"><span class="lc-ck">✓</span><span class="lc-lid num">'+r.creative_id+'</span><span class="lc-lw"><b>'+E(r.advertiser||"—")+"</b><small>"+E(r.product||"")+(r.project?" · "+E(r.project):"")+
+      '</small></span><span class="lc-lt">'+(tab.all?'<span class="lc-ls">'+E(r.status||"من غير حالة")+"</span>":"")+'<span class="lc-ls'+(lo?" ok":" warn")+'" title="الترخيص">'+(lo?"":"⚠ ")+"ترخيص: "+E(r.license||"مش متسجل")+"</span></span></button>"; }).join("")+
+    (hit.length>300?'<p class="hint" style="padding:8px 10px">ظاهر أول '+ltr(300)+" من "+ltr(hit.length)+" — ابحث بالرقم أو اسم المعلن أو المنتج.</p>":""); }
+function pickTabs(){ return LC_PICK_TABS.map((t,i)=>'<button type="button" role="tab" aria-selected="'+(i===ST.pickTab)+'" class="'+(i===ST.pickTab?"on":"")+'" data-a="lcPickTab" data-i="'+i+'">'+E(tabName(t))+' <b class="num">'+(ST.lib?ST.lib.filter(r=>inTab(t,r)).length:"…")+"</b></button>").join(""); }
+function pickNote(){ return "أي فيديو يتختار أياً كانت حالته. الترخيص اللي مش «"+LC_LICENSE_OK.join("» أو «")+"» متعلّم بـ ⚠ للعلم بس. وأي رقم تاني تقدر تلصقه في الخانة عادي."; }
+function pickPaint(){ const a=$("#lcPickTabs"),n=$("#lcPickNote"),l=$("#lcLib"); if(a) a.innerHTML=pickTabs(); if(n) n.innerHTML=pickNote(); if(l) l.innerHTML=pickRows(($("#lcPickQ")||{}).value||""); pickCount(); }
+function pickModal(){ pickSel=new Set(idInfo(F.ids).ids.filter(i=>pickOk(ST.libMap[i])));
+  openModal(mHead("اختار من المكتبة")+'<div class="lc-row" style="margin-bottom:10px"><div class="seg lc-ptabs" role="tablist" aria-label="حالة الإعلان" id="lcPickTabs">'+pickTabs()+'</div><span style="flex:1"></span><button type="button" class="btn btn-s" data-a="lcLibSync" id="lcLibSync">حدّث المكتبة</button></div>'+
+    '<input class="inp" id="lcPickQ" data-focus type="search" placeholder="بحث: رقم، معلن، منتج…" aria-label="بحث في المكتبة" style="width:100%">'+
+    '<p class="hint" style="margin-top:8px" id="lcPickNote">'+pickNote()+"</p>"+'<div class="lc-lib" id="lcLib">'+pickRows("")+"</div>"+
+    '<div class="lc-mf"><span class="hint" id="lcPickN"></span><button type="button" class="btn" data-a="lcModalClose">إلغاء</button><button type="button" class="btn btn-p" data-a="lcPickDone" id="lcPickGo">ضيف</button></div>',"اختار من المكتبة"); pickCount(); loadLib(); }
+function pickCount(){ const n=pickSel?pickSel.size:0, a=$("#lcPickN"), b=$("#lcPickGo"); if(a) a.innerHTML=n?ltr(n)+" فيديو متعلّم":"لسه ما اخترتش"; if(b) b.innerHTML="ضيف "+(n?ltr(n)+" فيديو":""); }
+function pickDone(){ const X=idInfo(F.ids),typed=X.ids.filter(i=>!pickSel.has(i)&&!pickOk(ST.libMap[i])); const out=[...typed,...(ST.lib||[]).filter(r=>pickSel.has(r.creative_id)).map(r=>r.creative_id),...X.bad];
+  F.ids=out.join("\n"); const n=pickSel.size; closeLc(); renderForm(); toast("اتضاف "+n+" فيديو من المكتبة"); }
+
+/* ═════════ قوالبي: قوالب محفوظة لكل مستخدم (docs data/users/<uid>/lctpl_<id> — محدش غيره يقراها)، مشتركة بين أجهزته ═════════ */
+const TPL={ pre:"lctpl_", lk:"gad.lc.tpls",
+  uid:"",
+  async who(){ if(this.uid||!cloud()) return this.uid; try{ const s=await sb().auth.getSession(); this.uid=(s.data&&s.data.session&&s.data.session.user&&s.data.session.user.id)||""; }catch(e){} return this.uid; },   /* معرّف حساب Supabase (مش ME.id) — قاعدة الجدول بتقفل data/users/<uid>/ على صاحبه */
+  async list(){ const u=await this.who(); if(u){ const q=await DB.collection("data/users/"+u).get(); return q.docs.filter(d=>d.id.indexOf(this.pre)===0).map(d=>d.data()); } return Object.values(lsGet(this.lk,{})); },
+  async set(t){ const u=await this.who(); if(u) return DB.doc("data/users/"+u+"/"+this.pre+t.id).set(t); const a=lsGet(this.lk,{}); a[t.id]=t; lsSet(this.lk,a); },
+  async del(id){ const u=await this.who(); if(u) return DB.doc("data/users/"+u+"/"+this.pre+id).delete(); const a=lsGet(this.lk,{}); delete a[id]; lsSet(this.lk,a); } };
+async function loadTpls(force){ if(ST.tpls&&!force) return; try{ ST.tpls=(await TPL.list()).filter(t=>t&&t.id&&t.form).sort((a,b)=>(b.upd||b.at||0)-(a.upd||a.at||0)); }catch(e){ ST.tpls=ST.tpls||[]; } paintTplBtn(); if($("#lcTplList")) $("#lcTplList").innerHTML=tplRows(); }
+function paintTplBtn(){ const b=$("#lcTplB"); if(b) b.innerHTML="قوالبي"+(ST.tpls&&ST.tpls.length?' <span class="ltr">('+ST.tpls.length+")</span>":""); }
+const TPL_DEF_SKIP=["title","ids"];
+function skipFields(p){ return [["title","عنوان الحملة"],["ids","Creatives ID"],["link","Product Link"],["customs","Adsets ( Custom )"],["campNum","رقم الحملة (Select)"]].concat(fieldsOf(p).map(d=>[d.k,d.l])); }
+function stripForm(f,skip){ const o=cl(f); skip.forEach(k=>{ if(k==="customs"){ o.customs=[]; o.ctype={}; } else if(k==="campNum"){ o.campNum=""; if(o.campMode==="Select") o.campMode="New"; } else if(k in o&&k!=="v") o[k]=""; else if(o.v&&k in o.v){ o.v[k]=""; if(k==="bid") o.v.targetCost=""; } }); o.kindManual=!!f.kindManual; return o; }
+function tplRows(){ const T=ST.tpls;
+  if(!T) return '<div class="empty">بيحمّل…</div>';
+  if(!T.length) return '<div class="empty">لسه مفيش قوالب.<br>املأ القالب مرة واضغط «احفظ القالب الحالي» — وبعد كده تختاره وتغيّر العنوان والـ '+ltr("Creative IDs")+" بس.</div>";
+  return T.map(t=>{ const ren=tplDraft&&tplDraft.ren===t.id, sk=(t.skip||[]).length;
+    return '<div class="lc-tr'+(ST.tplId===t.id?" cur":"")+'">'+(ren? '<input class="inp" id="lcTplRenI" data-focus value="'+E(t.name)+'" maxlength="80" style="flex:1 1 160px" aria-label="اسم القالب"><button type="button" class="btn btn-s btn-p" data-a="lcTplRenOk" data-id="'+t.id+'">حفظ الاسم</button><button type="button" class="btn btn-s" data-a="lcTplRenX">إلغاء</button>'
+      : '<button type="button" class="lc-tn" data-a="lcTplUse" data-id="'+t.id+'" title="املأ القالب منه"><b dir="auto">'+E(t.name)+'</b><small><span class="lc-pl" data-p="'+E(t.platform)+'"><i class="lc-dot"></i>'+ltr(t.platform)+"</span>"+(sk?" · "+ltr(sk)+" حقل بيتغيّر كل مرة":"")+"</small></button>"+
+        '<div class="lc-ta"><button type="button" class="btn btn-s btn-p" data-a="lcTplUse" data-id="'+t.id+'">استخدم</button><button type="button" class="btn btn-s" data-a="lcTplRen" data-id="'+t.id+'">اسم</button><button type="button" class="btn btn-s" data-a="lcTplUpd" data-id="'+t.id+'" title="خلّي القالب ده = اللي في الفورم دلوقتي">حدّث</button><button type="button" class="btn btn-s" data-a="lcTplDup" data-id="'+t.id+'">كرّر</button><button type="button" class="btn btn-s btn-d" data-a="lcTplDel" data-id="'+t.id+'">'+(tplDraft&&tplDraft.del===t.id?"متأكد؟":"احذف")+"</button></div>")+"</div>"; }).join(""); }
+function tplModal(){ tplDraft=null; openModal(mHead("قوالبي")+'<p class="hint" style="margin-bottom:10px">قوالبك المحفوظة — على حسابك، وبتظهر على الماك والآيباد والآيفون. اختار قالب والفورم يتملى منه، وتفضل الحقول اللي بتتغيّر كل مرة فاضية.</p>'+
+    '<div class="lc-tl" id="lcTplList">'+tplRows()+"</div>"+
+    '<div class="lc-mf"><button type="button" class="btn" data-a="lcModalClose">اقفل</button><button type="button" class="btn btn-p" data-a="lcTplSave">احفظ القالب الحالي</button></div>',"قوالبي"); loadTpls(true); }
+function tplSaveModal(upd){ const t=upd?(ST.tpls||[]).find(x=>x.id===upd):null; tplDraft={upd:t?t.id:"",skip:new Set(t?(t.skip||[]):TPL_DEF_SKIP)};
+  openModal(mHead(t?"حدّث القالب":"احفظ القالب الحالي")+
+    '<div class="fld"><label for="lcTplName">اسم القالب</label><input class="inp" id="lcTplName" data-focus maxlength="80" dir="auto" autocomplete="off" placeholder="تيك توك CPA الرياض" value="'+E(t?t.name:(F.title.trim()||""))+'"><p class="lc-err" id="lcTplE" style="display:block;min-height:18px" role="alert"></p></div>'+
+    '<div class="fld" style="margin-top:6px"><label>يتغيّر كل مرة <small>الحقول المتعلّمة بتتحفظ فاضية وتملاها مع كل حملة</small></label><div class="lc-skip" id="lcTplSkip">'+skipChips()+"</div></div>"+
+    '<p class="hint" style="margin-top:10px">باقي الحقول (المنصة '+ltr(F.platform)+"، الهدف، الميزانية، النص…) بتتحفظ زي ما هي في الفورم دلوقتي.</p>"+
+    '<div class="lc-mf"><button type="button" class="btn" data-a="lcTpl">رجوع</button><button type="button" class="btn btn-p" data-a="lcTplSaveOk">'+(t?"حدّث القالب":"احفظ")+"</button></div>",t?"حدّث القالب":"احفظ القالب"); }
+function skipChips(){ return skipFields(F.platform).map(x=>'<button type="button" role="checkbox" aria-checked="'+tplDraft.skip.has(x[0])+'" class="chip'+(tplDraft.skip.has(x[0])?" on":"")+'" data-a="lcTplSkip" data-k="'+x[0]+'">'+(/[A-Za-z]/.test(x[1])&&!/[؀-ۿ]/.test(x[1])?ltr(x[1]):E(x[1]))+"</button>").join(""); }
+async function tplSaveOk(){ const name=($("#lcTplName").value||"").trim(), er=$("#lcTplE");
+  if(!name){ er.textContent="اكتب اسم للقالب"; return; }
+  const T=ST.tpls||[], id=tplDraft.upd||uid();
+  if(T.some(t=>t.id!==id&&(t.name||"").trim().toLowerCase()===name.toLowerCase())){ er.textContent="فيه قالب بنفس الاسم — غيّر الاسم أو حدّث القالب ده من «قوالبي»"; return; }
+  const old=T.find(t=>t.id===id), skip=[...tplDraft.skip].filter(k=>skipFields(F.platform).some(x=>x[0]===k));
+  const t={id,name,platform:F.platform,skip,form:stripForm(F,skip),at:old?old.at:Date.now(),upd:Date.now()};
+  try{ await TPL.set(t); }catch(e){ er.textContent="ماتحفظش: "+String((e&&e.message)||e).slice(0,100); return; }
+  ST.tpls=[t].concat(T.filter(x=>x.id!==id)); ST.tplId=id; paintTplBtn(); closeLc(); toast(old?"القالب «"+name+"» اتحدّث":"القالب «"+name+"» اتحفظ"); }
+
+/* ── التبويبين على الموبايل ── */
+function setTab(v){ ST.tab=v==="list"?"list":"form"; const root=$("#lcRoot"); if(!root) return; root.dataset.tab=ST.tab;
+  const a=$("#lcTabF"),b=$("#lcTabL"),g=$("#lcGoM"),c=$("#lcCountM"); if(!a) return;
+  a.classList.toggle("on",ST.tab==="form"); b.classList.toggle("on",ST.tab==="list"); a.setAttribute("aria-selected",ST.tab==="form"); b.setAttribute("aria-selected",ST.tab==="list");
+  g.textContent=ST.tab==="form"?"اطلق":"+ حملة جديدة"; g.dataset.a=ST.tab==="form"?"lcLaunch":"lcTab"; g.dataset.v="form"; c.style.display=ST.tab==="form"?"":"none"; }
+function undoToast(msg,id){ let el=$("#toastAct"); if(!el){ el=document.createElement("div"); el.id="toastAct"; document.body.appendChild(el); }
+  el.innerHTML="<span>"+E(msg)+'</span><button data-a="lcUndo" data-id="'+E(id)+'">تراجع</button><button class="x" data-a="lcUndoHide">✕</button>'; el.className="toast-act on"; clearTimeout(undoToast.t); undoToast.t=setTimeout(()=>{ el.className="toast-act"; },8000); }
+
+/* ═════════ الأحداث ═════════ */
+const rowOf=b=>ST.rows.find(x=>x.id===b.dataset.id);
+Object.assign(ACT,{
+  lcNoop:()=>{},
+  lcPlat:b=>switchPlat(b.dataset.v),
+  lcKind:b=>{ F.kind=b.dataset.v; F.kindManual=true; renderForm(); },
+  lcCamp:b=>{ F.campMode=b.dataset.v; renderForm(); },
+  lcChipAdd:()=>{ const i=$("#lcf_custom"); addCustoms(i.value.split(/[,،\n]+/)); i.value=""; if(!matchMedia("(max-width:760px)").matches) i.focus(); },
+  lcChipDel:b=>{ F.customs.splice(+b.dataset.i,1); $("#lcChips").innerHTML=chipsHTML(F); live(); },
+  lcChipClear:()=>{ F.customs=[]; $("#lcChips").innerHTML=""; live(); },
+  lcCtype:b=>{ const c=F.customs[+b.dataset.i]; F.ctype[c]=snapType(F,c)==="Story"?"Single Video":"Story"; $("#lcChips").innerHTML=chipsHTML(F); live(); },
+  lcPreset:b=>addCustoms(PRESETS[+b.dataset.i][1]),
+  lcLaunch:()=>{ launch(); },
+  lcTest:()=>{ testLaunch(); },
+  lcBlank:()=>{ setForm(blank(F.platform)); lsSet(DRAFT_KEY,null); ST.tplId=""; toast("قالب فاضي"); },
+  lcRepeatLast:async()=>{ let f=null; const r=ST.rows.find(x=>!x.is_test);
+    if(r&&cloud()){ try{ const q=await sb().from("launch_queue").select("form").eq("id",r.id).maybeSingle(); f=q.data&&q.data.form; }catch(e){} }
+    f=f||lsGet(LAST_KEY,null); if(!f){ toast("لسه مفيش حملة اتطلقت",true); return; }
+    setForm(cl(f)); setTab("form"); toast("القالب اتملى من آخر حملة — غيّر اللي عايزه واطلق"); },
+  lcRepeat:async b=>{ const r=rowOf(b); if(!r) return; let f=null; try{ const q=await sb().from("launch_queue").select("form").eq("id",r.id).maybeSingle(); f=q.data&&q.data.form; }catch(e){}
+    if(!f){ toast("مش لاقي بيانات الحملة دي",true); return; } closeLc(); setForm(cl(f)); setTab("form"); window.scrollTo({top:0,behavior:"smooth"}); toast("القالب اتملى من «"+r.title+"»"); },
+  lcBrief:b=>{ briefModal(b.dataset.id); },
+  lcSay:b=>{ const t=document.getElementById("lcSay_"+b.dataset.id); sayTo(b.dataset.id,t?t.value:ST.say[b.dataset.id]); },
+  lcSayQ:b=>{ sayTo(b.dataset.id,QUICK[+b.dataset.i]); },
+  lcRep:b=>{ const id=b.dataset.id; ST.open[id]=!ST.open[id]; const box=b.parentNode; box.classList.toggle("open",!!ST.open[id]); b.setAttribute("aria-expanded",!!ST.open[id]); if(ST.open[id]) loadReport(id); },
+  /* إيقاف مؤقت / كمّل / الغي الباقي: rpc launch_pause_req — بيغيّر علامة الإيقاف والانتقالات دي بس */
+  lcPause:async b=>{ const r=rowOf(b),act=b.dataset.v; if(!r) return;
+    if(act==="cancel_rest"&&!confirm("تلغي الباقي من الحملة دي؟ اللي اتبنى هيفضل زي ما هو.")) return;
+    b.disabled=true; let res=null; try{ const q=await sb().rpc("launch_pause_req",{p_id:r.id,p_action:act}); res=q.error?null:q.data; }catch(e){}
+    if(!res||!res.ok){ toast("ماتنفّذش — الحالة اتغيّرت، بحدّث القائمة",true); ST.sig=""; load(); return; }
+    toast(act==="pause"?(r.state==="queued"?"اتوقفت مؤقتاً — مكانها في الطابور محفوظ":"هتقف عند أقرب نقطة آمنة — ممكن تاخد دقيقة أو اتنين"):act==="resume"?(r.state==="paused"?"هتكمّل من حيث وقفت":"اتلغى الإيقاف المؤقت"):"اتلغى الباقي — اللي اتبنى موجود");
+    ST.sig=""; load(); },
+  lcPauseAll:async b=>{ b.disabled=true; let res=null; try{ const q=await sb().rpc("launch_pause_all",{p_action:b.dataset.v}); res=q.error?null:q.data; }catch(e){}
+    if(!res||!res.ok) toast("ماتنفّذش — جرّب تاني",true); else toast(b.dataset.v==="pause"?"إيقاف مؤقت لـ "+res.n+" حملة — كل واحدة هتقف عند أقرب نقطة آمنة":"هتكمّل "+res.n+" حملة");
+    ST.sig=""; load(); },
+  lcCancel:async b=>{ const r=rowOf(b); if(!r||r.state!=="queued") return; b.disabled=true;
+    let ok=false; try{ const q=await sb().from("launch_queue").update({state:"cancelled"}).eq("id",r.id).eq("state","queued").select("id"); ok=!q.error&&q.data&&q.data.length>0; }catch(e){}
+    if(!ok){ toast("ماينفعش تتلغي — الماك استلمها خلاص",true); load(); return; }
+    r.state="cancelled"; ST.sig=""; paintList(); undoToast("اتلغت «"+r.title+"»",r.id); },
+  lcUndo:async b=>{ const id=b.dataset.id; const el=$("#toastAct"); if(el) el.className="toast-act";
+    try{ const q=await sb().from("launch_queue").update({state:"queued"}).eq("id",id).eq("state","cancelled").select("id"); if(q.error||!q.data||!q.data.length) throw 0; toast("رجعت للطابور"); }catch(e){ toast("ماقدرتش أرجّعها",true); } ST.sig=""; load(); poll(); },
+  lcUndoHide:()=>{ const el=$("#toastAct"); if(el) el.className="toast-act"; },
+  lcLim:async b=>{ const n=Math.min(10,Math.max(1,ST.limit+(+b.dataset.v))); if(n===ST.limit) return; ST.limit=n; $("#lcLim").textContent=n; ST.limBusy=true; ST.sig="";
+    try{ await RT.set("config/launch",{limit:n,at:Date.now(),by:ME.email||""}); }catch(e){ toast("الرقم ماتحفظش",true); } ST.limBusy=false; paintList(); },
+  lcClear:async b=>{ if(!b.dataset.armed){ b.dataset.armed="1"; b.textContent="متأكد؟ اضغط تاني"; setTimeout(()=>{ delete b.dataset.armed; b.textContent="امسح السجل"; },3500); return; }
+    delete b.dataset.armed; const ids=ST.rows.filter(x=>x.state==="draft"||x.state==="stopped"||x.state==="cancelled").map(x=>x.id); if(!ids.length) return;
+    try{ const q=await sb().from("launch_queue").update({hidden:true}).in("id",ids).in("state",["draft","stopped","cancelled"]); if(q.error) throw q.error;
+      toast("اتشال "+ids.length+" من السجل"+(ST.rows.length>ids.length?" — اللي لسه شغّال فضل":"")); }catch(e){ toast("السجل مااتمسحش",true); } ST.sig=""; load(); },
+  lcTab:b=>{ setTab(b.dataset.v); lsSet(TAB_KEY,ST.tab); window.scrollTo({top:0}); },
+  lcPasteOpen:()=>pasteModal(),
+  lcPasteFill:()=>{ const r=briefToForm($("#lcPasteT").value); if(!r){ $("#lcPasteE").textContent="مش لاقي حقول القالب في النص ده. الصق البريف كامل (من أول Tamkeen Ads Manager Level)."; return; }
+    closeLc(); F=normalize(r.f); touched=true; renderForm(); setTab("form"); const e=Object.keys(check(F).E).length;
+    toast(r.notes[0]||(e?"القالب اتملى — فاضل "+e+" حاجة ناقصة":"القالب اتملى من البريف — راجع واطلق"),!!e&&!r.notes[0]); },
+  lcPickOpen:()=>pickModal(),
+  lcPick:b=>{ const id=b.dataset.id; if(pickSel.has(id)) pickSel.delete(id); else pickSel.add(id); const on=pickSel.has(id); b.classList.toggle("sel",on); b.setAttribute("aria-checked",on); pickCount(); },
+  lcPickDone:()=>pickDone(),
+  lcPickTab:b=>{ ST.pickTab=+b.dataset.i||0; pickPaint(); },
+  /* «حدّث المكتبة»: نفس مزامنة Airtable ← media اللي «حدّث كل حاجة» ومكتبة الكريتيف بيستخدموها (edge function media-sync) */
+  lcLibSync:async b=>{ if(b.disabled) return; b.disabled=true; const t=b.textContent; b.textContent="بيحدّث من Airtable…";
+    try{ const r=await sb().functions.invoke("media-sync",{body:{}}); if(r.error||(r.data&&r.data.error)) throw new Error((r.data&&r.data.error)||r.error.message); await loadLib(true); toast("المكتبة اتحدّثت من Airtable"); }
+    catch(e){ toast("المكتبة مااتحدّثتش: "+String((e&&e.message)||e).slice(0,100),true); await loadLib(true); }
+    const nb=$("#lcLibSync"); if(nb){ nb.disabled=false; nb.textContent=t; } },
+  lcCopyBrief:b=>{ const t=$("#lcBriefT").textContent; (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>{ b.textContent="اتنسخ"; },()=>{ const r=document.createRange(); r.selectNodeContents($("#lcBriefT")); const s=getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent="متعلّم — انسخ"; }); },
+  lcModalClose:()=>closeLc(),
+  lcModalBg:(b,e)=>{ if(Date.now()-(window.__shAt||0)<600) return; if(e.target===b) closeLc(); },
+  lcTpl:()=>tplModal(),
+  lcTplSave:()=>tplSaveModal(""),
+  lcTplUpd:b=>tplSaveModal(b.dataset.id),
+  lcTplSkip:b=>{ const k=b.dataset.k; if(tplDraft.skip.has(k)) tplDraft.skip.delete(k); else tplDraft.skip.add(k); const on=tplDraft.skip.has(k); b.classList.toggle("on",on); b.setAttribute("aria-checked",on); },
+  lcTplSaveOk:()=>{ tplSaveOk(); },
+  lcTplUse:b=>{ const t=(ST.tpls||[]).find(x=>x.id===b.dataset.id); if(!t) return; closeLc(); setForm(cl(t.form)); ST.tplId=t.id; setTab("form");
+    toast("القالب «"+t.name+"» — املأ "+((t.skip||[]).length?"الحقول الفاضية":"اللي ناقص")+" واطلق"); const first=document.querySelector("#lcf_title"); if(first&&!matchMedia("(max-width:760px)").matches) first.focus({preventScroll:true}); },
+  lcTplRen:b=>{ tplDraft={ren:b.dataset.id}; $("#lcTplList").innerHTML=tplRows(); const i=$("#lcTplRenI"); if(i){ i.focus(); i.select(); } },
+  lcTplRenX:()=>{ tplDraft=null; $("#lcTplList").innerHTML=tplRows(); },
+  lcTplRenOk:async b=>{ const t=(ST.tpls||[]).find(x=>x.id===b.dataset.id), name=($("#lcTplRenI").value||"").trim(); if(!t||!name) return;
+    if(ST.tpls.some(x=>x.id!==t.id&&(x.name||"").trim().toLowerCase()===name.toLowerCase())){ toast("فيه قالب بنفس الاسم",true); return; }
+    const n=Object.assign({},t,{name,upd:Date.now()}); try{ await TPL.set(n); Object.assign(t,n); toast("الاسم اتغيّر"); }catch(e){ toast("الاسم مااتغيّرش",true); } tplDraft=null; $("#lcTplList").innerHTML=tplRows(); },
+  lcTplDup:async b=>{ const t=(ST.tpls||[]).find(x=>x.id===b.dataset.id); if(!t) return; let name=t.name+" (نسخة)", i=2; while(ST.tpls.some(x=>x.name===name)) name=t.name+" (نسخة "+(i++)+")";
+    const n=Object.assign(cl(t),{id:uid(),name,at:Date.now(),upd:Date.now()}); try{ await TPL.set(n); ST.tpls.unshift(n); toast("اتعملت نسخة «"+name+"»"); }catch(e){ toast("النسخة مااتعملتش",true); } paintTplBtn(); $("#lcTplList").innerHTML=tplRows(); },
+  lcTplDel:async b=>{ const id=b.dataset.id; if(!(tplDraft&&tplDraft.del===id)){ tplDraft={del:id}; $("#lcTplList").innerHTML=tplRows(); setTimeout(()=>{ if(tplDraft&&tplDraft.del===id){ tplDraft=null; const l=$("#lcTplList"); if(l) l.innerHTML=tplRows(); } },3500); return; }
+    tplDraft=null; const t=ST.tpls.find(x=>x.id===id); try{ await TPL.del(id); ST.tpls=ST.tpls.filter(x=>x.id!==id); if(ST.tplId===id) ST.tplId=""; toast("القالب «"+(t?t.name:"")+"» اتحذف"); }catch(e){ toast("القالب مااتحذفش",true); } paintTplBtn(); $("#lcTplList").innerHTML=tplRows(); }
+});
+document.addEventListener("input",e=>{ const el=e.target; if(!el||!el.closest) return;
+  if(el.dataset.lk&&el.closest("#lcRoot")){ if(el.dataset.ls==="v") F.v[el.dataset.lk]=el.value; else F[el.dataset.lk]=el.value; live(); return; }
+  if(el.classList&&el.classList.contains("lc-sayt")){ ST.say[el.dataset.id]=el.value; return; }
+  if(el.id==="lcPickQ"){ $("#lcLib").innerHTML=pickRows(el.value); return; } });
+document.addEventListener("focusout",e=>{ if(e.target&&e.target.id==="lcf_ids"&&F){ const X=idInfo(F.ids); if(X.ids.length&&!X.bad.length&&!X.dup.length){ F.ids=X.ids.join("\n"); e.target.value=F.ids; } } });
+document.addEventListener("keydown",e=>{ if(S.view!=="launch") return; const lm=$("#modalHost .lc-modal");
+  if(e.key==="Escape"&&lm){ closeLc(); return; }
+  if(e.target&&e.target.classList&&e.target.classList.contains("lc-sayt")){   /* خانة الشات: Enter يبعت (Shift+Enter سطر جديد) — ومفيش «اطلق» من هنا */
+    if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing&&!matchMedia("(max-width:760px)").matches){ e.preventDefault(); sayTo(e.target.dataset.id,e.target.value); }
+    return; }
+  if(e.key==="Enter"&&e.target&&e.target.id==="lcf_custom"&&!e.isComposing){ e.preventDefault(); ACT.lcChipAdd(); return; }
+  if(e.key==="Enter"&&e.target&&e.target.id==="lcTplName"&&!e.isComposing){ e.preventDefault(); tplSaveOk(); return; }
+  if(e.key==="Enter"&&e.target&&e.target.id==="lcTplRenI"&&!e.isComposing){ e.preventDefault(); const b=$('#lcTplList [data-a="lcTplRenOk"]'); if(b) ACT.lcTplRenOk(b); return; }
+  if(e.key==="Enter"&&(e.metaKey||e.ctrlKey)&&!$("#modalHost").innerHTML&&$("#lcRoot")){ e.preventDefault(); launch(); } });
+
+/* ═════════ الهيكل (render بيرسمه، و mount بيملاه) ═════════ */
+function view(){
+  const test=/[?&]lctest=1/.test(location.search);
+  return '<div class="lc" id="lcRoot" data-tab="'+ST.tab+'"><div class="lc-grid">'+
+    '<section class="lc-formcol" aria-label="قالب الحملة">'+
+      '<div class="lc-mac" role="status" aria-live="polite"><i></i><span>بشوف الماك متصل ولا لأ…</span></div>'+
+      '<div class="lc-top"><div class="seg lc-plat" role="radiogroup" aria-label="المنصة" id="lcPlat"></div><span class="lc-sp"></span>'+
+        '<button class="btn" data-a="lcTpl" id="lcTplB" type="button">قوالبي</button>'+
+        '<button class="btn" data-a="lcRepeatLast" id="lcRepeatB" type="button">كرّر آخر حملة</button>'+
+        '<button class="btn" data-a="lcBlank" type="button">قالب فاضي</button>'+
+        '<button class="btn" data-a="lcPasteOpen" type="button">الصق بريف جاهز</button></div>'+
+      '<div id="lcBlocks" style="display:flex;flex-direction:column;gap:14px"></div>'+
+      '<div class="card lc-notes" id="lcNotes" aria-live="polite"></div>'+
+      '<div class="lc-go"><span class="lc-count" id="lcCount"></span><span class="lc-sp"></span><span class="lc-miss" id="lcMiss" role="alert"></span><kbd class="lc-kbd ltr">⌘/Ctrl + Enter</kbd>'+
+        '<button class="btn btn-p lc-gobtn" data-a="lcLaunch" type="button" aria-keyshortcuts="Meta+Enter Control+Enter">اطلق'+IC.go+"</button></div>"+
+    "</section>"+
+    '<aside class="card lc-side" aria-label="الحملات اللي اتطلقت"><div class="lc-sh">'+
+      '<div class="card-h"><h2 class="card-t">الحملات اللي اتطلقت</h2><span class="card-x" id="lcTotal"></span></div>'+
+      '<div class="lc-mac" role="status"><i></i><span>…</span></div>'+
+      '<div class="lc-sum" id="lcSum"></div>'+
+      '<div class="lc-set"><label id="lcLimL">أقصى عدد يتبني مع بعض</label><div class="lc-step" role="group" aria-labelledby="lcLimL">'+
+        '<button type="button" data-a="lcLim" data-v="-1" aria-label="قلّل">−</button><output class="num" id="lcLim" aria-live="polite">'+ST.limit+'</output><button type="button" data-a="lcLim" data-v="1" aria-label="زوّد">+</button></div></div>'+
+      '<p class="hint" style="margin-top:6px">لو اتطلق أكتر من الرقم ده، الزيادة تفضل «في الطابور» وتبدأ لوحدها أول ما مكان يفضى.</p></div>'+
+      '<div class="lc-list" id="lcList"></div>'+
+      '<div class="lc-foot">'+(test?'<button class="btn btn-s" data-a="lcTest" type="button">اختبار ربط (من غير حملة)</button>':"")+'<button class="btn btn-s btn-d" data-a="lcClear" id="lcClear" type="button">امسح السجل</button></div>'+
+    "</aside></div>"+
+    '<div class="lc-mbar" id="lcMbar"><div class="lc-mcount" id="lcCountM"></div><div class="lc-mrow">'+
+      '<div class="seg lc-mtabs" role="tablist" aria-label="عرض"><button role="tab" type="button" data-a="lcTab" data-v="form" id="lcTabF">القالب</button>'+
+      '<button role="tab" type="button" data-a="lcTab" data-v="list" id="lcTabL" aria-label="الحملات اللي اتطلقت">اتطلقت <b class="num" id="lcBadge">0</b></button></div>'+
+      '<button class="btn btn-p lc-gobtn" data-a="lcLaunch" type="button" id="lcGoM">اطلق</button></div></div></div>';
+}
+function mount(){
+  if(!$("#lcRoot")) return;
+  if(!F) F=normalize(lsGet(DRAFT_KEY,null)||blank("Meta"));
+  renderForm(); paintList(); paintMac(); paintTplBtn(); setTab(ST.tab);
+  load(); poll(); loadTpls(); loadLib();
+}
+/* لو المستخدم بيكتب في القالب، render() بتاع الموقع ميبدّلش الـ DOM من تحته (الكيبورد على الموبايل كان هيقفل) */
+function busy(){ const a=document.activeElement; return !!($("#lcRoot")&&a&&a.closest&&a.closest("#lcRoot")&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)); }
+function focus(id){ ST.focus=/^[a-z0-9]{8,24}$/.test(id||"")?id:""; if(ST.focus) ST.tab="list"; }
+return {view,mount,busy,focus,PICK_TABS:LC_PICK_TABS,LICENSE_OK:LC_LICENSE_OK};
+})();
 function render(){
   /* لينك مباشر: ?p=campperf&ws=<client>&from=YYYY-MM-DD&to=YYYY-MM-DD&act=all — بيتطبق مرة واحدة أول ما الإعدادات تتحمّل */
   if(!S.urlInit&&S.cfg.clients.length){ S.urlInit=1; try{ const q=new URLSearchParams(location.search);
     const ws=q.get("ws"); if(ws&&clientById(ws)){ S.ws=ws; S.wsInit=1; lsSet("gad.ws",ws); }
     if(q.get("p")==="campperf"){ S.view="campperf"; const f=q.get("from"), t=q.get("to"), d=q.get("day");
       if(f&&t){ CP.per="r"; CP.from=f; CP.to=t; CP.urlPer=1; } else if(d){ CP.per="d"; CP.day=d; CP.urlPer=1; } if(q.get("act")==="all") CP.act="all"; }
+    else if(q.get("p")==="launch"){ S.view="launch"; LC.focus(q.get("lc")||""); }   /* التنبيه «جاهزة درافت / وقفت» بيفتح صفحة الإطلاق على الحملة دي */
     else if(!q.get("p")&&(maMQ&&maMQ.matches||(window.matchMedia&&matchMedia("(display-mode: standalone)").matches)||navigator.standalone)) S.view="campperf"; }catch(e){} }
   /* أكتر من عميل: السيستم بيفتح على آخر عميل اخترته (أو أول عميل) بدل ما يجمع أرقام العملا مع بعض. «كل العملاء» بتتحفظ برضه. */
   if(!S.wsInit&&S.cfg.clients.length>1){ S.wsInit=1; const r=lsGet("gad.ws",""); if(r!=="*"&&!S.ws) S.ws=(r&&clientById(r))? r : S.cfg.clients[0].id; }
@@ -15099,6 +16094,8 @@ function render(){
   document.documentElement.classList.toggle("ma-on",maOn());
   document.documentElement.classList.toggle("ma-desk",maDesk());
   document.documentElement.classList.toggle("ap-on",apOn());
+  document.documentElement.classList.toggle("lc-on",S.view==="launch");
+  const _lcSkip=S.view==="launch"&&LC.busy();   /* بيكتب في قالب الإطلاق: سيب الـ DOM زي ما هو */
   $("#topbar").innerHTML=(maMQ&&maMQ.matches&&!isPending())? "" : topbarHTML();
   { const m=$("#railMe"); if(m) m.innerHTML=(meVis()&&!isPending())? '<div class="rail-me" data-a="profEdit" title="'+esc(L("ملفي الشخصي","My profile"))+'">'+pav(ME.id,36)+'<div><b>'+esc(pname(ME.id))+"</b><small>"+esc(meSub())+"</small></div></div>" : ""; }
   const cs=(S.cfg.screens||[]);
@@ -15107,8 +16104,9 @@ function render(){
   renderFBar();
   { const fb=$("#fbar"); if(fb&&fb.innerHTML) try{ fb.innerHTML=addHelp(fb.innerHTML); }catch(e){} }
   const _maKeep=maOn()? [["#maDp","scrollTop"],[".ma-ks","scrollLeft"],[".ma-plats","scrollLeft"]].map(x=>{ const el=document.querySelector(x[0]); return el?[x[0],x[1],el[x[1]]]:null; }).filter(Boolean) : [];
-  $("#view").innerHTML=(lsGet("mbc.pmDemo",false)?'<div class="pm-demo pm-demo-g"><span>'+esc(L("وضع البيانات التجريبية: الأرقام في كل الشاشات عشوائية للمعاينة، مش أرقامك ومش متسجلة في أي مكان.","Demo mode: numbers on every screen are random previews — not yours, not saved."))+'</span><button class="btn btn-s" data-a="pmDemo">'+esc(L("اقفله","Turn off"))+"</button></div>":"")+(READONLY?'<div class="ro-bar">'+esc(L("👁 وضع المشاهدة — بتشوف كل حاجة لحظياً، بس التعديل وإدخال البيانات مقفولين.","👁 View-only — you see everything live, but editing and data entry are locked."))+"</div>":"")+
+  if(!_lcSkip) $("#view").innerHTML=(lsGet("mbc.pmDemo",false)?'<div class="pm-demo pm-demo-g"><span>'+esc(L("وضع البيانات التجريبية: الأرقام في كل الشاشات عشوائية للمعاينة، مش أرقامك ومش متسجلة في أي مكان.","Demo mode: numbers on every screen are random previews — not yours, not saved."))+'</span><button class="btn btn-s" data-a="pmDemo">'+esc(L("اقفله","Turn off"))+"</button></div>":"")+(READONLY?'<div class="ro-bar">'+esc(L("👁 وضع المشاهدة — بتشوف كل حاجة لحظياً، بس التعديل وإدخال البيانات مقفولين.","👁 View-only — you see everything live, but editing and data entry are locked."))+"</div>":"")+
     (maOn()? renderView() : apOn()? '<div class="ap ma" id="apRoot">'+apBar()+'<div class="ap-pg">'+wsBar()+headerFor()+renderView()+"</div>"+maSheet()+"</div>" : wsBar()+headerFor()+renderView());
+  if(S.view==="launch"&&!_lcSkip){ try{ LC.mount(); }catch(e){ console.warn("launch",e); } }
   _maKeep.forEach(x=>{ const el=document.querySelector(x[0]); if(el&&!(x[0]==="#maDp"&&CP.manimWas)) el[x[1]]=x[2]; }); CP.manimWas=0;
   const host=$("#aiHost");
   if(host&&(!$("#aiPanel")||host.dataset.lang!==LANG())){

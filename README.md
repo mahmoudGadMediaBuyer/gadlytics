@@ -53,6 +53,7 @@ The site **only displays data**. It never writes to or changes an ad account. Al
 34. [Khzama live sync (Chrome extension)](#34-khzama-live-sync-chrome-extension-nov-11-2026)
 35. [Season mode «وضع الموسم»](#35-season-mode-وضع-الموسم-nov-11-2026)
 36. [Design system «Bramble»](#36-design-system-bramble-nov-11-2026--phase-1-of-3)
+37. [Campaign launch from GADLYTICS «إطلاق الحملات»](#37-campaign-launch-from-gadlytics-إطلاق-الحملات-nov-12-2026)
 
 ---
 
@@ -1242,6 +1243,10 @@ These tasks stop on a permission prompt when they hit a tool they haven't been a
 | Nov 11 | Khzama live sync: Chrome extension `khzama-live/` (every 2 min, today's Khzama links → `gad-api` `POST /khzama/push`, full snapshot of the day, 50 % guard, login/error push notifications, heartbeat `sys/khzama_live` → `/summary` `data_freshness.orders.khzama_live`). `gad-api` v3 / 1.2.0, new key scope `khzama` (`make_api_key.py --khzama`; a khzama key can't read, a read key can't push), `ingest` v14 accepts `["khzama"]`. Khzama pull = screen read of `affiliateLinks` React props + `khzama_ingest.py`. |
 | Nov 11 | Season mode «وضع الموسم» (§35): edge fn `season-tick` v1 (verify_jwt on) + cron `gad-season-tick` every 2 min — when `config/app.season` is active, platform spend refreshes every 2 min 24 h and `camp-alerts` also runs 00:00–07:59 Riyadh; auto start 2027-01-09 (1 Sha'ban 1448); heartbeat `sys/season`. Tested on, then left **off** (waiting for 2027-01-09). |
 | Nov 11 | **Bramble look, phase 1** (§36): dark navy + violet glow, glass cards, indigo pill buttons, IBM Plex Sans Arabic; dark is the default, light still works; old Clay choice cleared once. Readability floor (12px phone / 11.5px elsewhere, no letter-spacing on Arabic, AA muted text). GSAP count-up / chart draw-in / card fade once per view open, shimmer while loading, reduced-motion respected. Bramble toasts incl. «تراجع». System health card at the end of «الإعدادات» (admins). Same content and order on every page. |
+| Nov 12 | Two standing rules for parallel builds: **own tabs only** (the extension has one tab group per session — agents isolate by tab id, label tab titles, close only their own; background-tab throttling measured) and a **campaign-number lock** (`launch_numlock` + `launch_status.py number-lock`: one first Launch at a time, queue by launch order, released on the number / final state / 6 min silence). First real run of three campaigns together: Meta draft in 20 min; Snap and TikTok needed a resume. Local only. |
+| Nov 12 | Launch cards: **chat with the campaign** (table `launch_msgs`, `launch-api` v3 `/say` + `draft → building`, `launch_poll` message hand-over, watcher `--msgs` + `MESSAGE` blocks, `launch_status.py say`, resume procedure and fixed rules in the skill), «حالة الحملات» shows the last message, and **build agents run on `sonnet`** (one setting at the top of `launch_dispatch.md`; `opus` if builds make setting mistakes). Local only. |
+| Nov 12 | Launch cards: real progress bar «NN%» from counts (`launch_queue.progress` / `prog`, `launch-api` v2, `launch_status.py --launches/--adsets/--ads/--khzama K/N`; weights 20 / 10 / 35 / 30 + final check 5), card named by the campaign code + full name once known, picker tab «كل الحالات» (any status is selectable; nothing checks status). Local only. |
+| Nov 12 | **Campaign launch from GADLYTICS** (§37, local only — not uploaded yet): new view `launch` «إطلاق الحملات» after «إدارة الحملات» (brief form for Meta / TikTok / Snapchat, validation, «قوالبي» saved templates per user, library picker with tabs by status + «حدّث المكتبة», shared launched list with live states, Mac connection state, report per campaign). Backend: table `launch_queue` (RLS + guard trigger), SQL `launch_claim` / `launch_poll`, edge fn `launch-api` (verify_jwt on), key scope `launch` (`make_api_key.py --launch` → `~/.gadlytics/launch.key`), push on draft / stopped. Mac: `launch_watcher.py`, `launch_status.py`, `launch_lib.py`, runbook `launch_dispatch.md`. Dry-run tested without a real campaign; builds run as background agents of one dispatcher chat «مراقب الإطلاق» (automatic `start_session` is refused by the app); the agent hop is proven by Mahmoud's next test (§37.9). |
 
 ## 32) AI assistants API (instinct / MCP) — `gad-api` (Nov 10 2026)
 
@@ -1516,6 +1521,19 @@ Install (once): `chrome://extensions` → Developer mode → Load unpacked → `
 - Heartbeat: `docs` `sys/khzama_live` (`last_ok_at`, `last_state`, `last_detail`, `rows`, `totals` for today, `days`, `notified`). `/summary` shows it as `data_freshness.orders.khzama_live` (`last_ok_at`, `minutes_ago`, `state`, `today`).
 - Tested Nov 11 2026: 401 without a key; khzama key → 403 on `/summary`, `/mcp`, `/edit/preview`, `/report?key=`; read key → 403 on `/khzama/push`; re-push of 2026-11-10 (1 link, 1 donation, 100 SAR) → `unchanged: true`; second push within 30 s → 429; empty push over a 10-donation day → 409 guard; date outside today/yesterday → 400.
 
+### 34.4 Campaign links «روابط الحملات» — the extension registers a build's affiliate links (v1.1.0, Nov 12 2026)
+
+The slowest part of a campaign build was the agent filling Khzama's «إضافة» form link by link. Now `khzama-live/links.js` does it in seconds, and the agent only sends the list and reads the result.
+
+- **Jobs:** table `launch_kz_jobs` (`launch_id`, `code`, `title` = keyword = the Parameters string, `advertiser` = TSW only, `state` queued → adding → done | failed, `error`, `link_id`, `existed`, `attempts`). RLS: signed-in users read; all writes go through two key-gated SQL functions (rpc through PostgREST with the anon key, like `launch_poll`): `launch_kz(key, id, links, takeover)` — **launch** key only; `kz_jobs(key, info)` — **khzama** key only (heartbeat + report the finished job + take the next one; one job at a time). No edge function changed for this; the khzama key is still refused by `gad-api` read/edit/refresh/mcp (403), `launch-api` (401) and `launch_poll` / `launch_numlock` / `launch_kz`.
+- **Agent side:** `launch_status.py <id> khzama-links --file links.json` (a list of Parameters strings; idempotent) → `KHZAMA-LINKS QUEUED n`, or `MANUAL` when the extension is off / not updated (no heartbeat in `docs sys/khzama_links` for 100 s, or its switch is off — then nothing is queued). `launch_status.py <id> khzama-status [--wait 240] [--take-over]` → `ALL DONE`, or `MISSING <title> — reason` lines the agent registers by hand (keyword check first). `--take-over` fails whatever is still waiting so the extension can never add a title the agent is adding.
+- **Extension side** (alarm every 30 s, then job after job): a **second, un-pinned tab of its own** (closed when the batch ends; the pinned donations tab is never used). Per job: load `affiliateLinks?keyword=<title>` and read the table's React props twice (same search box, «المجموع» row present) → exact title already there ⇒ done, nothing added → «إضافة» → fill `input[name=title]` + `input[name=queryValue]` (native setter + `input` + `focusout`: the form is react-hook-form and reads a field on blur) → type the advertiser in the react-select and click the option whose text is **exactly** `TSW` (`TSW-1` is listed first) → one step that checks the fields AND the form's own values (`title`, `queryValue`, `affiliateId` = the hidden input, `createCopies` false) and only then clicks «حفظ البيانات» → wait for the dialog to close → keyword search again → link id → done.
+- **Guards:** title must match `^[A-Z]{2,4}-\d{3,6}-[A-Za-z0-9_~-]+$` and start with the launch's campaign number (checked on the server, in the worker and in the page step); advertiser must be TSW; never edits or deletes; no cookies/storage/tokens read. **Any failure stops the batch** (login page, missing field, no exact TSW option, form values that do not match, a save Khzama refuses): the server fails what is left and the agents take those by hand. A job taken and not reported for 2 min is re-queued once, then failed. The save click never happens later than 70 s after the job was taken.
+- **Progress:** each finished job updates `launch_queue.prog.khzama` and the percentage (same 30 % weight).
+- **Popup:** box «روابط الحملات» (state · last batch `MGG-… · 12/12` · last error) + its own on/off switch. Options: «وضع تجربة» — serves only is_test rows and cancels instead of saving.
+- **Update the installed extension:** `chrome://extensions` → «GADLYTICS · خزامى لحظي» → reload (↻). The key stays (it is in `chrome.storage.local`). Version shows 1.1.0.
+- **Tested Nov 12:** on the live page in a tab of mine — keyword check against MGG-03112's 12 links (exact title → 1 row, id 2545), dialog opened, both fields filled, exact `TSW` picked with `TSW-1` focused first, form values read back (`affiliateId` 4), then cancelled: **nothing was saved**. 53 automated checks (scratch `kz_ut.js`: guard, every stop, idempotency, take-over, stale job, key scopes) with a fake page + the real server and hand-made test rows (deleted). **Not tested: a real save** — the first one is the next real campaign. After Khzama was signed in again, the packaged `kzLinkStep` itself (same bytes as `links.js`, fingerprint checked in the page) was run on the live page in stub mode: read → open → fill → exact `TSW` → the pre-save check passed (and refused a wrong advertiser, a wrong title and a non-campaign title) → cancelled; the keyword search afterwards shows 0 links for the test title.
+
 ## 35) Season mode «وضع الموسم» (Nov 11 2026)
 
 During the season (Ramadan 1448) spend moves fast and money is spent at night too, so the numbers must stay fresh around the clock. Season mode does two things, and nothing outside the season changes:
@@ -1595,3 +1613,246 @@ Mahmoud approved the Bramble look (prototype `gadlytics-design/bramble-me.html`)
 **Kept exactly as before:** every view, ACT handler and data source; breakpoints phone ≤760 / iPad 761–1180 (`html.ma-on`) / Mac >1180 (`html.ma-desk`); the 600 ms ghost-tap guards (`window.__shAt`); notifications as their own view `push`; no caching service worker + the build-id auto-update; pinch zoom; notch safe areas; the «بيانات تجريبية» banner.
 
 **Phases.** Phase 1 (this): global look + لوحتي. Phase 2: أداء الحملات (polish of `.ma-*` / desktop table in Bramble). Phase 3: other pages + polish.
+
+## 37) Campaign launch from GADLYTICS «إطلاق الحملات» (Nov 12 2026)
+
+Mahmoud fills the campaign brief in GADLYTICS — on the Mac, the iPad or the iPhone — and presses «اطلق». His Mac then starts building it: one background agent per campaign inside a single Claude Code chat on the Mac («مراقب الإطلاق»), which builds that campaign as a **draft** with the `tamkeen-launch` skill. The page shows every campaign's live state, and a push notification arrives when it is ready or when it stops. Rules are the skill's own and unchanged: **ملبي only, videos only, draft / paused only, never publish or activate.** The page itself never talks to an ad platform, the launch tool or Khzama.
+
+```
+page «إطلاق الحملات»  ──insert──▶  launch_queue (Supabase, behind the GADLYTICS login)
+                                        ▲ state / step / campaign no / report          │ rpc launch_poll (every 2 s)
+                                        │                                               ▼
+        launch_status.py ──▶ launch-api /status ──▶ push          launch_watcher.py  (on the Mac, no model calls)
+                 ▲                                                     │ LAUNCH block (id + agent prompt) · UPDATE lines (news)
+                 │                                                     ▼
+   background agent (tamkeen-launch)  ◀──── Agent tool ────  «مراقب الإطلاق» — the dispatcher chat (prints the news + reports)
+```
+
+### 37.1 The page (view `launch`)
+
+- Sidebar group «الإدارة والتحليل», right after «إدارة الحملات»; same place in the phone / iPad menu. Deep link `?p=launch&lc=<request id>` opens the page on that campaign (the push notification uses it).
+- **Form** = the skill's brief, three blocks per platform (Meta / TikTok / Snapchat): «Tamkeen Ads Manager Level (airtable)», «Campaign- Adset Level», «AD Level». Fields, defaults and mandatory marks come from `tamkeen-launch` (`SKILL.md` «The brief», `template.md`, `template-snapchat.md`). Launch kind follows the platform (TikTok = Smart, Snapchat = Bulk, Meta = Single / Bulk by the number of videos). Custom chips with quick sets (مدن · CPA25–50 · SV + Story); Snapchat chips carry the ad type (Single Video / Story).
+- **Validation** blocks the launch only for the skill's mandatory fields (client must be ملبي, 14-digit Creative IDs with no duplicates, kind limits, link, Customs, performance goal, budget, age / gender, text / headline / CTA…). Everything else is a note (title vs platform, goal vs bid strategy, CPA Customs, city Customs, a video's licence — never its status).
+- **«اطلق»** (also ⌘/Ctrl + Enter) inserts ONE row into `launch_queue` and clears the form, so the next brief can be filled at once. Each press starts its own campaign; there is no list to collect first. The row holds the exact brief the build works from («البريف» on the card shows it).
+- **Top row:** «قوالبي» · «كرّر آخر حملة» · «قالب فاضي» · «الصق بريف جاهز» (a pasted brief fills the form).
+- **«قوالبي» (saved templates).** «احفظ القالب الحالي» saves the form under a name; the chips under «يتغيّر كل مرة» mark the fields that are saved **empty** (default: campaign title + Creative IDs; any field can be ticked). Picking a template fills the form with everything else. Each template can be renamed («اسم»), updated from the current form («حدّث»), duplicated («كرّر») and deleted («احذف», two taps). Stored per user at `docs` `data/users/<auth uid>/lctpl_<id>` — the row policy of `docs` lets only that user read or write the path — so they follow him to every device.
+- **Library picker** («اختار من المكتبة») reads the same `media` table as «مكتبة الكريتيف» (ملبي, `kind = Video`). Three tabs, defined by **one constant at the top of the module**:
+  ```js
+  const LC_PICK_TABS=[{status:"معتمد للتشغيل", …},{status:"تم التقييم", …},{all:true,label:"كل الحالات", …}];
+  const LC_LICENSE_OK=["فعال","لا يتطلب"];
+  ```
+  «معتمد للتشغيل» is the default tab (empty state «مفيش فيديو معتمد للتشغيل دلوقتي — اعتمده من Airtable ودوس حدّث»), then «تم التقييم», then «كل الحالات» — every ملبي video with its status as a small label (first 300 shown; the search box finds the rest by ID, influencer or product). **Any video is selectable whatever its status** (Mahmoud, Nov 12: he launches on any status). The licence is shown on every row and one outside `LC_LICENSE_OK` gets a ⚠ — information only. **Nothing in the page, the watcher prompt or the skill checks or blocks on status**, and **pasted IDs are always accepted**. «حدّث المكتبة» runs the existing `media-sync` edge function (Airtable → `media`) and reloads the list.
+- **«الحملات اللي اتطلقت»** = the shared queue (all devices). Each card:
+  - **Name.** Until the launch tool answers, the brief's title line («Meta - Value») is the card title. As soon as the campaign number and name are known, the **campaign code** (`MGG-03xxx`) becomes the big title, the full campaign name (`MGG-… | CL:Molabi | PR:… | VR:… | OB:… | GE:…`) sits under it, and the brief title moves to a small secondary line. The dispatcher chat, «حالة الحملات» and the push title use the code the same way.
+  - **Progress.** A bar + «NN%» next to the step label while «بتبدأ» / «بتتبني» (animated with `transform: scaleX`, from the last value shown to the new one); 100 % and green on «جاهزة درافت»; frozen at its last value on «وقفت». The number is `launch_queue.progress`, computed by `launch-api` from the counts the build reports (§37.5). Rows without it fall back to the step number ÷ 4.
+  - **Chat with the campaign** («كلّم الحملة», under «التقرير», on cards that are «بتتبني», «وقفت» or «جاهزة درافت»): the thread in bubbles (his messages and the campaign's replies), a text box and «ابعت» (Enter sends on the Mac, Shift+Enter = new line), and on a stopped card three quick replies — «كمّل من مكان ما وقفت» · «رفعت الفيديو — كمّل» · «الغي الباقي وسيبها زي ما هي». A message is marked «مستني المراقب» until the Mac picks it up, then «وصلت للمراقب»; with the Mac off it says «الماك مش متصل — الرسالة هتستنى لحد ما يتصل», and when the connected dispatcher is an older one that does not take messages: «المراقب الشغّال مش بيسمع الرسايل — وقّفه وشغّله تاني» (the heartbeat carries `msgs`). What is being typed survives the list's live refresh (text, focus and caret).
+  - State chip (في الطابور · بتبدأ · بتتبني · جاهزة درافت · وقفت · اتلغت), elapsed minutes, stop reason, «التقرير» (the build's Arabic report, loaded on demand), «البريف», «كرّر», and «إلغاء» — **queued requests only**; a claimed or running build can't be cancelled from the page («تراجع» for 8 s puts it back). «امسح السجل» hides finished rows (soft: `hidden = true`).
+- **«أقصى عدد يتبني مع بعض»** 1–10 (default 7) is stored in `docs` `config/launch` and enforced by the server at claim time; extra requests stay «في الطابور» and start by themselves when a slot frees.
+- **Mac connection.** The watcher's heartbeat is `docs` `sys/launch_mac` (`at` in ms, written every ~6 s). The page shows «الماك متصل» when it is younger than 30 s; otherwise **«الماك مش متصل — الحملة هتستنى لحد ما يتصل»** (amber, on the form on phones and above the list everywhere, and on each queued card). A request sent while the Mac is off is not lost — it is claimed as soon as the watcher is back.
+- **Live updates** by polling, the site's usual pattern: every 2.5 s while anything is queued / starting / building, else every 8 s; paused while the tab is hidden.
+- **Layouts:** Mac > 1180 two columns (form + sticky list); iPad 761–1180 two narrower columns inside the app shell; phone ≤ 760 one column with a fixed bottom bar (tabs «القالب» / «اتطلقت» + «اطلق»), modals as bottom sheets, 44 px targets, 16 px inputs. Bramble tokens only, no new font. iOS rules kept: modals stamp `window.__shAt` and ignore backdrop taps for 600 ms; no service-worker caching; safe-area insets; and while a field of the form has focus the site's `render()` leaves the page's DOM alone (so the phone keyboard never closes under a background refresh).
+- Hidden helper: `?lctest=1` adds «اختبار ربط (من غير حملة)» under the list — it queues a fixed, harmless test request (no campaign) to check the whole chain.
+- Code: `<style id="lc-css">` (classes `lc-…`) before `<style id="bramble">`, and the module `const LC=(function(){…})()` before `function render()` in `mediabuyer-console.html`; actions are `ACT.lc…`; `render()` calls `LC.mount()` after drawing the view.
+
+### 37.2 Table `launch_queue` (private)
+
+| Column | Notes |
+|---|---|
+| `id` | text, made by the page (`^[a-z0-9]{8,24}$`) |
+| `client`, `client_id`, `platform`, `title`, `kind`, `n_videos`, `n_adsets`, `n_ads` | what the card shows |
+| `brief` | the full brief text the build works from (20–20,000 chars) |
+| `form` | the form as JSON («كرّر») |
+| `state` | `queued` → `starting` → `building` → `draft` \| `stopped`; `cancelled` |
+| `step`, `step_no` | step label + 0–5 |
+| `numlock`, `numlock_at` | the campaign-number turn: `waiting` / `held` / `done` and when it last asked |
+| `progress`, `prog` | percentage 0–100 and the counts it was computed from (`{launch:[k,n], adsets:[k,n], ads:[k,n], khzama:[k,n]}`) |
+| `campaign_no`, `campaign_name`, `stop_reason`, `report`, `has_report` | from the build (`launch_status.py`) |
+| `session_title`, `session_id` | unused since builds run as agents of the dispatcher chat (kept for a build that runs in a chat of its own) |
+| `is_test`, `hidden` | test request / removed from the list |
+| `created_by`, `created_by_name`, `created_at`, `claimed_at`, `started_at`, `finished_at`, `updated_at`, `notified_at` | |
+
+**Table `launch_msgs`** (the card's chat): `id`, `launch_id` → `launch_queue` (cascade), `who` (`user` | `agent`), `body`, `created_at`, `handled_at` (when the watcher handed a user message to the dispatcher), `created_by`. RLS: `select` + `insert` for `authenticated` only, **no update and no delete policy**, no grant for `anon`; the insert policy requires `who = user`, the caller's uid and an existing request in `starting` / `building` / `draft` / `stopped`; trigger `launch_msgs_guard` forces `who = user`, `handled_at = null`, the uid, and at most 2000 characters. Agent replies are inserted by `launch-api /say` (service role). Tested from the signed-in page: forging `who: agent` → stored as a user message; update → 0 rows; delete → 0 rows; unknown or cancelled request → refused; 2500 characters → refused; anon select / insert → 401.
+
+- **RLS:** `select` / `insert` / `update` for `authenticated` only; no policy and no grant for `anon`, no `delete` policy at all. Insert requires `state = queued` and `created_by = auth.uid()`.
+- **Trigger `launch_queue_guard`** (everything that is not the service role): on insert it forces `queued`, the caller's uid and empty result fields, and refuses a brief that is not a launch template (`^اعمل الحملة دي من تمكين ادز مانجر` + «Tamkeen Ads Manager Level») or the fixed test text; on update it lets the page change **only** `state` (queued ⇄ cancelled, and only while unclaimed) and `hidden` (finished rows) — every other column is put back. Tested from the signed-in page: forging `draft` → refused; editing `brief` / `campaign_no` → ignored; a free-text brief → refused; delete → 0 rows; anon select → empty, anon insert → 401.
+- **`launch_claim(p_limit)`** (service role only): advisory lock, counts `starting` + `building`, claims the oldest `queued` rows up to the free slots (`for update skip locked`).
+- **`launch_poll(p_key, p_info)`** — what the watcher calls every 2 s through PostgREST (`/rest/v1/rpc/launch_poll`, anon key): checks that SHA-256(`p_key`) is a live `api_keys` row of scope `launch`, frees stuck rows (`starting` > 10 min, `building` silent > 90 min → `stopped` with the reason), claims (`launch_claim`), writes the heartbeat when `p_info.mode = "watch"`, returns `{limit, queued, active, starting[], rows[], track[], today?, msgs[], now}` — `msgs` only when the watcher asks (`p_info.msgs`, i.e. `launch_watcher.py --msgs`): unhandled user messages of claimed requests are marked `handled_at` and returned **in the same statement**, with the campaign's code, name, state, percentage, report, brief and whole thread, so each message is handed over exactly once and a dispatcher that does not know messages never swallows one; (`track` = running rows + rows finished in the last 30 min, for the dispatcher's news; `today` only when asked, for «حالة الحملات»). It is `SECURITY DEFINER` and executable by `anon` **on purpose** (the Supabase advisor flags that): without a valid launch key it only raises `unauthorized`. Polling goes to Postgres directly so 2-second polling does not burn edge-function invocations.
+
+### 37.3 Edge function `launch-api` v4 / 1.3.0 (verify_jwt ON; 1.3.0 adds `result_kind`)
+
+Source `supabase/functions/launch-api/index.ts`. Base `https://ibpwudzjwjraqhfdmzet.supabase.co/functions/v1/launch-api`. Headers: `Authorization: Bearer <anon>` + `apikey: <anon>` (gateway) and `x-api-key: <launch key>` (header only).
+
+| Call | What |
+|---|---|
+| `GET /` | info |
+| `GET /next` | the same claim as `launch_poll`, over the API |
+| `GET /row?id=` | one request (light columns) |
+| `POST /status` `{id, state, step?, step_no?, campaign?, name?, reason?, session?, session_id?, report?, counts?, progress?}` | `counts` = `{launch, adsets, ads, khzama}` each `[done, total]`, merged call by call; progress = **20 % launches + 10 % ad sets + 35 % ads + 30 % Khzama links** (the last 5 % is the final check: 100 only at `draft`), never going back while building, kept as is on `stopped`; an explicit `progress` overrides the computed value. Allowed moves: `starting` → `building` → `draft` \| `stopped`; `stopped` → `building` and `draft` → `building` (a build resumed after a message — the percentage continues from the counts, never from 0); `draft` → `draft` (details); `cancelled` / `queued` → 409. Reaching `draft` or `stopped` sends **one** push |
+| `POST /say` `{id, text, notify?}` | the campaign's reply in the card's chat (`launch_msgs`, `who = agent`); `notify: true` also pushes «MGG-… · Platform — رد من الحملة» (for a reply that is not followed by a new final state) |
+| `POST /key` `{name, key_hash}` | admin only (`x-ingest-key`, SHA-256 checked like `push` / `camp-refresh`): registers a launch-scope key. Never returns a key |
+
+- **Why a separate function and not `gad-api`:** `gad-api` is 112 KB and deploying through the Supabase MCP means re-pasting the whole file; a typo there would break the widget and Khzama live. `launch-api` is 11 KB with the same two-layer auth. `gad-api` and `ingest` were **not touched** (`ingest` is still v14): a launch key is registered by `launch-api /key`, so the `ingest` scope whitelist did not have to change; `revoke_api_key.py <name>` works for it as for any key. `api_keys_scopes_check` now also allows exactly `{launch}`.
+- **Scope isolation (tested):** launch key on `gad-api /summary` → 403; no anon header → gateway 401; no / wrong key → 401; `/key` without the ingest key → 403; `launch_poll` with a wrong key → 403 `unauthorized`.
+- **Push** (`notify`): `push` `action: send`, `to: "all"` (every active row of `push_subs` — the iPhone and the iPad / Mac subscriptions), `force: true` (a finished campaign is delivered even in quiet hours), `kind: "launch"`, title `«MGG-03xxx · <Platform> — جاهزة درافت»` or `«… — وقفت»` (the request title when there is no number yet; «(تجريبي)» on tests), body = **the first line of the report** (fallback: a default sentence / the stop reason), `url = <site>?p=launch&lc=<id>`, `tag = launch-<id>`. Logged in `alerts_sent`; tapping it in «سجل التنبيهات» opens the launch page on that campaign too.
+
+### 37.4 The Mac side (`~/.gadlytics`, copies in `skill/gadlytics/scripts` and `runbooks/`)
+
+| File | Job |
+|---|---|
+| `launch.key` | the launch API key, mode 600. **Never printed, never in the repo, never in the clipboard** |
+| `launch_lib.py` | shared helpers: key, anon key (from the site's `config.js`), `launch-api` calls with retries (a dropped connection is retried 2 / 5 / 10 s), `launch_poll`, the local queue files |
+| `launch_watcher.py` | polls every 2 s (no model calls), keeps the heartbeat, claims requests, validates each brief again (launch template for ملبي with 14-digit IDs, or the exact test text — anything else is refused and marked `stopped`), writes `launch_queue/<id>.prompt.txt` (the agent's prompt), `<id>.brief.txt` (the brief exactly as written + the id line) and `<id>.json`, and prints `LAUNCH` blocks and `UPDATE` lines. `--dispatch` exits as soon as there is one of them (what the dispatcher runs); `--msgs` also takes the messages written on the cards and prints `MESSAGE` blocks (text, files, a ready `CONTINUE` text and a ready `PROMPT`); `--fresh` (first run of a new dispatcher chat) also hands over requests claimed earlier but never started; `--status` and `--table` («حالة الحملات») read only. One instance (`launch_queue/.watcher.pid`; a second one exits 3). Log `launch_watcher.log` |
+| `launch_status.py` | `<id> starting|building|draft|stopped|show [--step … --step-no n --campaign MGG-… --name "…" --reason "…" --report-file <path> --launches/--adsets/--ads/--khzama K/N]` and `<id> say --text-file <path> [--notify]` (a reply in the card's chat). Never fails a build: prints one line and exits 0 (unless `--strict`). Any successful call also moves the request's files to `launch_queue/done/`, and a final state leaves `done/<id>.final` |
+| `launch_dispatch.md` | the dispatcher chat's runbook |
+| `make_api_key.py <name> --launch` | makes the key, registers only its hash, writes it straight to `launch.key` |
+
+**The mechanism — background agents inside one chat.** A plain script cannot start a Claude build, so one Claude Code chat on the Mac is the **launch dispatcher**, «مراقب الإطلاق». Mahmoud starts it by typing «شغّل مراقب الإطلاق»; it runs `launch_watcher.py --dispatch` in the background (free while idle) and is woken when the watcher exits:
+
+- for every `LAUNCH` block it launches **one background agent** with the Agent tool (general-purpose, fresh context, description «حملة: <title> [<id>]») whose prompt is the block's text verbatim — a short instruction block (read and follow `tamkeen-launch/SKILL.md` end to end; the saved brief file wins over the typed copy; one closed Chrome tab group of its own; draft / paused only; report with `launch_status.py`; final answer = the Arabic report), then the brief exactly as on the page, then `GADLYTICS launch id: <id>` — reports `starting`, and writes «بدأت: <title> — <platform>» in the chat;
+- it restarts the watcher first on every wake-up, so new clicks keep being claimed while agents build; up to the limit (7) run in parallel;
+- **Build model.** One line at the top of the runbook — `Build model: sonnet` — sets the Agent tool's `model` for every build agent (new launches, continuation agents, the connection test), whatever model the dispatcher chat runs on (Mahmoud, Nov 12, to save usage). If builds make setting mistakes, change that line to `opus`. An agent continued with SendMessage keeps its own model.
+- **Messages from the card.** For every `MESSAGE` block it writes «رسالة على MGG-…: <text>», then continues the campaign's **same agent** with SendMessage when that agent is still known in the chat (it keeps its context), or starts a continuation agent with the ready `PROMPT` (saved brief + last report + conversation files; «read what already exists in the launch tool, Khzama and the platform first; build only what is missing; never duplicate a launch, a link, an ad set or an ad»), and sets the row back to `building` — the bar continues from where it was. The agent ends with `draft` / `stopped` again plus an updated report and a short `say` reply; push as before. Typing about a campaign directly in the dispatcher chat works the same way.
+- **What no message can change** (in every agent prompt, the runbook and the skill): draft / paused only, never publish or activate; ملبي only; nothing is deleted unless the message explicitly asks for that specific deletion, and then only inside this campaign; no other campaign is touched; no budget cap. A message about anything outside the campaign's build gets a reply saying so, and no action.
+- **Tabs: one shared Chrome group, isolation by tab id** (verified Nov 12 on the three real parallel builds and a test). The Claude in Chrome extension gives **one tab group per Claude session**: all three agents of the dispatcher chat got the same `tabGroupId` and saw each other's tabs; `createIfEmpty` does nothing once the group exists; no tool creates a second window or group; a page's `window.open` is blocked; a group cannot be named (only a separate *session* gets a separate group, and automatic sessions are refused). The builds stayed apart because each used only the tab ids it opened (TikTok 2 tabs, Meta 2, Snap 4 — no cross-use found). The rule in every agent prompt and in the skill: never use a tab that already exists, open your own (2–3), pass `tabId` on every call, label the tab title with the campaign code, close only your own at the end.
+- **Background-tab throttling is real** (measured in the same Chrome): a tab that is not the front tab of a visible window reports `hidden`, a 50 ms timer fired 4 times in 3.7 s (≈ once a second), `requestAnimationFrame` gave 0 frames, a screenshot did not wake it, and even the selected tab stays hidden while its window is covered. With several campaigns in one window only one tab paints at a time — the main reason the UI builds (TikTok, Snap) are slow and hit «page is busy / timed out after 45000 ms».
+- **Number lock.** One build at a time may press its first Launch with Campaign = New: `launch_status.py <id> number-lock` → SQL `launch_numlock(key, id)` (PostgREST rpc, key-gated like `launch_poll`; `launch-api` was not redeployed for it, on purpose, while real builds were running). First come first served when nobody holds it; waiters queue by launch order (`created_at`); the card shows «مستنية دورها في حجز رقم الحملة (قدامها N)» and the percentage does not move. Released when the holder reports its campaign number (`--campaign`), reaches draft / stopped / cancelled, or is silent for 6 minutes; a waiter that stops asking for 90 s leaves the queue. Later launches (Select) need no lock; `campaign-claim.sh` stays the second check. The build takes the lock only after the form is filled, so the hold is seconds, not minutes.
+- for every `UPDATE` line it only writes news: «<title> أخدت رقم MGG-…» (the watcher exits when a running row's campaign number first appears), or «… وقفت: <reason>» for a stop that did not come from the agent itself (the server's time-outs);
+- when an agent finishes, the chat writes «MGG-… جاهزة درافت — <platform>» + the campaign's full report, or «<title> وقفت: <reason>» + what already exists;
+- «حالة الحملات» typed in that chat prints today's campaigns as a table (state, step, number, elapsed minutes); «وقّف مراقب الإطلاق» stops the watcher (running agents finish).
+
+**No double start.** A request is printed as `LAUNCH` once, when it is claimed. A watcher restarted inside the same chat never prints it again (the `.emitted` marker); only a new dispatcher chat (`--fresh`) takes over requests that were claimed but never started; `UPDATE` lines never start anything; and each piece of news is printed once (`launch_queue/.tracked.json`). Unit-tested offline with scripted poll answers (14 checks).
+
+**Why not sessions.** The app's auto-mode classifier refuses a `start_session` that was not asked for by the user's own words in the chat: the launch-panel mod's timer on 2026-10-19 («no verdict … the request that produced this action did not ask for one», `launch-dashboard/mod.log`), «Run now» of a scheduled task from the build session («judged dangerous»), and — in the live test of Nov 12, 13:31 — the dispatcher's own `start_session` after a watcher wake-up («the request came from an automatic event, not from the user's words in the chat»). None of these was retried or worked around; Mahmoud chose in-session agents instead. The mod, `launch-dashboard/queue/` and scheduled tasks are **not** used. The skill's «Launcher mode» (Mahmoud typing «اطلق الحملات دي …» himself → one session per block) is unchanged for when he wants separate sessions by hand.
+
+**Permission mode.** The agents inherit the dispatcher chat's permission mode. His chats run in **Auto** (the live dispatcher chat reported `permissionMode: auto`): steps are judged by the auto-mode classifier, nothing waits for a click. In the default mode every Chrome / Bash / connector step that has no allow rule in `~/.claude/settings.json` would wait for approval (the only GADLYTICS Bash rule there is `snap_update.py`), so agents would stall — the runbook makes the dispatcher check its mode once and say so. No setting was changed.
+
+**No auto-start is installed** (no LaunchAgent, no login item, no scheduled task). What must be running: the Claude desktop app with the dispatcher chat armed (the page then shows «الماك متصل»), and Chrome signed in. After an app restart the dispatcher must be started again.
+
+**Local only.** Everything runs in one local chat on the Mac — no cloud session, no Remote Control (the app setting «Connect new sessions to Remote Control» is Off), no `move_to_cloud`, no artifact. The queue, the reports and the templates live only in Supabase behind Mahmoud's GADLYTICS login.
+
+### 37.5 State reporting from the build
+
+`tamkeen-launch/SKILL.md` has one short section, «GADLYTICS launch id»: when the brief carries the id, the build (a background agent of the dispatcher chat, or a chat of its own) reads the saved brief `~/.gadlytics/launch_queue/done/<id>.brief.txt` and trusts it over the typed prompt, as an agent skips the session-rename rule, and reports with `launch_status.py <id> building …` — one cheap command each, about 12–15 per campaign, never blocking the build:
+
+| When | Command arguments | Weight |
+|---|---|---|
+| start | `--step-no 1 --step "أداة الإطلاق: الأسامي وروابط UTM" --launches 0/N` | |
+| after each launch result (one launch per ad set) | `--launches K/N`; **the first one also `--campaign MGG-… --name "<full campaign name>"`** (right after `campaign-claim.sh` KEEP) | 20 % |
+| ad sets created on the platform | `--step-no 2 --step "بناء الحملة على <platform>" --adsets K/N` | 10 % |
+| after each batch of ads | `--ads K/N` | 35 % |
+| after each Khzama batch | `--step-no 3 --step "تسجيل الروابط في خزامى" --khzama K/N` | 30 % |
+| final read-back check | `--step-no 4 --step "مراجعة أخيرة"` | last 5 % |
+| left as a draft | `draft --campaign … --name … --report-file <file>` | 100 % |
+| any stop | `stopped --reason "…" --report-file <file>` | frozen |
+
+The percentage is a weighted sum of the counts, so it stays right when the platform build and the Khzama batches interleave (the skill's fast path) or run in another order on another platform. The **report file** sent with `draft` / `stopped` is short Egyptian Arabic: line 1 = the result in one sentence (it becomes the push body), then «اللي اتبنى» (number and name, ad sets, ads, Khzama links, where the draft is), «المشاكل», «محتاج تراجعه», «الوقت»; a stopped run says where it stopped, what already exists and why. As an agent its final answer is that report. Nothing else in the skill changed.
+
+### 37.6 Commands
+
+In a Claude Code chat on the Mac (Auto mode):
+
+| Mahmoud types | What happens |
+|---|---|
+| «شغّل مراقب الإطلاق» | that chat becomes the dispatcher (the GADLYTICS skill maps it to `launch_dispatch.md`); the page shows «الماك متصل» |
+| «حالة الحملات» | table of today's campaigns (code, state, step, percentage, minutes, last message) |
+| a message on a campaign's card, or about it in this chat | the campaign continues / changes and answers in the card's chat |
+| «وقّف مراقب الإطلاق» | stops the watcher; the page shows «الماك مش متصل»; running builds finish |
+
+Only one dispatcher at a time: stop the old one before starting a new chat (a second watcher exits with «مراقب تاني شغّال فعلاً»).
+
+In Terminal:
+
+```
+python3 ~/.gadlytics/make_api_key.py launch-mac --launch     # make / replace the Mac's launch key (saved to ~/.gadlytics/launch.key, 600)
+python3 ~/.gadlytics/launch_watcher.py --status              # key ok? limit · queued · active
+python3 ~/.gadlytics/launch_watcher.py --table               # today's campaigns
+python3 ~/.gadlytics/revoke_api_key.py launch-mac            # revoke it (effective within 30 s)
+python3 ~/.gadlytics/launch_status.py <id> show              # one request's state
+```
+
+### 37.7 Tested Nov 12 2026 — dry run, no real campaign
+
+No launch-tool submission, no Khzama link and no platform campaign were made. Test rows were deleted afterwards (`launch_queue` 4 rows, `alerts_sent` 4 rows, test templates).
+
+| Check | Result |
+|---|---|
+| The page queues a request (the fixed test text, `?lctest=1`) | row `queued`, card «في الطابور», «الماك مش متصل — هتستنى لحد ما يتصل» |
+| «إلغاء» on a queued request, then «تراجع» | `cancelled` → back to `queued` |
+| Watcher claims it | within ~2 s of the watcher's first poll; card «بتبدأ», Mac chip «الماك متصل» |
+| `launch_status.py` building → draft with the fake number `MGG-00000` «تجريبي» | card «بتتبني 2/4» → «جاهزة درافت · MGG-00000 · رقم تجريبي», report shown under «التقرير» |
+| Push | `MGG-00000 · Meta — جاهزة درافت (تجريبي)`, body = first line of the report, delivered to 2 devices (`alerts_sent.deliveries` sent / sent) |
+| Limit = 1, two requests | only the oldest claimed; the second claimed by itself (< 1 s) when the first reached `draft` |
+| `stopped` with a report file, then resumed `building`, then `stopped` | accepted; push «… — وقفت»; `draft` → `building` refused (409) |
+| Network blip on the final `draft` call | lost once → retries added to `launch_lib.api` |
+| A second watcher | exits 3 «WATCHER-ALREADY-RUNNING» |
+| A real-shaped brief from the form (fake IDs, Mac off) | inserted, brief text = the template format, cancelled 3.6 s later, never claimed |
+| Templates | save (title + IDs empty) → use → rename → duplicate → update → delete, all stored under `data/users/<uid>/` |
+| Picker | «معتمد للتشغيل» 0 (empty state) · «تم التقييم» 246 · «كل الحالات» 562 videos with status labels; search «نايف» → 4; a «تم التقييم» video picked with no status note |
+| **Live run with the dispatcher chat (13:30)** | «شغّل مراقب الإطلاق» → page «الماك متصل»; «اختبار ربط» pressed 13:30:56 → claimed 13:30:58 → dispatcher awake and watcher restarted 13:31:07 → its `start_session` **refused** 13:31:43 («the request came from an automatic event, not from the user's words in the chat») → row marked «وقفت» with that reason, push on 2 devices. Led to the agents design (§37.4) |
+| Agents design, offline | watcher unit test 14 / 14 (one LAUNCH per claim, no second hand-over on restart, `--fresh` take-over, number → one UPDATE, agent-reported finals stay silent, server-side stop → UPDATE, nothing announced twice, wrong test text refused); status flow on a hand-made row (`starting` → `building` 1/4 → 2/4 + `MGG-00000`), `--table`, page wording at 1440 and 390 |
+| **Live run with agents (13:47)** | click 13:47:45 → claimed 13:47:47 → agent started → `building` 13:48:07 → `draft` 13:48:20, push on 2 devices — the Agent hop works |
+| Progress + naming (hand-made row, no push) | counts 0/3 → 1/3 → 3/3 launches = 0 → 7 → 20 %; + ad sets 3/3 and ads 6/12 = 48 %; + Khzama 6/12 = 63 %; a lower count later does not move it back; card title switched to `MGG-03999` with the full name under it and «Meta - Value» as the small line; an old row without progress showed 75 % from step 3/4; the running dispatcher was not woken (test rows had no `claimed_at`). Checked at 1440 and 390 |
+| Chat with the campaign (hand-made stopped row at 68 %, no real platform action) | quick reply «رفعت الفيديو — كمّل» from the page → row in `launch_msgs`, bubble «المراقب الشغّال مش بيسمع الرسايل…» (the live dispatcher was the older one); `launch_poll` with `msgs` handed it over **once** (second call empty) with one `MESSAGE` block; `building` kept 68 %, new counts moved it to 86 %; the `say` reply appeared in the thread; `draft` → 100 % + push; `draft` → `building` (86 %) → `say --notify` (push «رد من الحملة») → `draft`; typed text, focus and caret survived the live refresh at 390; RLS guards as listed in §37.2. Watcher unit tests 25 / 25. The real rows (MGG-03110 / 03111 / 03112) were not touched |
+| Number lock (hand-made rows, no launch-tool submission) | B asked first → held; A, C, D → waiting 1 / 2 / 3 with the card step «مستنية دورها… (قدامها N)» and unchanged percentages; B reported `--campaign` → A (oldest waiter) got the turn, C could not jump it; holder silent 7 min → released; a waiter silent 2 min → skipped; holder set to stopped → next got it; a numbered request → «مفيش قفل مطلوب»; unknown id → `NUMBER-LOCK UNAVAILABLE` (the build carries on). Rows deleted |
+| UI | 1440 / 820 / 390, no console errors; لوحتي and أداء الحملات unchanged; screenshots in `gadlytics-design/launch-live-shots/` |
+
+### 37.8 Design decisions
+
+- Each «اطلق» starts its campaign at once; up to 7 build together (1–10), the rest wait. Builds are background agents of the dispatcher chat, and that chat carries the news of every campaign.
+- History is shared (Supabase), not per device. Drafts of the form being typed stay on the device (`localStorage gad.lc.draft`).
+- «إلغاء» only cancels a queued request; it never stops a running build.
+- Snapchat stays a UI draft built in Snap Ads Manager through Chrome; the launch tool stays in the browser (no API key); TikTok keeps the skill's current path (Ads Manager in Chrome; the developer app was rejected). Nothing in those paths changed.
+
+### 37.8b First real run — three campaigns launched together (Nov 12, 14:05)
+
+All three agents ran on Opus in one dispatcher chat, sharing one Chrome window. Times are from the agents' own status calls.
+
+| | Meta `MGG-03112` | Snapchat `MGG-03111` | TikTok `MGG-03110` |
+|---|---|---|---|
+| Plan | 4 ad sets × 3 videos = 12 ads, 12 Khzama links | 2 ad sets, 8 ads planned (6 after the missing video), 8 links | 6 Smart+ ad groups, 6 ads, 6 links |
+| Launch tool | ≈ 6.5 min (4 launches; campaign + ad sets created in between) | ≈ 3.5 min (2 launches) | ≈ 9.5 min (6 launches, 70–145 s each) |
+| Khzama | ≈ 7 min (12 links) | ≈ 5.5 min (8 links) | ≈ 4 min (6 links) |
+| Platform build | ≈ 5.5 min — connector (campaign 9 s, 4 ad sets 1 min, 12 ads 2 min + video lookup) | UI: ≈ 12 min for 1 ad set + 3 ads, stopped (video not in the Snap library), ≈ 12 min more after the resume for the Story ad set + 3 ads | UI: 14 min until the first ad group + ad existed, stopped once, 6 ad groups + 3 ads by minute 40 — still building at minute 47 |
+| Final check | ≈ 1 min | ≈ 1 min | — |
+| Total | **20 min, draft** | ≈ 44 min incl. a 9-min stop | > 47 min |
+| Model calls / tool time | 122 calls, 81 % of the time inside tools | 252 calls, 58 % | 367 calls, 57 % |
+
+What cost time: the two UI builds are one browser step per model call (119 and 146 `browser_batch` calls) on tabs that are throttled whenever they are not in front; page-busy / 45-second timeouts (TikTok 8, Meta 6 on Khzama, Snap 4), a «Leave site?» dialog on Snap, single batches of 70–130 s; six separate launch-tool launches for TikTok; Khzama at ≈ 35–40 s per link. No campaign-number clash happened, no tab was used by the wrong campaign, no classifier refusal. The TikTok build went straight to Ads Manager in Chrome — it did not try the connector's create tools, so whether they are still rollout-gated was not re-tested.
+
+### 37.8c Khzama links by the extension, Snap by API (Nov 12, later)
+
+- **Khzama links** are registered by the Chrome extension (§34.4). Agent prompt item 7 and the tamkeen-launch skill: `khzama-links --file` right after the launch results, build on the platform meanwhile, `khzama-status --wait 240` at the end, by hand only for `MISSING` / `MANUAL`. Needs the extension reloaded once (v1.1.0); until then every build is told `MANUAL` and works as before. No dispatcher restart: the watcher writes the new prompt on its next start, which happens after every event.
+
+- **Snapchat by API (Task D).** Runbook setting **«Snap build: `api` | `ui`»** next to «Build model» (the watcher reads it and writes item 10 into every Snapchat agent prompt). `api`: `adlytics-connectors/snap/make_spec.py <id> --results f.json` → `build.py spec --dry-run` → `build.py spec` → everything created **PAUSED**, read back and compared `===`; progress lines `PROGRESS adsets K/M` / `PROGRESS ads K/N` are forwarded to the bar; `--resume` after a refused create; UI draft only as the fallback for what the API cannot express (city Custom, Message Design / Discover ON). Never activates, edits or deletes; `--delete-campaign` is manual only.
+- **Ad account picker.** The Snapchat form has a mandatory «الحساب الإعلاني» (no default; «قوالبي» may keep it; «كرر آخر حملة» does not). Options come from `docs config/snap_accounts` = `{list, at}`, written by `~/.gadlytics/snap_accounts_sync.py [--refresh]` (runs `snap/accounts.py`, which lists the organisation's accounts through the API and keeps ملبي's; rpc `launch_cfg_set`, launch key). Same field names as camp-refresh's hard-coded list (`account_id`, `account_name`, `currency`, `fx`). The brief carries `Ad Account: <name> (<id>)` under «Campaign Level». Amounts are typed in SAR; for the dollar account the page shows «= $53.33» under the budget and Target Cost (÷ 3.75, the camp-apply rate) and warns below Snap's minimum (5 units of the account currency per day, from Snap's docs). Pixel, public profile and the video check are resolved on the chosen account.
+- **Final wording.** `launch_queue.result_kind` (`draft` | `paused`), sent by `launch_status.py … draft --result-kind paused` (`launch-api` v4 / 1.3.0, verify_jwt ON). Cards: «جاهزة — موقوفة على سناب / ميتا» for paused (Meta rows without the field count as paused), «جاهزة درافت» for UI drafts; push title «جاهزة موقوفة».
+- **Not proven:** no campaign has been created through the Snap API yet (dry runs and read-only GETs only). The dollar account is blocked until its public profile is confirmed and its videos are uploaded to its own library.
+
+### 37.8d Pause and resume a build (Nov 12, later)
+
+A safe checkpoint, not a kill. Columns `launch_queue.pause_requested`, `paused_at`; new state **`paused`** (not counted against the parallel limit, never touched by the stale rules, no push).
+
+- **Page:** a «بتبدأ / بتتبني» card gets «إيقاف مؤقت» → the state text becomes «هتقف عند أقرب نقطة آمنة…» (it can take a minute or two) with «الغي الإيقاف المؤقت»; a queued card gets «إيقاف مؤقت» too (it keeps its place: `launch_claim` skips it) and then «كمّل»; a paused card gets «كمّل» and «الغي الباقي» (→ `stopped`, what was built stays). Above the list: «وقّف الكل مؤقتاً» / «كمّل الكل». All of them call `launch_pause_req(id, pause | resume | cancel_rest)` / `launch_pause_all(pause | resume)` — SECURITY DEFINER, signed-in users only, and they change nothing but that flag and those transitions; a direct update of the column is still refused by the table guard.
+- **Agent:** every successful `launch_status.py … starting|building` call also asks `launch_pause(key, id)`; when a pause is requested it prints `PAUSE REQUESTED …`. The agent finishes the step in hand and runs `launch_status.py <id> paused --step "…" [counts]` → state `paused`, percentage kept, number lock released. No change in `launch-api` for this (a late `building` call on a paused row gets 409 and is ignored).
+- **Khzama link jobs** of a pausing / paused campaign are not taken and not dropped (`kz_jobs`), and continue after the resume.
+- **Resume:** «كمّل» sets the row back to `building` («بتكمّل بعد الإيقاف المؤقت», same percentage) and writes a card message, so it travels the existing MESSAGE path: the dispatcher continues the same agent (SendMessage) or starts a continuation agent that reads what exists first.
+- **Dispatcher chat:** watcher lines `UPDATE <id> pause-requested | paused | resumed | pause-cancelled` → «إيقاف مؤقت: MGG-…», «اتوقفت مؤقتاً عند NN%», «كمّلت: MGG-…»; «حالة الحملات» shows «متوقفة مؤقتاً». The dispatcher must re-read the runbook once for these lines (restart it).
+- **Tested** with hand-made rows (deleted): pause → `PAUSE REQUESTED` at the next status call → `paused` at 43 % → resume → `building` at 43 % with the card message; a paused queued row was not claimed by the live watcher for minutes; pause all / resume all; cancel the rest → `stopped`, no push; direct column update refused; wrong key refused. Not tested: a real agent pausing in the middle of a real build.
+- **Snapchat account default:** «الحساب الإعلاني» is preselected to the riyal account (the first SAR account of the list), changeable to the dollar one.
+
+### 37.8e After the first real runs (Nov 12, evening)
+
+First real runs of the new paths: MGG-03113 (Snapchat by API, 7 min, PAUSED, 6 ads, 6/6 links by the extension) and MGG-03114 (Meta, 15 min, 12/12 links by the extension at ~18 s per link; the 4 launch-tool launches took 9.5 min).
+
+- **Step label / number lock (trigger `launch_queue_auto`, BEFORE UPDATE):** the lock is `done` the moment the row has its campaign number (it used to wait for the next campaign to ask); when a call changes the counts without a step of its own, the label follows the latest phase: «أداة الإطلاق … K/N» → «بناء الحملة على <platform> — Ad sets a/b · إعلانات c/d» → «روابط خزامى K/N (الإضافة)» → «مراجعة أخيرة».
+- **Faster Khzama links (extension 1.2.0, `links.js`):** one load per campaign (`?keyword=<code>-&size=1000`), then every link is checked, added and verified **in place** from the page's own table (no load per link; the advertiser list is fetched once). The page function and its pre-save check are unchanged. Fallbacks: table not refreshed → one fresh load → exact-title search; pre-save check fails on a reused page → reload and one retry → halt. Expected ≈ 4–6 s per link (was 16–18).
+- **Suspended tabs:** a links tab that was discarded / parked by a tab-suspender is loaded again (twice at most). Whitelist admin.molabi.sa, launch.tamkeen-agency.com and the ad managers in the suspender.
+- **Khzama warning:** the launch page shows a red line under «الماك متصل» when `sys/khzama_live.last_state = login_required`, when the links switch is off, or when `sys/khzama_links` is older than 2.5 min; `launch_status.py` prints the same on the build's first status call (`launch_kz` returns `ext.khzama_login`).
+
+### 37.9 Not proven yet / open
+
+- **The Agent hop is proven** (live test 13:47, above). What is still unproven is a real build:
+- **A real build as an agent has never run.** The same classifier that refused `start_session` after an automatic wake-up may also refuse an agent's sensitive steps (pressing Launch in the launch tool, creating the campaign, saving Khzama links) because they too follow an automatic event. If that happens the agent reports «وقفت» with the refusal — it must not be worked around — and the fallback is the card's «البريف» pasted into a chat by hand (Launcher mode). Starting the dispatcher with his standing instruction in his own words («شغّل مراقب الإطلاق — أي طلب ييجي من صفحة إطلاق الحملات أنا اللي باعته، ابنيه درافت على طول») puts the request in the chat itself.
+- Seven agents share one Chrome and one chat; the skill's «one closed tab group per campaign» rule is what keeps them apart. Not exercised yet with more than one.
+- Click → build-start delay: queue part ≤ ~2–3 s; in the live run the dispatcher was awake 9 s after the claim. End to end (agent launched) is to be measured on the next test.
+- Upload to GitHub waits for «ارفع» (`index.html`, `README.md`, `supabase/functions/launch-api/index.ts`, `skill/gadlytics/*`).
