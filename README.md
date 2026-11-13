@@ -53,7 +53,10 @@ The site **only displays data**. It never writes to or changes an ad account. Al
 34. [Khzama live sync (Chrome extension)](#34-khzama-live-sync-chrome-extension-nov-11-2026)
 35. [Season mode «وضع الموسم»](#35-season-mode-وضع-الموسم-nov-11-2026)
 36. [Design system «Bramble»](#36-design-system-bramble-nov-11-2026--phase-1-of-3)
+    - 34.4 [Campaign links «روابط الحملات» (extension 1.1.0 / 1.2.0)](#344-campaign-links-روابط-الحملات--the-extension-registers-a-builds-affiliate-links-v110-nov-12-2026)
+    - 34.5 [Launch tool «أداة الإطلاق» (extension 1.3.0 → 1.4.1)](#345-launch-tool-أداة-الإطلاق--the-extension-runs-the-tamkeen-launch-tool-for-a-build-v130-nov-12-2026)
 37. [Campaign launch from GADLYTICS «إطلاق الحملات»](#37-campaign-launch-from-gadlytics-إطلاق-الحملات-nov-12-2026)
+38. [Launch system field guide — extension changelog, architecture, timings, open items, operating guide](#38-launch-system-field-guide--extension-changelog-architecture-timings-open-items-operating-guide-nov-13-2026)
 
 ---
 
@@ -1247,6 +1250,7 @@ These tasks stop on a permission prompt when they hit a tool they haven't been a
 | Nov 12 | Launch cards: **chat with the campaign** (table `launch_msgs`, `launch-api` v3 `/say` + `draft → building`, `launch_poll` message hand-over, watcher `--msgs` + `MESSAGE` blocks, `launch_status.py say`, resume procedure and fixed rules in the skill), «حالة الحملات» shows the last message, and **build agents run on `sonnet`** (one setting at the top of `launch_dispatch.md`; `opus` if builds make setting mistakes). Local only. |
 | Nov 12 | Launch cards: real progress bar «NN%» from counts (`launch_queue.progress` / `prog`, `launch-api` v2, `launch_status.py --launches/--adsets/--ads/--khzama K/N`; weights 20 / 10 / 35 / 30 + final check 5), card named by the campaign code + full name once known, picker tab «كل الحالات» (any status is selectable; nothing checks status). Local only. |
 | Nov 12 | **Campaign launch from GADLYTICS** (§37, local only — not uploaded yet): new view `launch` «إطلاق الحملات» after «إدارة الحملات» (brief form for Meta / TikTok / Snapchat, validation, «قوالبي» saved templates per user, library picker with tabs by status + «حدّث المكتبة», shared launched list with live states, Mac connection state, report per campaign). Backend: table `launch_queue` (RLS + guard trigger), SQL `launch_claim` / `launch_poll`, edge fn `launch-api` (verify_jwt on), key scope `launch` (`make_api_key.py --launch` → `~/.gadlytics/launch.key`), push on draft / stopped. Mac: `launch_watcher.py`, `launch_status.py`, `launch_lib.py`, runbook `launch_dispatch.md`. Dry-run tested without a real campaign; builds run as background agents of one dispatcher chat «مراقب الإطلاق» (automatic `start_session` is refused by the app); the agent hop is proven by Mahmoud's next test (§37.9). |
+| Nov 13 | Docs pass for the GitHub upload: §38 launch-system field guide (extension changelog 1.1.0 → 1.4.1, architecture, measured timings, open items, Egyptian-Arabic operating guide, token-usage lessons); table of contents now lists §34.4, §34.5, §37, §38. |
 
 ## 32) AI assistants API (instinct / MCP) — `gad-api` (Nov 10 2026)
 
@@ -1531,8 +1535,24 @@ The slowest part of a campaign build was the agent filling Khzama's «إضافة
 - **Guards:** title must match `^[A-Z]{2,4}-\d{3,6}-[A-Za-z0-9_~-]+$` and start with the launch's campaign number (checked on the server, in the worker and in the page step); advertiser must be TSW; never edits or deletes; no cookies/storage/tokens read. **Any failure stops the batch** (login page, missing field, no exact TSW option, form values that do not match, a save Khzama refuses): the server fails what is left and the agents take those by hand. A job taken and not reported for 2 min is re-queued once, then failed. The save click never happens later than 70 s after the job was taken.
 - **Progress:** each finished job updates `launch_queue.prog.khzama` and the percentage (same 30 % weight).
 - **Popup:** box «روابط الحملات» (state · last batch `MGG-… · 12/12` · last error) + its own on/off switch. Options: «وضع تجربة» — serves only is_test rows and cancels instead of saving.
+- **1.4.0 (Nov 12) — campaigns side by side, and why a link took 10–15 s.** In the first run with 1.2.0 the time per link GREW inside each campaign's tab: MGG-03115's 12 links took 12.7 (with the page load) · 6.1 · 6.0 · 8.3 · 9.4 · 12.9 · 15.3 · 14.7 · 16.9 · 20.6 · 27.2 · 30.5 s, MGG-03116's 6 took 13.7 · 6.0 · 7.1 · 8.5 · 12.3 · 14.6 s, and the second campaign started fast again in its NEW tab — no reload fallback fired (every job is `done`, first attempt). So the 4–6 s target is met for the first links of a tab and lost as the background tab ages (Chrome slows a hidden tab's timers more and more as the page keeps working; a new tab starts fresh). 1.4.0: a fresh tab every `LINKS_PER_TAB = 3` links, and `LINKS_MAX_PARALLEL = 3` campaigns at once, one tab each, one link at a time inside a campaign (`kz_jobs`: `max`, `for`, `skip`, never two of one campaign). All the pre-save and no-duplicate checks are unchanged. Expected: ≈ 8–9 s per link including the extra page loads, and two campaigns no longer wait for each other.
 - **Update the installed extension:** `chrome://extensions` → «GADLYTICS · خزامى لحظي» → reload (↻). The key stays (it is in `chrome.storage.local`). Version shows 1.1.0.
 - **Tested Nov 12:** on the live page in a tab of mine — keyword check against MGG-03112's 12 links (exact title → 1 row, id 2545), dialog opened, both fields filled, exact `TSW` picked with `TSW-1` focused first, form values read back (`affiliateId` 4), then cancelled: **nothing was saved**. 53 automated checks (scratch `kz_ut.js`: guard, every stop, idempotency, take-over, stale job, key scopes) with a fake page + the real server and hand-made test rows (deleted). **Not tested: a real save** — the first one is the next real campaign. After Khzama was signed in again, the packaged `kzLinkStep` itself (same bytes as `links.js`, fingerprint checked in the page) was run on the live page in stub mode: read → open → fill → exact `TSW` → the pre-save check passed (and refused a wrong advertiser, a wrong title and a non-campaign title) → cancelled; the keyword search afterwards shows 0 links for the test title.
+
+### 34.5 Launch tool «أداة الإطلاق» — the extension runs the Tamkeen launch tool for a build (v1.3.0, Nov 12 2026)
+
+After Khzama links, the slowest part left was the agent driving `launch.tamkeen-agency.com` by hand through Claude in Chrome: about 2.4 minutes per launch (4 launches = 9.5 min). Now `khzama-live/launchtool.js` does it, and the agent only sends the inputs once and reads the results.
+
+- **Jobs:** table `launch_tool_jobs` (`launch_id`, `seq`, `custom`, `inputs`, `state` queued → running → done | failed, `result`, `error`, `attempts`, `submit_at`) — one job per ad set (Custom). RLS: signed-in users read; writes only through key-gated SQL functions (PostgREST rpc with the anon key, like `launch_kz` / `kz_jobs`): `launch_tl(key, id, inputs, takeover)` — **launch** key; `tl_jobs(key, info)` — **khzama** key (heartbeat `docs sys/khzama_launch` with `cap: ["launch"]` + report + «may I press Launch» + take one job). Internal, not callable from outside: `launch_tl_lock` (the same number turn as `launch_numlock`, same columns, for the extension) and `launch_tl_roll` (progress: `prog.launch`, 20 %). Nothing existing was altered; an extension older than 1.3.0 never takes these jobs and the agent is told `MANUAL`.
+- **Agent side:** `launch_status.py <id> tool-launch --file inputs.json` — `{"client": "Molabi", "kind": "Single|Bulk|Smart", "platform": "Meta|TikTok|Snapchat", "objective": "Conversion", "country": "SA", "creative_ids": [...], "customs": [...], "product_link": "https://…", "campaign": "New" | "Select 03114"}`; checked on the server (ملبي only, 14-digit IDs, Custom = letters / digits / underscore, platform = the request's platform, a request that already has a number cannot ask for New); taken **once** (a second call adds nothing). → `TOOL-LAUNCH QUEUED n`, or `MANUAL` / `REJECTED`. `launch_status.py <id> tool-status [--wait 180] [--take-over] [--out f.json]` → `LAUNCHED <custom>` / `RUNNING` / `WAITING` / `MISSING <custom> — reason` lines and a results file (default `~/.gadlytics/launch_queue/done/<id>.launch-results.json`): `{launch_id, campaign_no, campaign_name, complete, ad_sets: [{custom, ads: [{creative_id, ad_name, parameters, utm_url, product_link, result_id}]}], links: [every Parameters string], missing: [...], notes: [...]}` — `ad_sets` is the shape `snap/make_spec.py --results` reads, and the same file works for `khzama-links --file`.
+- **Extension side** (alarm every 30 s, then job after job, one at a time): a **third tab of its own** (never the pinned donations tab, the links tab, or a tab of the user or an agent; closed when the batch ends; a tab parked by a tab-suspender is loaded again). Per job: Select launches first read the campaign's own «Campaign ads» list — an ad set that is already there is adopted, never launched twice → `/launch`, the right tab (Single / Bulk / Smart; Radix tabs switch on `mousedown`) → fill with native value setters + `input` / `change` events (Campaign ID, Platform, Objective and «Existing campaign» are Radix selects with a hidden native `<select>` — setting it and firing `change` is the path the app itself supports; Country is a popover list, clicked open and picked by its `(SA)` item) → read back that the app registered every field (the Radix select's own state, the field values, «N IDs detected», the enabled Launch button, no message in the form) → ask the server «may I press Launch?» — for Campaign = New that takes the **number lock**, held until the result is read → one page step that checks everything again and clicks Launch → wait for the result page → read every result from the page's own data (and that its rows show the same values) and compare with the inputs with `===`: Creative IDs, count, Custom (`AS:`), platform, objective, country, client, campaign, `affiliate` of the UTM = Parameters → report. Later ad sets: Campaign ID = Select → that exact number, the chosen option must start with `MGG-<n> `, and the inherited platform / objective / country must equal the brief's.
+- **A submit is never repeated.** No result page and no message from the tool → the History list decides (only launches made after that submit; for New the whole campaign must be new): found → results read; not found → failed «do not launch again before reading History». A job that died after its submit mark comes back only for that History check. Any failure hands the rest of **that** campaign to the agent; an unexpected page (login, a changed form, a field that does not read back) hands **every** waiting launch to the agents. The agent's fallback is the skill's manual method, reading the tool's History first.
+- **Popup:** box «أداة الإطلاق» (state · last batch `MGG-… · 4/4` · what it is doing · last error) + its own switch. Options: «وضع تجربة لأداة الإطلاق» — serves only is_test rows and never presses Launch.
+- **Update the installed extension:** `chrome://extensions` → «GADLYTICS · خزامى لحظي» → reload (↻). Version shows **1.3.0**; Chrome asks nothing extra unless it disables the extension for the new site permission (`launch.tamkeen-agency.com`) — then press «Accept permission» / re-enable. No dispatcher restart: the watcher writes the new agent prompt on its next start.
+- **1.3.1 (Nov 12, after the first real run — MGG-03115 Meta 4 × 3 and MGG-03116 Snapchat 2 × 3).** What worked for real: the Launch click from a background tab, the number lock (03115 then 03116), landing on the result page, the number and the name, submit → finished in 21 s and 19 s. What failed, in both: the first launch was marked «نتيجة الإطلاق مش مطابقة… الصفحة بتعرض قيم غير البيانات» for the LAST Creative ID although the tool had launched all three. Cause (measured on the live result page, read-only): for ~0.2 s after a result page first draws, its rows carry short labels — «Campaign / Ad / Product Link / Parameters / UTM» — and only then «Campaign Name / Ad Name / UTM URL», with the same values; the reader looked for the long labels only and read the landing result (the tool lands on the last launch) inside that window. Fixes: rows matched under either label; a result is accepted only when its rows agree with its data and two reads in a row are identical (rows that never agree still stop the launch, with the labels seen in the reason); the reader takes the current React tree, not the stale twin a DOM node may still point at; the pre-submit check also compares every dropdown's state with what the page itself shows (hidden `<select>` value + button text). Both real third ads pass the validation with the fix. The agents' fallback had worked (no duplicates; the `MISSING` line carried the campaign number for Select).
+- **1.4.0 (Nov 12) — campaigns side by side.** `LT_MAX_PARALLEL = 4`: one loop and one tab per campaign (a fresh tab for every launch — a background tab gets slower the longer it lives), launches of ONE campaign stay one after the other (New, then Select …: the «already there» check and the result matching assume one writer per campaign, and two submits into one campaign at once cannot be shown safe without live submits). `tl_jobs` hands out one job per campaign, never two of the same (`max`, `for`, `skip`); an older extension keeps the one-at-a-time behaviour. **The number lock is held only from the New submit until the number is read** on the result page (the extension reports it at once with `num`; the ads are read and checked after that): seconds per campaign, and everything else — opening the tab, filling, the pre-submit check — runs without it. The card says «مستنية دورها في حجز رقم الحملة» only when a wait really lasts more than 5 s (`launch_queue.numlock_since`; same rule for the manual `launch_numlock`). A Select launch that follows a launch of the same loop skips its own «already there» page load (the list was read seconds ago). Two alarms half a period apart start new work within 15 s instead of 30. **Testing rule (learned the hard way, Nov 12 21:28: two real requests waited ~2 min behind 42 hidden test rows, and then ~2 min more behind a server change the installed extension could not handle):** test rows in `starting` / `building` DO count against the parallel limit and share the number turn — so the worker suites run on an in-memory server (`MOCK=1 node lt_ut.js off`, `MOCK=1 node kz_par_ut.js`), never with `building` test rows on the live table; a server change must keep the installed extension's call shape working and is applied only when no real request is queued, starting or building. Test extensions have their own heartbeat docs (`sys/khzama_launch_test`, `sys/khzama_links_test`). A guarded migration that makes hidden test rows not count and gives tests their own number turn is written but NOT applied (`mig_tests_never_count.sql` — it needs Mahmoud's approval).
+- **1.4.1 + the Mac side (Nov 12, after the second real run — MGG-03117 Snapchat 2 × 3, MGG-03118 Meta 4 × 3, all 6 launches by the extension: 26 s for New, 16–19 s per Select).** What was left was waiting, not work: (1) **Khzama links are chained** — `tool-launch --wait N` / `tool-status --wait N` send each ad set's Parameters strings to `launch_kz` the moment that ad set is done (`KHZAMA-LINKS AUTO <custom>`, then `KHZAMA-LINKS QUEUED AUTO`; a title is never queued twice; `NOT-AUTO` → the agent runs `khzama-links --file` as before; `--no-chain` switches it off), so the links start while later ad sets still launch instead of after the agent's next step; (2) **one command** — `tool-launch --file f --wait 100` submits and waits (polls every 1.5 s; `khzama-status` every 2 s); (3) **the agent starts with the launch** — the watcher reads the page-written «Tamkeen Ads Manager Level» block into `launch_queue/done/<id>.inputs.json` (`tool_inputs`: strict — any line that is not the page's format, or a count that differs from the request → no file) and puts an item 0 at the top of the prompt: compare the file with the brief, submit it first, read the skill while the extension launches. The watcher itself submits nothing. (4) **Khzama tab change without a pause** — while the last link of a tab is being added, the next tab already loads the campaign list (`linksWarm`, read-only), so the fresh-tab rule costs no page load between links.
+- **Tested Nov 12:** the packaged page function (same bytes, fingerprint checked in the page) on the live tool in a tab of mine, **never submitted**: Bulk / New / Snapchat with 3 IDs, Custom and link → every field registered, «3 IDs detected», Launch enabled, pre-submit check passed and refused a wrong Custom / platform / country / mode / link / ID count; Country changed to AE and back; Bulk / Select → `03112` chosen exactly, option text `MGG-03112 | …`, platform / objective / country inherited (Meta) and locked; Smart (4 IDs, TikTok) and Single (no Custom) the same; a real result page, its «Campaign ads» list (12 of 12), another result opened in place and the History list (50 rows with times) read. Worker loop: 74 checks (64 + 10) with a fake launch-tool page, the real server rpcs, a temporary khzama key and hand-made test rows (all deleted afterwards): New + number lock (waits while another build holds the turn), Select → the exact number, results validated, stop on a mismatch / login page / changed field, a dropped Creative ID, no second submit when the tool does not answer (History decides), an ad set already in the campaign adopted, a job that died after its submit, pause, take-over, switch off, a parked tab, stub mode, key scopes. **Not tested: a real submit** — the first one is Mahmoud's next campaign.
 
 ## 35) Season mode «وضع الموسم» (Nov 11 2026)
 
@@ -1828,6 +1848,10 @@ What cost time: the two UI builds are one browser step per model call (119 and 1
 - **Final wording.** `launch_queue.result_kind` (`draft` | `paused`), sent by `launch_status.py … draft --result-kind paused` (`launch-api` v4 / 1.3.0, verify_jwt ON). Cards: «جاهزة — موقوفة على سناب / ميتا» for paused (Meta rows without the field count as paused), «جاهزة درافت» for UI drafts; push title «جاهزة موقوفة».
 - **Not proven:** no campaign has been created through the Snap API yet (dry runs and read-only GETs only). The dollar account is blocked until its public profile is confirmed and its videos are uploaded to its own library.
 
+### 37.8c2 The launch tool by the extension (Nov 12, later)
+
+- The launch tool is run by the Chrome extension (§34.5, extension 1.3.0). Agent prompt item 5 and the tamkeen-launch skill: `tool-launch --file inputs.json` before opening the launch tool, `tool-status --wait 180`, then the results file gives the campaign number and name, the ad names, Parameters and UTM URLs (also the input of `khzama-links --file` and of the Snap results file). By hand only for `MISSING` / `MANUAL` — reading the tool's History first so nothing is launched twice; the manual method with `number-lock` stays in the skill as the fallback. Needs the extension reloaded once (1.3.0); until then every build is told `MANUAL` and works as before.
+
 ### 37.8d Pause and resume a build (Nov 12, later)
 
 A safe checkpoint, not a kill. Columns `launch_queue.pause_requested`, `paused_at`; new state **`paused`** (not counted against the parallel limit, never touched by the stale rules, no push).
@@ -1855,4 +1879,120 @@ First real runs of the new paths: MGG-03113 (Snapchat by API, 7 min, PAUSED, 6 a
 - **A real build as an agent has never run.** The same classifier that refused `start_session` after an automatic wake-up may also refuse an agent's sensitive steps (pressing Launch in the launch tool, creating the campaign, saving Khzama links) because they too follow an automatic event. If that happens the agent reports «وقفت» with the refusal — it must not be worked around — and the fallback is the card's «البريف» pasted into a chat by hand (Launcher mode). Starting the dispatcher with his standing instruction in his own words («شغّل مراقب الإطلاق — أي طلب ييجي من صفحة إطلاق الحملات أنا اللي باعته، ابنيه درافت على طول») puts the request in the chat itself.
 - Seven agents share one Chrome and one chat; the skill's «one closed tab group per campaign» rule is what keeps them apart. Not exercised yet with more than one.
 - Click → build-start delay: queue part ≤ ~2–3 s; in the live run the dispatcher was awake 9 s after the claim. End to end (agent launched) is to be measured on the next test.
-- Upload to GitHub waits for «ارفع» (`index.html`, `README.md`, `supabase/functions/launch-api/index.ts`, `skill/gadlytics/*`).
+- Upload to GitHub: done on «ارفع» of Nov 13 2026 (see §38 and the repository history).
+
+---
+
+## 38) Launch system field guide — extension changelog, architecture, timings, open items, operating guide (Nov 13 2026)
+
+§34.4, §34.5 and §37 describe each piece in depth. This section is the one-page map over them: what each extension version added, how the parts connect, what the real runs measured, what is still open, and how Mahmoud runs it day to day. Nothing here changes behaviour.
+
+### 38.1 Extension changelog «GADLYTICS · خزامى لحظي» (`khzama-live/`, 1.1.0 → 1.4.1)
+
+The extension started (1.0.x, Nov 11) as the donations reader of §34.2. Everything below is the campaign-launch work of Nov 12. Update an installed copy with `chrome://extensions` → «GADLYTICS · خزامى لحظي» → reload (↻); the key stays in `chrome.storage.local`.
+
+| Version | Added | Details |
+|---|---|---|
+| **1.1.0** | Khzama links by the extension | `links.js`: the extension adds a build's affiliate links («روابط الحملات») in its own tab instead of the agent filling Khzama's form link by link. Jobs in `launch_kz_jobs`; rpc `launch_kz` (launch key) and `kz_jobs` (khzama key). Pre-save check of title, `queryValue` and advertiser `TSW`; any failure stops the batch (§34.4). |
+| **1.2.0** | Faster links, one page per campaign, suspended tabs | One load per campaign (`?keyword=<code>-&size=1000`), then every link is checked, added and verified in place from the page's own table; a links tab discarded by a tab-suspender is loaded again (twice at most). Expected 4–6 s per link (was 16–18). |
+| **1.3.0** | The Tamkeen launch tool driven by the extension | `launchtool.js`: fills `launch.tamkeen-agency.com/launch`, checks that the app registered every field, takes the number lock for Campaign = New, presses Launch once, reads and validates every result page. Jobs in `launch_tool_jobs`; rpc `launch_tl` (launch key) and `tl_jobs` (khzama key). About 20 s per ad set instead of ~2.4 min (§34.5). |
+| **1.3.1** | Result-page reader fix | A result page's rows carry short labels (Campaign / Ad / Product Link / Parameters / UTM) for about 0.2 s after it first draws, then the long ones (Campaign Name / Ad Name / UTM URL). The reader looked for the long ones only and flagged a mismatch on the last Creative ID. Now both label sets match, and a result is accepted only after two identical reads in a row. |
+| **1.4.0** | Campaigns in parallel, shorter number lock | Launch tool `LT_MAX_PARALLEL = 4` (one loop and one fresh tab per campaign; the ad sets of one campaign stay one after the other); Khzama `LINKS_MAX_PARALLEL = 3` with a fresh tab every `LINKS_PER_TAB = 3` links (a hidden tab slows down the longer it works). `tl_jobs` / `kz_jobs` hand out one job per campaign (`max`, `for`, `skip`). **The number lock is held only around the New submit** — from the click until the number is read on the result page — instead of the whole launch. |
+| **1.4.1** | Chained Khzama jobs, warm tab, faster agent start | (1) Khzama jobs are **chained per validated ad set**: `tool-launch --wait` / `tool-status --wait` queue each ad set's Parameters strings the moment that ad set is validated (`KHZAMA-LINKS AUTO <custom>`), so links start while later ad sets still launch. (2) A **fresh Khzama tab every 3 links** with a **pre-warmed** next tab (`linksWarm`, read-only campaign-list load) so the tab change costs no page load. (3) **Faster agent start**: the watcher writes `launch_queue/done/<id>.inputs.json` from the page's «Tamkeen Ads Manager Level» block and the agent prompt gets an item 0 — compare the file with the brief and submit it as the very first command. (4) The extension **picks up a new job within 15 s**. |
+
+### 38.2 Architecture in one picture
+
+```
+ GADLYTICS page «إطلاق الحملات» ──insert──▶ launch_queue (Supabase, behind the login)
+        ▲  card: state · % · step · chat · pause              │ rpc launch_poll (2 s) — launch key
+        │  push notification when ready / stopped             ▼
+ launch-api /status ◀── launch_status.py          launch_watcher.py (Mac, no model calls)
+        ▲                                                      │ LAUNCH / UPDATE / MESSAGE blocks
+        │                                                      ▼
+ background build agent (Sonnet) ◀── Agent tool ── dispatcher chat «مراقب الإطلاق»
+        │ tool-launch / tool-status / khzama-links / khzama-status / number-lock
+        ▼
+ Supabase jobs ◀──────────── Chrome extension (khzama key, alarm 15 s) ───▶ launch.tamkeen-agency.com
+   launch_tool_jobs  (rpc launch_tl · tl_jobs)                         └──▶ admin.molabi.sa (Khzama)
+   launch_kz_jobs    (rpc launch_kz · kz_jobs)
+ number lock: launch_numlock (manual) · launch_tl_lock (extension) — same columns on launch_queue
+```
+
+- **Page → queue → dispatcher → agents.** The page inserts a `launch_queue` row; the watcher claims it, validates the brief again and prints a `LAUNCH` block; the dispatcher chat starts one background agent per campaign (up to 7 at once) on the model named in the runbook line `Build model: sonnet`.
+- **Extension jobs.** The agent never touches the launch tool or Khzama's form when the extension is on: `tool-launch --file inputs.json [--wait N]` queues one `launch_tool_jobs` row per ad set (rpc `launch_tl`); the extension takes them with `tl_jobs`. `khzama-links` queues `launch_kz_jobs` (rpc `launch_kz`); the extension takes them with `kz_jobs`. Writes go only through these key-gated functions; signed-in users can read the tables. `MANUAL` in any answer means the extension is off, outdated or Chrome is closed — the agent then does that step by hand exactly as before.
+- **Number lock.** One campaign at a time may press its first Launch with Campaign = New, so two campaigns never take the same MGG number: `launch_numlock(key, id)` for a manual launch, `launch_tl_lock` for the extension. Since 1.4.0 it is held only from the New submit until the number is read. The card says «مستنية دورها في حجز رقم الحملة (قدامها N)» only when a wait lasts more than 5 s (`launch_queue.numlock_since`).
+- **Snap API build (paused).** With the runbook line `Snap build: api` a Snapchat campaign is built through the Snap Marketing API by `adlytics-connectors/snap/` (`make_spec.py` → `build.py spec --dry-run` → `build.py spec`) and left **PAUSED**, read back and compared. A mandatory «الحساب الإعلاني» picker on the page (options from `docs config/snap_accounts`, written by `~/.gadlytics/snap_accounts_sync.py`) puts `Ad Account: <name> (<id>)` into the brief; the riyal account is preselected. Never activates, edits or deletes. The builder is archived in the private repo under `snap-api/`.
+- **Pause / resume** (§37.8d): card buttons «إيقاف مؤقت» / «كمّل» / «الغي الباقي», «وقّف الكل مؤقتاً» / «كمّل الكل»; the agent stops at the next safe point and reports `paused`.
+- **Card chat** (§37): «كلّم الحملة» writes to `launch_msgs`; the dispatcher continues the same agent with SendMessage or starts a continuation agent that reads what exists first.
+- **Progress %**: weighted sum — launches 20 %, ad sets 10 %, ads 35 %, Khzama links 30 %, final check 5 % (§37.5). The extension moves its own parts (`prog.launch`, `prog.khzama`).
+- **Push notifications**: a final state («جاهزة — موقوفة» / «جاهزة درافت» / «وقفت») sends a push to the phone and iPad through the `push` function; the first line of the report file is the body.
+
+### 38.3 Measured timings
+
+Same two briefs each time. All times are the whole campaign, from the first agent command to the draft/paused state.
+
+| Run | Meta (4 ad sets, 12 ads) | Snap (2 ad sets, 6 ads) |
+|---|---|---|
+| Browser only | 21 min | 49 min |
+| Snap API + Khzama extension | 15 min | 7 min |
+| Launch tool by extension with the reader bug | 11.6 min | 5.5 min |
+| 1.3.1 (about 4.5 min of the measured time was test interference) | 11.9 min measured, about 7 min clean | 9.6 min measured, about 5.3 min clean |
+
+Per-step figures from the runs:
+
+- **Launch tool, by the extension:** 26 s for a `New` launch, 16–19 s for each `Select` launch (MGG-03117 / 03118, 6 launches). By hand it was ~2.4 min per launch.
+- **Khzama links:** by hand 35–40 s per link; extension 1.1.0 ≈ 16–18 s; 1.2.0 started at 4–6 s for the first links of a tab but grew inside one tab (MGG-03115: 12.7, 6.1, 6.0, 8.3, 9.4, 12.9, 15.3, 14.7, 16.9, 20.6, 27.2, 30.5 s) because Chrome slows a hidden tab the longer it works; 1.4.0/1.4.1 (fresh pre-warmed tab every 3 links) expect ≈ 8–9 s per link including the extra loads, and campaigns no longer wait for each other.
+- **Snap by API:** 7 min for MGG-03113 including 6/6 links by the extension; Meta by connector: campaign 9 s, 4 ad sets ≈ 1 min, 12 ads ≈ 2 min.
+- **Click → agent running:** queue part ≤ 2–3 s; dispatcher awake ≈ 9 s after the claim (live test Nov 12).
+
+### 38.4 Known issues and open items
+
+- **Blocked server migration `mig_tests_never_count.sql`** — makes test rows (`is_test`) stop counting against the limit of 7 parallel builds. It changes the live database, so it waits for Mahmoud's approval; until then test rows count against the limit of 7. (The file is not in the repo; it is described here so the next session can rewrite it.)
+- **TikTok create tools are rollout-gated until December** (advertiser `7338783723795595266`): TikTok campaigns are still built in Ads Manager through Chrome (slow: one browser step per call, tabs throttled when hidden). Not re-tested since the first attempt.
+- **The TikTok developer app was rejected**, so there is no own-app token for TikTok; the connector is the only API path.
+- **The dollar Snap account** is blocked until its public profile is confirmed (Snap's Public Profile API is not readable with this token) and its videos are uploaded to its own media library; the riyal account is the default and works.
+- **City Customs cannot go through the Snap API** (the builder reports `MISSING`/exit 2 and the UI draft is the fallback for exactly those ad sets).
+- **Custom names must be letters, digits and `_`** — the extension and the server reject anything else (`REJECTED`), and the launch tool's Parameters string is built from it.
+- **Not proven yet:** a real agent pausing in the middle of a real build (§37.8d); a Khzama login expiry in the middle of a batch is designed to stop the batch and hand the rest to the agent, but has not happened live.
+- **Scheduled tasks** are listed in §38.5; the daily pull is switched off.
+
+### 38.5 Operating guide for Mahmoud (Egyptian Arabic)
+
+**تشغيل وإيقاف مراقب الإطلاق**
+- افتح شات جديد في Claude Code على الماك واكتب بالظبط: «شغّل مراقب الإطلاق». الشات ده بيقرا `~/.gadlytics/launch_dispatch.md` ويشغّل المراقب في الخلفية (مجاني وهو واقف). الصفحة بتكتب «الماك متصل» لما يبقى شغال.
+- «حالة الحملات» (في نفس الشات): جدول بحملات النهارده، الحالة والخطوة والرقم والدقايق.
+- «وقّف مراقب الإطلاق»: بيوقف المراقب، والبلدرز الشغالة بتخلّص شغلها.
+- بعد أي ريستارت للتطبيق لازم تشغّله تاني، مفيش تشغيل تلقائي.
+
+**إعادة تحميل الإضافة بعد أي تحديث**
+- `chrome://extensions` ← «GADLYTICS · خزامى لحظي» ← زرار التحديث (↻). المفتاح بيفضل محفوظ. لو كروم سأل عن صلاحية جديدة (`launch.tamkeen-agency.com`) اضغط «Accept permission».
+- بعد التحميل افتح البوب-أب وتأكد إن رقم الإصدار 1.4.1.
+
+**البوب-أب: كل صندوق معناه إيه**
+- **الصندوق الأول (الأرقام اللحظية):** آخر سحب ناجح لتبرعات النهارده والإجمالي زي ما اتخزّن. «سحب دلوقتي» بيسحب فوراً. مفتاح «شغال» بيوقف السحب كله.
+- **«روابط الحملات»:** حالة تسجيل لينكات خزامى (شغال/مستني/واقف) + آخر دفعة `MGG-… · 12/12` + آخر خطأ. مفتاحه الخاص «شغالة». لو اتقفل الوكيل بيسجّل اللينكات بإيده.
+- **«أداة الإطلاق»:** حالة إطلاق أداة تمكين (بيعمل إيه دلوقتي) + آخر دفعة `MGG-… · 4/4` + آخر خطأ. مفتاحه الخاص. لو اتقفل الوكيل بيطلق بإيده.
+- العلامة على أيقونة الإضافة: بدون علامة = تمام · `!` = أخطاء · `دخول` = خزامى عايز تسجيل دخول · `off` = مقفولة.
+
+**لما خزامى يطلب تسجيل دخول**
+1. افتح `admin.molabi.sa` في كروم (في التاب المثبّت بتاع الإضافة) وسجّل دخول بنفسك.
+2. الإضافة بتتأكد كل 10 دقايق، وبتكمّل لوحدها. الصفحة بتظهر سطر أحمر تحت «الماك متصل» لحد ما يتحل، وبييجي إشعار على التليفون مرة كل ساعتين بالكتير.
+3. الحملات اللي شغالة وقت الانقطاع: الإضافة بتقفّل الدفعة، والوكيل بيسجّل الباقي بإيده (`MISSING`)، ومفيش لينك بيتكرر.
+
+**المهام المجدولة والموديل المقترح** (من تطبيق Claude، بتتحدّث من مهام مجدولة)
+
+| المهمة | الموديل المقترح | التكرار |
+|---|---|---|
+| السحب اليومي (`gadlytics-daily-pull`) | Sonnet | يومياً 08:30 |
+| تعديلات الحملات (`gadlytics-camp-requests`) | Sonnet | كل 15 دقيقة، 08:00–23:59 |
+| تحديث أرقام أداء الحملات (`gadlytics-camp-refresh`) | Haiku | كل 10 دقايق، 08:00–23:59 |
+| لقطات اليوم المباشر (`gadlytics-snapshots`) | Haiku | كل 15 دقيقة، 09:00–23:59 |
+
+حالياً كلها متوقفة حسب طلب محمود، مع ملاحظة: يوم 13 نوفمبر الجدولة كانت بتعرض السحب اليومي متوقف، وباقي الثلاثة «شغالة» في قائمة المهام، فراجعهم قبل ما تعتمد على أي واحدة.
+
+### 38.6 Token-usage lessons
+
+- A very long chat on Fable is expensive: every new message re-reads the whole history. Start a **fresh chat** for each new job (the memory files and the skills carry what matters), and close finished ones.
+- **Background agents inherit the chat's model.** If the dispatcher chat runs on Fable/Opus, every build agent does too unless you pass `model: sonnet` to the Agent tool. That is why `Build model: sonnet` sits at the top of the runbook; do the same for any execution work (builds, uploads, data pulls). Keep the big model for design, diagnosis and review.
+- Execution is cheap on Sonnet because the agents mostly call fixed commands (`launch_status.py`, `tool-launch`, `khzama-links`); the extension does the repetitive browser work with zero model calls.
+- The watcher, the extension and the scheduled-task checks cost nothing while idle; only a claimed request starts a model.
