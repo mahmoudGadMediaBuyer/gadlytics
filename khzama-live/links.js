@@ -1,6 +1,7 @@
 // GADLYTICS · خزامى لحظي — «روابط الحملات»: registers the Khzama affiliate links of a campaign build.
-// The build agent on the Mac submits the list (launch_status.py <id> khzama-links); this file takes ONE job at a time from the
-// server (rpc kz_jobs, the extension's own khzama key), and in a SECOND Khzama tab of its own (never the pinned donations tab):
+// The build agent on the Mac submits the list (launch_status.py <id> khzama-links). Campaigns run side by side (up to
+// LINKS_MAX_PARALLEL, one Khzama tab each, a fresh tab every LINKS_PER_TAB links); inside a campaign ONE link at a time (rpc
+// kz_jobs, the extension's own khzama key). In its own tab (never the pinned donations tab), per link:
 //   1. the campaign's links are loaded once (?keyword=<code>-&size=1000), then read from the page's own table → the exact
 //      Parameters string already there? done, nothing is added
 //   2. «إضافة» → fills العنوان + كلمة دلالية مخصصة, picks the advertiser whose name is EXACTLY the job's (TSW, never TSW-1)
@@ -9,7 +10,10 @@
 // Any unexpected page state (login page, a missing field, a form that does not match) stops the whole batch: the server marks
 // what is left as failed and the agents register those by hand. It never edits or deletes a link, and only titles that start
 // with a campaign code (XXX-12345-…) are accepted. No cookies, storage, tokens or headers are read.
-const LINKS_V = '1.2.0';
+const LINKS_V = '1.4.1';
+const LINKS_MAX_PARALLEL = 3;                                // campaigns whose links are registered at the same time — one tab each; inside a campaign one link at a time
+const LINKS_PER_TAB = 3;                                     // links per tab: a background tab gets slower with every save (measured 6 s → 30 s per link over 12 links), a fresh tab is fast again
+const LINKS_TABS = new Set();                                // the tabs this worker opened and has not closed yet
 const LINKS_RPC = 'https://ibpwudzjwjraqhfdmzet.supabase.co/rest/v1/rpc/kz_jobs';
 const LINKS_ALARM = 'kz-links';
 const LINK_TITLE_RE = /^[A-Z]{2,4}-\d{3,6}-[A-Za-z0-9_~-]+$/;
@@ -157,33 +161,37 @@ async function linksRpc(info) {
   const { apiKey, anonKey } = await keys();
   const s = await get(['linksOn', 'linksTest']);
   const r = await fetch(LINKS_RPC, { method: 'POST', headers: { 'content-type': 'application/json', Authorization: 'Bearer ' + anonKey, apikey: anonKey },
-    body: JSON.stringify({ p_key: apiKey, p_info: { v: LINKS_V, cap: ['links'], on: s.linksOn !== false, test: s.linksTest === true, ...info } }) });
+    body: JSON.stringify({ p_key: apiKey, p_info: { v: LINKS_V, cap: ['links'], on: s.linksOn !== false, test: s.linksTest === true, max: LINKS_MAX_PARALLEL, ...info } }) });
   let j = {}; try { j = await r.json(); } catch { /* */ }
   if (!r.ok || !j || j.ok !== true) throw new Error('السيرفر رفض (kz_jobs ' + r.status + ')');
   return j;
 }
 
-// the extension's SECOND Khzama tab: a normal background tab, never the pinned donations tab; closed when the batch ends
-async function linksTab() {
-  const { linksTabId, tabId } = await get(['linksTabId', 'tabId']);
-  if (linksTabId != null && linksTabId !== tabId) {
-    try {
-      const t = await chrome.tabs.get(linksTabId);
-      if (!t.pinned && (!t.url || t.url === 'about:blank' || t.url.includes('admin.molabi.sa'))) return t;
-    } catch { /* closed */ }
-  }
+// a Khzama tab of this worker's own for one campaign: a normal background tab, never the pinned donations tab; replaced by a
+// fresh one every LINKS_PER_TAB links and closed when the campaign's links are done
+async function linksOpenTab() {
+  const { tabId } = await get('tabId');
   const t = await chrome.tabs.create({ url: 'about:blank', pinned: false, active: false });
   if (t.id === tabId) throw new LinksHalt('tab', 'التبويب اتلخبط مع تبويب التبرعات');
   await chrome.tabs.update(t.id, { autoDiscardable: false });
-  await set({ linksTabId: t.id });
+  LINKS_TABS.add(t.id);
+  await chrome.storage.session.set({ linksTabs: [...LINKS_TABS] });
   return t;
 }
-async function closeLinksTab() {
-  const { linksTabId, tabId } = await get(['linksTabId', 'tabId']);
-  if (linksTabId != null && linksTabId !== tabId) {
-    try { const t = await chrome.tabs.get(linksTabId); if (!t.pinned) await chrome.tabs.remove(linksTabId); } catch { /* already closed */ }
+async function linksCloseTab(id) {
+  if (id == null) return;
+  LINKS_TABS.delete(id);
+  try { const t = await chrome.tabs.get(id); if (!t.pinned) await chrome.tabs.remove(id); } catch { /* already closed */ }
+  await chrome.storage.session.set({ linksTabs: [...LINKS_TABS] });
+}
+// tabs left open by a worker that was stopped in the middle (only ids this extension itself opened in this browser session)
+async function linksSweepTabs() {
+  const { linksTabs } = await chrome.storage.session.get('linksTabs'), { tabId } = await get('tabId');
+  for (const id of linksTabs || []) {
+    if (LINKS_TABS.has(id) || id === tabId) continue;
+    try { const t = await chrome.tabs.get(id); if (!t.pinned && (!t.url || t.url === 'about:blank' || t.url.startsWith(KZ) || t.url.startsWith('chrome-extension://'))) await chrome.tabs.remove(id); } catch { /* gone */ }
   }
-  await set({ linksTabId: null });
+  await chrome.storage.session.set({ linksTabs: [...LINKS_TABS] });
 }
 
 async function linkStep(tabId, step, a) {
@@ -308,57 +316,115 @@ async function linkAdd(tabId, job, test, t0, B) {
   return { state: 'done', link_id: hit.id, existed: false };
 }
 
-// heartbeat + take jobs one after another until none is left. Any failure stops the batch (the server fails the rest).
+// the campaign's NEXT tab, loaded while the last link of the current tab is being added (a read-only load of the campaign
+// list), so that changing tabs costs no page load. → {tabId, B, code} · null when it could not be prepared
+async function linksWarm(code) {
+  let t = null;
+  try {
+    t = await linksOpenTab();
+    const B = {};
+    await linkList(t.id, B, code, true);
+    return { tabId: t.id, B, code };
+  } catch { if (t) await linksCloseTab(t.id).catch(() => {}); return null; }
+}
+
+const linksSeen = (r) => set({ linksSeen: Date.now(), linksPending: r.pending || 0, ...(r.batch ? { linksBatch: r.batch } : {}) });
+
+// one campaign's links, one after the other, in a tab of its own. Any failure stops every campaign (the server fails the rest).
+async function linksCampaign(first, ctl) {
+  const lid = first.launch_id;
+  let job = first, tabId = null, B = {}, inTab = 0, lingered = false, next = null, pending = 2;
+  try {
+    while (job) {
+      await chrome.storage.session.set({ linksRunning: Date.now() });
+      const s = await get(['linksOn', 'linksTest']), on = s.linksOn !== false, test = s.linksTest === true;
+      const t0 = Date.now(), bad = linkGuard(job) || (!!job.test !== test ? 'وضع التجربة مش مطابق' : null);
+      await set({ linksNow: { title: job.title, at: t0, n: ctl.loops.size } });
+      let report;
+      if (bad) report = { id: job.id, state: 'failed', error: bad };
+      else {
+        try {
+          if (tabId == null || inTab >= LINKS_PER_TAB) {
+            const warm = next ? await next : null;
+            next = null;
+            await linksCloseTab(tabId); tabId = null;
+            if (warm && warm.code === job.code) { tabId = warm.tabId; B = warm.B; }
+            else { if (warm) await linksCloseTab(warm.tabId); tabId = (await linksOpenTab()).id; B = {}; }
+            inTab = 0;
+          }
+          inTab++;
+          if (inTab === LINKS_PER_TAB && job.code && pending > 1 && !next) next = linksWarm(job.code);   // more links are waiting: the next tab loads meanwhile
+          report = { id: job.id, ...(await linkAdd(tabId, job, test, t0, B)) };
+          if (report.state !== 'done') report.halt = true;
+          else await set({ linksError: null });
+        } catch (e) {
+          report = { id: job.id, state: 'failed', error: String(e.message || e).slice(0, 200), halt: true };
+        }
+        if (report.halt) { ctl.stopAll = true; await set({ linksError: { at: Date.now(), msg: report.error } }); }
+      }
+      // the report and this campaign's next link in one call
+      let r = null;
+      for (let i = 0; i < 3 && !r; i++) { try { r = await linksRpc({ take: on && !ctl.stopAll, for: lid, report }); } catch { await sleep(1500); } }
+      if (!r) break;                                         // the server re-queues a silent job after 2 minutes
+      await linksSeen(r);
+      pending = (r.pending || 0) + (r.job ? 1 : 0);
+      job = r.job;
+      if (!job && on && !ctl.stopAll && !lingered) {         // the agent may send this campaign's last links right after
+        lingered = true; await sleep(4000);
+        r = await linksRpc({ take: true, for: lid }).catch(() => null);
+        job = r && r.job;
+      } else if (job) lingered = false;
+    }
+  } finally {
+    if (next) { const w = await next.catch(() => null); if (w) await linksCloseTab(w.tabId).catch(() => {}); }
+    await linksCloseTab(tabId).catch(() => {});
+  }
+}
+
+// heartbeat + start one loop per campaign (up to LINKS_MAX_PARALLEL), until nothing is left
 async function linksTick() {
   const now = Date.now(), { linksRunning } = await chrome.storage.session.get('linksRunning');
   if (linksRunning && now - linksRunning < 150e3) return;
   await chrome.storage.session.set({ linksRunning: now });
-  let tab = null, report = null, worked = false, lingered = false;
-  const B = {};                                             // the campaign list already loaded in the links tab (linkList)
+  const loops = new Map(), ctl = { stopAll: false, loops };
+  let errs = 0;
   try {
+    await linksSweepTabs();
     for (;;) {
       await chrome.storage.session.set({ linksRunning: Date.now() });
-      const s = await get(['linksOn', 'linksTest']), on = s.linksOn !== false, test = s.linksTest === true;
-      const r = await linksRpc({ take: on && !(report && report.halt), report });
-      const halted = !!(report && report.halt);
-      report = null;
-      await set({ linksSeen: Date.now(), linksPending: r.pending || 0, ...(r.batch ? { linksBatch: r.batch } : {}) });
-      if (halted) break;
-      const job = r.job;
-      if (!job) {
-        if (worked && !lingered) { lingered = true; await sleep(5000); continue; }      // a second campaign may submit right after
-        break;
+      const s = await get('linksOn');
+      let r;
+      try { r = await linksRpc({ take: s.linksOn !== false && !ctl.stopAll && loops.size < LINKS_MAX_PARALLEL, skip: [...loops.keys()] }); errs = 0; } catch (e) {
+        await set({ linksError: { at: Date.now(), msg: String(e.message || e).slice(0, 200) } });
+        if (!loops.size || ++errs > 20) break;
+        await Promise.race([...loops.values(), sleep(3000)]);
+        continue;
       }
-      worked = true; lingered = false;
-      const t0 = Date.now(), bad = linkGuard(job) || (!!job.test !== test ? 'وضع التجربة مش مطابق' : null);
-      await set({ linksNow: { title: job.title, at: t0 } });
-      if (bad) { report = { id: job.id, state: 'failed', error: bad }; continue; }
-      try {
-        tab = tab || await linksTab();
-        report = { id: job.id, ...(await linkAdd(tab.id, job, test, t0, B)) };
-        if (report.state !== 'done') report.halt = true;
-        else await set({ linksError: null });
-      } catch (e) {
-        report = { id: job.id, state: 'failed', error: String(e.message || e).slice(0, 200), halt: true };
+      await linksSeen(r);
+      const id = r.job && (r.job.launch_id || r.job.code);
+      if (id && !loops.has(id)) {
+        loops.set(id, linksCampaign({ ...r.job, launch_id: r.job.launch_id || undefined }, ctl).catch(async (e) => { await set({ linksError: { at: Date.now(), msg: String(e.message || e).slice(0, 200) } }); }).finally(() => { loops.delete(id); }));
+        continue;                                            // maybe another campaign is waiting too
       }
-      if (report.halt) await set({ linksError: { at: Date.now(), msg: report.error } });
+      if (loops.size) { await Promise.race([...loops.values(), sleep(3000)]); continue; }
+      break;                                                 // each campaign loop lingers by itself for late links
     }
-  } catch (e) {
-    if (report) { try { await linksRpc({ take: false, report }); } catch { /* the server re-queues a silent job after 2 minutes */ } }
-    await set({ linksError: { at: Date.now(), msg: String(e.message || e).slice(0, 200) } });
   } finally {
-    if (tab) await closeLinksTab().catch(() => {});
+    await Promise.allSettled([...loops.values()]);
+    for (const id of [...LINKS_TABS]) await linksCloseTab(id).catch(() => {});
     await set({ linksNow: null });
     await chrome.storage.session.set({ linksRunning: 0 });
   }
 }
 
+// two alarms half a period apart: Chrome allows no alarm faster than 30 s, so a campaign's links wait 15 s at most, not 30
 async function ensureLinksAlarm() {
   if (!(await chrome.alarms.get(LINKS_ALARM))) chrome.alarms.create(LINKS_ALARM, { periodInMinutes: 0.5, delayInMinutes: 0.1 });
+  if (!(await chrome.alarms.get(LINKS_ALARM + '-b'))) chrome.alarms.create(LINKS_ALARM + '-b', { periodInMinutes: 0.5, delayInMinutes: 0.35 });
 }
 chrome.runtime.onInstalled.addListener(ensureLinksAlarm);
 chrome.runtime.onStartup.addListener(ensureLinksAlarm);
-chrome.alarms.onAlarm.addListener((a) => { if (a.name === LINKS_ALARM) linksTick(); });
+chrome.alarms.onAlarm.addListener((a) => { if (a.name === LINKS_ALARM || a.name === LINKS_ALARM + '-b') linksTick(); });
 chrome.runtime.onMessage.addListener((m, _s, reply) => {
   if (m?.cmd === 'links') { linksTick().then(() => reply({ ok: true })); return true; }
 });

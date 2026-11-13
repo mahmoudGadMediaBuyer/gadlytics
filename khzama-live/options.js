@@ -8,7 +8,12 @@ document.getElementById('save').onclick = async () => {
   chrome.runtime.sendMessage({ cmd: 'run' });
 };
 const linksBox = document.getElementById('links'), linksTest = document.getElementById('linksTest');
-const refresh = () => { renderStatus(box); renderLinks(linksBox); };
+const launchBox = document.getElementById('launch'), ltTest = document.getElementById('ltTest');
+const refresh = () => { renderStatus(box); renderLinks(linksBox); if (launchBox && typeof renderLaunch === 'function') renderLaunch(launchBox); };
+if (ltTest) {
+  chrome.storage.local.get('ltTest').then((s) => { ltTest.checked = s.ltTest === true; });
+  ltTest.onchange = async () => { await chrome.storage.local.set({ ltTest: ltTest.checked }); chrome.runtime.sendMessage({ cmd: 'launch' }).catch(() => {}); };
+}
 chrome.storage.local.get('linksTest').then((s) => { linksTest.checked = s.linksTest === true; });
 linksTest.onchange = async () => { await chrome.storage.local.set({ linksTest: linksTest.checked }); chrome.runtime.sendMessage({ cmd: 'links' }).catch(() => {}); };
 chrome.storage.onChanged.addListener(refresh);

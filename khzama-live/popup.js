@@ -1,6 +1,11 @@
 const box = document.getElementById('status'), run = document.getElementById('run'), on = document.getElementById('on');
 const linksBox = document.getElementById('links'), linksOn = document.getElementById('linksOn');
-const refresh = () => { renderStatus(box); if (linksBox && typeof renderLinks === 'function') renderLinks(linksBox); };
+const launchBox = document.getElementById('launch'), ltOn = document.getElementById('ltOn');
+const refresh = () => { renderStatus(box); if (linksBox && typeof renderLinks === 'function') renderLinks(linksBox); if (launchBox && typeof renderLaunch === 'function') renderLaunch(launchBox); };
+if (ltOn) {
+  chrome.storage.local.get('ltOn').then((s) => { ltOn.checked = s.ltOn !== false; });
+  ltOn.onchange = async () => { await chrome.storage.local.set({ ltOn: ltOn.checked }); chrome.runtime.sendMessage({ cmd: 'launch' }).catch(() => {}); };
+}
 chrome.storage.local.get('linksOn').then((s) => { linksOn.checked = s.linksOn !== false; });
 linksOn.onchange = async () => { await chrome.storage.local.set({ linksOn: linksOn.checked }); chrome.runtime.sendMessage({ cmd: 'links' }).catch(() => {}); };
 chrome.storage.local.get('enabled').then((s) => { on.checked = s.enabled !== false; });
