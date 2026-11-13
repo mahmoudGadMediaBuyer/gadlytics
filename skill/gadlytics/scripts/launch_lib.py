@@ -131,6 +131,18 @@ def kz(rid, links=None, takeover=False):
                  with_key=False, timeout=20)
 
 
+def tl(rid, inputs=None, takeover=False):
+    """rpc launch_tl: the Tamkeen launch tool through the Chrome extension — submit the inputs once (idempotent), read the results, or take over."""
+    for i in range(3):                                     # every call is safe to repeat: a dropped connection is tried again
+        try:
+            return _call(SUPA + "/rest/v1/rpc/launch_tl", "POST", {"p_key": key(), "p_id": rid, "p_inputs": inputs, "p_takeover": bool(takeover)},
+                         with_key=False, timeout=20)
+        except LaunchError as e:
+            if e.code != "network" or i == 2:
+                raise
+            time.sleep(2)
+
+
 def pause(rid, action="check", note=None):
     """rpc launch_pause: did Mahmoud ask to pause this build? (check) / the build has stopped at a safe point (paused)."""
     return _call(SUPA + "/rest/v1/rpc/launch_pause", "POST", {"p_key": key(), "p_id": rid, "p_action": action, "p_note": note}, with_key=False, timeout=20)

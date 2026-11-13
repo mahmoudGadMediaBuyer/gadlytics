@@ -123,15 +123,76 @@ How to work:
 2. First read the saved brief {brief_file} (after the build starts it is in ~/.gadlytics/launch_queue/done/{id}.brief.txt). It is the exact text Mahmoud wrote; if a Creative ID, a link or any value differs from the copy below, the file wins.
 3. {tabs}
 4. You are a background agent inside the «مراقب الإطلاق» chat, not a separate session: skip the skill's session-rename step. Never start a session; never use a cloud or remote target, Remote Control or an artifact.
-5. Campaign number (Campaign = New): with the launch-tool form of your FIRST launch filled and checked, run `python3 ~/.gadlytics/launch_status.py {id} number-lock` and press Launch only after it prints `NUMBER-LOCK HELD` (`WAITING` → run it again; `UNAVAILABLE` → carry on). Report the number the moment it shows (`--launches 1/N --campaign MGG-… --name "…"`): that frees the turn for the next campaign. `campaign-claim.sh` stays the second check; later launches (Select) need no lock.
+5. The launch tool is run by the Chrome extension, not by you (the skill's part «The launch tool is run by the Chrome extension»): BEFORE opening the launch tool, write the inputs to a JSON file — `{{"client": "Molabi", "kind": "Single|Bulk|Smart", "platform": "Meta|TikTok|Snapchat", "objective": "Conversion", "country": "SA", "creative_ids": ["<14 digits>", …], "customs": ["<one per ad set, in the brief's order>", …], "product_link": "https://…", "campaign": "New"}}` (`"Select <number>"` only when the brief says so; no Custom → `"customs": []`) — and run `python3 ~/.gadlytics/launch_status.py {id} tool-launch --file <that file> --wait 100` (one command: it submits and waits for the results). `TOOL-LAUNCH QUEUED` → do NOT open the launch tool and do NOT run number-lock (the extension takes the campaign-number turn itself); while it still prints `RUNNING` / `WAITING` run `python3 ~/.gadlytics/launch_status.py {id} tool-status --wait 100`. `TOOL-STATUS ALL DONE` → the results file it names holds the campaign number and name and, per ad set, every ad name, Parameters string and UTM URL, already compared with the brief (Creative IDs, count, Custom, platform, objective): use those values exactly, report `--launches N/N --campaign MGG-… --name "…"`, run `campaign-claim.sh`, and use its `ad_sets` for the Snap results file. The same command also queues each ad set's Khzama links the moment that ad set is done: `KHZAMA-LINKS QUEUED AUTO` → do not run `khzama-links` at all (item 7 starts at «go on building»); `KHZAMA-LINKS NOT-AUTO` → give the results file to `khzama-links --file`. `MISSING <custom>` lines / `TOOL-STATUS MANUAL` → only those launches are yours, by hand as the skill says: FIRST read the launch tool's History for this campaign — a launch that is already there is never made again, read its result instead — then launch what is missing with Campaign = Select → the campaign number when it already has one. `TOOL-LAUNCH MANUAL`, `REJECTED` or `UNAVAILABLE` → do every launch by hand from the start, with the number lock held for SECONDS only: open the tool and fill and check the form of your FIRST launch without the lock; run `python3 ~/.gadlytics/launch_status.py {id} number-lock` only when pressing Launch is the very next thing you do, and press it the moment it prints `NUMBER-LOCK HELD` (`WAITING` → run it again; `UNAVAILABLE` → carry on); then, the moment the result page shows the campaign number — before reading the other results or doing anything else — report it (`--launches 1/N --campaign MGG-… --name "…"`): that gives the turn to the next campaign. `campaign-claim.sh` stays the second check; later launches (Select) need no lock. Say in the report how the launches were made (extension / by hand / both).
 6. Report progress with launch_status.py exactly as the skill's section «GADLYTICS launch id» says — it drives the «NN%» bar on Mahmoud's page: `--launches K/N` after each launch result (the FIRST one also carries `--campaign MGG-… --name "<the full campaign name>"`), `--adsets K/N` and `--ads K/N` after each batch on the platform, `--khzama K/N` for the Khzama links (see 7); then `draft --campaign … --name … --report-file …` when it is left as a draft (add `--result-kind paused` when the objects are real and PAUSED on the platform — Meta connector, Snap API — and nothing for a UI draft), or `stopped --reason "…" --report-file …` at any stop. One short command each, about 12 to 15 in the whole build; a failed status call never blocks the build. If a status call prints `PAUSE REQUESTED` (Mahmoud pressed «إيقاف مؤقت»): finish only the step in hand so nothing is left half-saved — never a filled unsaved dialog or a half-created object — then run `python3 ~/.gadlytics/launch_status.py {id} paused --step '<one line: what exists, what is left>'` with the counts, and stop: no new step, no `draft`, no `stopped`; your final answer is that one line. He resumes it later with a message. If a safety classifier refuses a step, do not look for another way: report `stopped` with the refusal text as the reason.
-7. Khzama links are registered by the Chrome extension, not by you: as soon as ALL launch results are in, write every Parameters string to a JSON file (a list of strings) and run `python3 ~/.gadlytics/launch_status.py {id} khzama-links --file <that file>`. `KHZAMA-LINKS QUEUED` → do NOT open the Khzama form; go on building on the platform, and send no `--khzama` yourself meanwhile. When the platform build is done run `python3 ~/.gadlytics/launch_status.py {id} khzama-status --wait 240`: `ALL DONE` → report `--khzama N/N`. `MISSING <title>` lines → register only those by hand exactly as the skill says (keyword check first, advertiser exactly TSW), then report the real count. Still `WAITING` after the wait → run `khzama-status --take-over` first (it hands them to you), and wait out any `ADDING` line before touching that title. `KHZAMA-LINKS MANUAL`, `REJECTED` or `UNAVAILABLE` → register those by hand from the start, as the skill says. Your report says how the links were registered (extension / by hand / both, with counts).
+7. Khzama links are registered by the Chrome extension, not by you. If item 5 printed `KHZAMA-LINKS QUEUED AUTO` they are already queued — skip the `khzama-links` command. Otherwise: as soon as ALL launch results are in, write every Parameters string to a JSON file (a list of strings) and run `python3 ~/.gadlytics/launch_status.py {id} khzama-links --file <that file>`. `KHZAMA-LINKS QUEUED` → do NOT open the Khzama form; go on building on the platform, and send no `--khzama` yourself meanwhile. When the platform build is done run `python3 ~/.gadlytics/launch_status.py {id} khzama-status --wait 240`: `ALL DONE` → report `--khzama N/N`. `MISSING <title>` lines → register only those by hand exactly as the skill says (keyword check first, advertiser exactly TSW), then report the real count. Still `WAITING` after the wait → run `khzama-status --take-over` first (it hands them to you), and wait out any `ADDING` line before touching that title. `KHZAMA-LINKS MANUAL`, `REJECTED` or `UNAVAILABLE` → register those by hand from the start, as the skill says. Your report says how the links were registered (extension / by hand / both, with counts).
 8. {rules}
 9. Your final answer is the Arabic report text you sent with the final status, and nothing else.
 {platform_note}
 The brief:
 
 """
+
+
+INPUTS_NOTE = ("0. FIRST, before you read the skill: the launch-tool inputs were already read from the first block of the brief into {file}. Compare that file once with the block "
+               "«Tamkeen Ads Manager Level» below (Creative IDs, the ad sets in order, platform, kind, product link, campaign). If it is the same, run these two now — "
+               "`python3 ~/.gadlytics/launch_status.py {id} building --step-no 1 --step \"أداة الإطلاق: الأسامي وروابط UTM\" --launches 0/{n}` and "
+               "`python3 ~/.gadlytics/launch_status.py {id} tool-launch --file {file}` — so the extension launches while you read the skill; then go on with 1, and at item 5 do not write "
+               "the file or submit again: go straight to `python3 ~/.gadlytics/launch_status.py {id} tool-status --wait 100`. If anything differs from the brief, do not use the file: follow item 5 as written.\n")
+
+
+def tool_inputs(row):
+    """The launch-tool inputs, read from the «Tamkeen Ads Manager Level (airtable)» block exactly as the GADLYTICS page writes it.
+    Strict on purpose: any line that is not in that format, or a count that differs from the request → None, and the agent writes
+    the inputs itself as before. Nothing is submitted here — the agent compares the file with the brief and submits it."""
+    b = (row.get("brief") or "").replace("\r\n", "\n")
+    m = re.search(r"(?m)^Tamkeen Ads Manager Level \(airtable\)[ \t]*\n((?:[^\n]*\S[^\n]*\n?)+)", b)
+    if not m:
+        return None
+    cur, vals = None, {}
+    for ln in m.group(1).split("\n"):
+        ln = ln.strip()
+        if not ln:
+            break
+        k = re.match(r"^(Client|Platform|Launch kind|Creatives ID|Campaign|Country|Objective|Product Link|Adsets \( Custom \)):\s*(.*)$", ln)
+        if k:
+            cur = k.group(1)
+            if cur in vals:
+                return None
+            vals[cur] = [k.group(2)] if k.group(2) else []
+        elif cur in ("Creatives ID", "Adsets ( Custom )"):
+            vals[cur].append(ln)
+        else:
+            return None
+    one = lambda key: vals[key][0] if len(vals.get(key) or []) == 1 else None
+    if (one("Client") or "").lower() not in ("molabi", "ملبي"):
+        return None
+    plat, kind = one("Platform"), one("Launch kind")
+    if plat not in ("Meta", "TikTok", "Snapchat") or plat.lower() != (row.get("platform") or "").lower() or kind not in ("Single", "Bulk", "Smart"):
+        return None
+    ids = [re.sub(r"^-\s*", "", x) for x in vals.get("Creatives ID") or []]
+    if not ids or len(set(ids)) != len(ids) or any(not re.match(r"^\d{14}$", x) for x in ids):
+        return None
+    if (kind == "Single" and len(ids) != 1) or (kind == "Smart" and len(ids) > 10) or len(ids) > 50:
+        return None
+    camp = one("Campaign") or ""
+    cm = re.match(r"^Select\b\D*(\d{3,6})\)?$", camp)
+    campaign = "New" if camp == "New" else ("Select " + cm.group(1)) if cm else None
+    country = one("Country") or ""
+    country = "SA" if country == "Saudi Arabia" else country if re.match(r"^[A-Z]{2}$", country) else None
+    obj, link = one("Objective"), one("Product Link") or ""
+    if not campaign or not country or not obj or not re.match(r"^https://\S+$", link):
+        return None
+    customs = []
+    for i, x in enumerate(vals.get("Adsets ( Custom )") or []):
+        c = re.match(r"^(\d+)-\s*([A-Za-z0-9_]{1,40})$", x)
+        if not c or int(c.group(1)) != i + 1 or c.group(2) in customs:
+            return None
+        customs.append(c.group(2))
+    if (row.get("n_videos") and int(row["n_videos"]) != len(ids)) or (row.get("n_adsets") and customs and int(row["n_adsets"]) != len(customs)):
+        return None
+    return {"client": "Molabi", "kind": kind, "platform": plat, "objective": obj, "country": country, "creative_ids": ids, "customs": customs,
+            "product_link": link, "campaign": campaign}
 
 
 def out(s):
@@ -176,7 +237,17 @@ def take(row):
         brief = prompt = row["brief"].rstrip() + "\n"
     else:
         brief = row["brief"].rstrip() + "\n\nGADLYTICS launch id: %s\n" % rid
-        prompt = AGENT_HEAD.format(id=rid, brief_file=L.brief_path(rid), rules=RULES, tabs=TABS, platform_note=snap_note(row, rid)) + brief
+        note = ""
+        try:                                               # the launch-tool inputs, ready for the agent's first command (never blocks a claim)
+            ti = tool_inputs(row)
+            if ti:
+                os.makedirs(L.DONE, exist_ok=True)
+                f = os.path.join(L.DONE, rid + ".inputs.json")
+                open(f + ".tmp", "w", encoding="utf-8").write(json.dumps(ti, ensure_ascii=False, indent=1)); os.replace(f + ".tmp", f)
+                note = INPUTS_NOTE.format(id=rid, file=f, n=max(1, len(ti["customs"])))
+        except Exception as e:
+            note = ""; L.log("tool inputs for %s not prepared: %s" % (rid, str(e)[:120]))
+        prompt = AGENT_HEAD.format(id=rid, brief_file=L.brief_path(rid), rules=RULES, tabs=TABS, platform_note=snap_note(row, rid)).replace("How to work:\n", "How to work:\n" + note, 1) + brief
     for path, txt in ((L.brief_path(rid), brief), (L.prompt_path(rid), prompt)):
         open(path + ".tmp", "w", encoding="utf-8").write(txt); os.replace(path + ".tmp", path)
     json.dump({"id": rid, "title": row.get("title"), "platform": row.get("platform"), "is_test": bool(row.get("is_test")),

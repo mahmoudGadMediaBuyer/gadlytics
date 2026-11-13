@@ -15,6 +15,8 @@ when its brief carries a line  GADLYTICS launch id: <id>.
   python3 ~/.gadlytics/launch_status.py <id> say --text-file /path/reply.txt [--notify]                    (a reply in the card's chat)
   python3 ~/.gadlytics/launch_status.py <id> khzama-links --file links.json                            (روابط خزامى: الإضافة تسجّلهم)
   python3 ~/.gadlytics/launch_status.py <id> khzama-status [--wait 240] [--take-over]                   (خلصوا؟ إيه اللي ناقص؟)
+  python3 ~/.gadlytics/launch_status.py <id> tool-launch --file inputs.json [--wait 100] [--out results.json]   (أداة الإطلاق: الإضافة تملى الفورم وتطلق؛ --wait = استنى النتايج في نفس الأمر)
+  python3 ~/.gadlytics/launch_status.py <id> tool-status [--wait 180] [--take-over] [--out results.json] (النتايج: رقم الحملة، الأسامي، Parameters، UTM)
   python3 ~/.gadlytics/launch_status.py <id> paused --step "<اللي موجود واللي فاضل>" [--adsets K/N …]   (بعد سطر PAUSE REQUESTED: وقفت عند نقطة آمنة)
   python3 ~/.gadlytics/launch_status.py <id> number-lock                                                   (my turn to take a NEW campaign number?)
 
@@ -41,7 +43,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import launch_lib as L
 
 p = argparse.ArgumentParser(add_help=True)
-p.add_argument("id"); p.add_argument("state", choices=["starting", "building", "draft", "stopped", "show", "say", "number-lock", "khzama-links", "khzama-status", "paused"])
+p.add_argument("id"); p.add_argument("state", choices=["starting", "building", "draft", "stopped", "show", "say", "number-lock", "khzama-links", "khzama-status", "paused", "tool-launch", "tool-status"])
 p.add_argument("--step"); p.add_argument("--step-no", type=int)
 p.add_argument("--campaign"); p.add_argument("--name")
 p.add_argument("--reason"); p.add_argument("--session"); p.add_argument("--session-id")
@@ -49,7 +51,7 @@ p.add_argument("--report-file"); p.add_argument("--report")
 p.add_argument("--launches"); p.add_argument("--adsets"); p.add_argument("--ads"); p.add_argument("--khzama"); p.add_argument("--progress", type=int)
 p.add_argument("--text-file"); p.add_argument("--text"); p.add_argument("--notify", action="store_true")
 p.add_argument("--wait", type=int, default=None)
-p.add_argument("--file"); p.add_argument("--take-over", action="store_true")
+p.add_argument("--file"); p.add_argument("--take-over", action="store_true"); p.add_argument("--out"); p.add_argument("--no-chain", action="store_true")
 p.add_argument("--result-kind", choices=["draft", "paused"])   # how a finished build was left: a UI draft, or real objects PAUSED (API builds)
 p.add_argument("--strict", action="store_true")
 a = p.parse_args()
@@ -94,6 +96,130 @@ try:
                 print("NUMBER-LOCK WAITING (قدامها %s) — شغّل نفس الأمر تاني وما تضغطش Launch قبل ما يطلع HELD." % pos)
                 L.log("numlock %s still waiting (%s ahead)" % (a.id, pos)); sys.exit(0)
             time.sleep(4)
+    if a.state in ("tool-launch", "tool-status"):
+        # The Tamkeen launch tool through the Chrome extension «GADLYTICS · خزامى لحظي» (one launch per Custom). It never fails a
+        # build: when the extension is off / not updated / stops, the lines say MANUAL or MISSING and the agent does those
+        # launches by hand as the skill says — after reading the tool's History, so nothing is launched twice.
+        import json, time
+        MAN = "اعمل الإطلاقات بإيدك زي ما السكيل بيقول (اقرا History الأول عشان مفيش حاجة تتطلق مرتين)."
+        out_path = os.path.abspath(os.path.expanduser(a.out)) if a.out else os.path.join(L.DONE, a.id + ".launch-results.json")
+
+        def write_results(r):
+            jobs = r.get("jobs") or []
+            done = [j for j in jobs if j.get("state") == "done" and (j.get("result") or {}).get("ads")]
+            first = (done[0]["result"] if done else {})
+            data = {"launch_id": a.id, "source": "extension", "complete": bool(jobs) and len(done) == len(jobs),
+                    "campaign_no": first.get("campaign_no"), "campaign_name": first.get("campaign_name"),
+                    "ad_sets": [{"custom": j.get("custom") or "", "existed": bool(j["result"].get("existed")), "ads": j["result"]["ads"]} for j in done],
+                    "links": [ad["parameters"] for j in done for ad in j["result"]["ads"]],
+                    "missing": [{"custom": j.get("custom") or "", "state": j.get("state"), "error": j.get("error"), "submitted": bool(j.get("submitted")),
+                                 "partial": j.get("result")} for j in jobs if j not in done],
+                    "notes": [n for j in done for n in (j["result"].get("notes") or [])]}
+            os.makedirs(os.path.dirname(out_path), exist_ok=True)
+            open(out_path + ".tmp", "w", encoding="utf-8").write(json.dumps(data, ensure_ascii=False, indent=1)); os.replace(out_path + ".tmp", out_path)
+            return data
+
+        try:
+            if a.state == "tool-launch":
+                if not a.file:
+                    print("TOOL-LAUNCH MANUAL (محتاج --file inputs.json) — " + MAN); sys.exit(0)
+                try:
+                    inputs = json.loads(open(os.path.expanduser(a.file), encoding="utf-8").read())
+                except ValueError as e:
+                    print("TOOL-LAUNCH MANUAL (الملف مش JSON: %s) — %s" % (str(e)[:80], MAN)); sys.exit(0)
+                if not isinstance(inputs, dict):
+                    print("TOOL-LAUNCH MANUAL (الملف لازم يبقى object واحد) — " + MAN); sys.exit(0)
+                r = L.tl(a.id, inputs)
+                if not r.get("ok"):
+                    print("TOOL-LAUNCH MANUAL (%s) — %s" % (r.get("error") or r, MAN)); L.log("tl %s submit not ok: %s" % (a.id, r)); sys.exit(0)
+                ext = r.get("ext") or {}
+                for x in r.get("rejected") or []:
+                    print("REJECTED %s: %s" % (x.get("why"), x.get("detail")))
+                if r.get("rejected"):
+                    print("TOOL-LAUNCH MANUAL — المدخلات اترفضت (السطور اللي فوق): صلّح الملف وشغّل الأمر تاني، أو " + MAN); L.log("tl %s rejected: %s" % (a.id, r.get("rejected"))); sys.exit(0)
+                if not r.get("total"):
+                    why = "الزرار مقفول" if ext.get("switch") is False else "مش متحدّثة لـ 1.3.0 أو كروم مقفول" if ext.get("seen_sec") is None else "آخر ظهور من %s ثانية" % ext.get("seen_sec")
+                    print("TOOL-LAUNCH MANUAL — الإضافة مش شغالة (%s): %s" % (why, MAN)); L.log("tl %s: extension off (%s)" % (a.id, ext)); sys.exit(0)
+                print("TOOL-LAUNCH QUEUED %s إطلاق (%s) — الإضافة بتملى فورم أداة الإطلاق وبتطلق دلوقتي، وهي اللي بتاخد قفل رقم الحملة: ما تفتحش أداة الإطلاق وما تشغّلش number-lock. %s"
+                      % (r.get("total"), "اتسلّموا قبل كده — مفيش حاجة اتضافت" if r.get("already") else "جديد",
+                         "مستني النتايج…" if a.wait else "بعدها: python3 ~/.gadlytics/launch_status.py %s tool-status --wait 100" % a.id))
+                sys.stdout.flush()
+                L.log("tl %s submitted: total=%s added=%s already=%s" % (a.id, r.get("total"), r.get("added"), r.get("already")))
+                if not a.wait:
+                    sys.exit(0)
+            # Khzama links are chained here: the moment an ad set's launch is done and checked, its Parameters strings go to the
+            # links extension (launch_kz — a title is never queued twice), so the links start while the later launches still run.
+            chained, kz_manual = set(), []
+
+            def chain(rr):
+                if a.no_chain:
+                    return
+                for j in rr.get("jobs") or []:
+                    res = j.get("result") or {}
+                    if j.get("state") != "done" or not res.get("ads") or j.get("seq") in chained:
+                        continue
+                    chained.add(j.get("seq"))
+                    try:
+                        k = L.kz(a.id, [ad["parameters"] for ad in res["ads"]])
+                        if k.get("ok") and (k.get("total") or 0) > 0 and not (k.get("rejected") or []):
+                            print("KHZAMA-LINKS AUTO %s — %s رابط اتبعتوا للإضافة (الإجمالي في القائمة %s)" % (j.get("custom") or "(من غير Custom)", len(res["ads"]), k.get("total"))); sys.stdout.flush()
+                        else:
+                            kz_manual.append(j.get("custom") or "")
+                    except Exception as e:
+                        kz_manual.append(j.get("custom") or ""); L.log("tl %s chain failed: %s" % (a.id, str(e)[:120]))
+
+            end = time.time() + max(0, min(540, a.wait or 0))
+            while True:
+                r = L.tl(a.id)
+                if not r.get("ok"):
+                    print("TOOL-STATUS UNAVAILABLE (%s) — %s" % (r.get("error") or r, MAN)); sys.exit(0)
+                chain(r)
+                busy = (r.get("queued") or 0) + (r.get("running") or 0)
+                if not busy or time.time() >= end:
+                    break
+                time.sleep(1.5)
+            if a.take_over and busy:
+                r = L.tl(a.id, None, True)
+            ext = r.get("ext") or {}
+            tot, done = r.get("total") or 0, r.get("done") or 0
+            if not tot:
+                print("TOOL-STATUS NONE — مفيش إطلاقات متسلّمة للإضافة للحملة دي: " + MAN); sys.exit(0)
+            data = write_results(r)
+            print("TOOL-STATUS %s/%s done · running %s · queued %s · failed %s · الإضافة: %s" % (done, tot, r.get("running") or 0, r.get("queued") or 0, r.get("failed") or 0,
+                  "شغالة" if ext.get("on") else "مش ظاهرة"))
+            for j in r.get("jobs") or []:
+                c, res = j.get("custom") or "(من غير Custom)", j.get("result") or {}
+                if j.get("state") == "done" and res.get("ads"):
+                    print("LAUNCHED %s — %s · %s إعلان%s" % (c, res.get("campaign_no"), len(res["ads"]), " · كان متطلق قبل كده" if res.get("existed") else ""))
+                    for n in res.get("notes") or []:
+                        print("  NOTE %s" % n)
+                elif j.get("state") == "done":
+                    print("STUB %s — تجربة من غير إرسال" % c)
+                elif j.get("state") == "failed":
+                    part = (" · اللي اتقرا: %s بـ %s إعلان (ناقص: %s)" % (res.get("campaign_no"), len(res.get("ads") or []), "، ".join(res.get("missing") or []) or "-")) if res.get("campaign_no") else ""
+                    print("MISSING %s — %s%s%s" % (c, j.get("error") or "failed", part, " · الفورم كان اتبعت: اقرا History الأول" if j.get("submitted") else ""))
+                elif j.get("state") == "running":
+                    print("RUNNING %s — الإضافة شغالة عليه دلوقتي: استنى وشغّل الأمر تاني، وما تطلقوش بإيدك" % c)
+                else:
+                    print("WAITING %s — لسه في الدور (شغّل الأمر بـ --wait، أو بـ --take-over لو هتطلقه بإيدك)" % c)
+            if data.get("campaign_no"):
+                print("CAMPAIGN %s | %s" % (data["campaign_no"], data.get("campaign_name")))
+            print("RESULTS %s  (ad_sets لـ make_spec.py · links لـ khzama-links --file)" % out_path)
+            if chained and not kz_manual:
+                print("KHZAMA-LINKS QUEUED AUTO — روابط الـ Ad sets اللي خلصت اتبعتت للإضافة تلقائي: ما تشغّلش khzama-links وما تفتحش فورم خزامى؛ بعد بناء المنصة: khzama-status --wait 240")
+            elif kz_manual:
+                print("KHZAMA-LINKS NOT-AUTO (%s) — شغّل: python3 ~/.gadlytics/launch_status.py %s khzama-links --file %s (ولو قال MANUAL سجّلهم بإيدك)" % ("، ".join(x or "-" for x in kz_manual), a.id, out_path))
+            if done == tot:
+                print("TOOL-STATUS ALL DONE — بلّغ: --launches %s/%s --campaign %s --name \"<campaign_name من الملف>\"، وبعدها campaign-claim.sh%s" % (done, tot, data.get("campaign_no"),
+                      "" if (chained and not kz_manual) else " وkhzama-links --file %s" % out_path))
+            elif not (r.get("queued") or r.get("running")):
+                print("TOOL-STATUS MANUAL %s — سطور MISSING عليك: اقرا History في أداة الإطلاق الأول (اللي اتطلق فعلاً ما يتطلقش تاني)، وبعدها أطلق الناقص بإيدك بـ Select على نفس رقم الحملة لو الرقم موجود." % (tot - done))
+            L.log("tl %s status: %s/%s failed=%s queued=%s running=%s" % (a.id, done, tot, r.get("failed"), r.get("queued"), r.get("running")))
+        except L.LaunchError as e:
+            print("%s UNAVAILABLE (%s) — %s" % (a.state.upper(), e, MAN)); L.log("tl %s unavailable: %s" % (a.id, e))
+        except Exception as e:
+            print("%s UNAVAILABLE (%s) — %s" % (a.state.upper(), str(e)[:160], MAN))
+        sys.exit(0)
     if a.state in ("khzama-links", "khzama-status"):
         # Khzama affiliate links through the Chrome extension «GADLYTICS · خزامى لحظي». It never fails a build: when the
         # extension is off / not updated / too slow, the lines say MANUAL or MISSING and the agent registers those by hand.
@@ -134,7 +260,7 @@ try:
                 busy = (r.get("queued") or 0) + (r.get("adding") or 0)
                 if not busy or time.time() >= end:
                     break
-                time.sleep(5)
+                time.sleep(2)
             if a.take_over and busy:
                 r = L.kz(a.id, None, True)
             ext = r.get("ext") or {}
