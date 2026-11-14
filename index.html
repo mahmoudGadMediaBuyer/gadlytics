@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="gad-build" content="20261112134434">
+<meta name="gad-build" content="20261114100627">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -16,7 +16,7 @@
 <script>
 /* تحديث تلقائي للتطبيق على الموبايل/الآيباد: مفيش service worker ولا كاش. كل ما التطبيق يتفتح أو يرجع للواجهة
    بيجيب index.html جديد (no-store) ويقارن رقم البيلد؛ لو فيه نسخة أحدث بيفتحها على طول. */
-(function(){ var B="20261112134434", last=0;
+(function(){ var B="20261114100627", last=0;
   function busy(){ return document.querySelector("#cpIn:focus, .ma-sheet, input:focus, textarea:focus"); }
   function chk(){ var n=Date.now(); if(n-last<20000) return; last=n; if(busy()) return;
     fetch(location.pathname+"?_b="+n,{cache:"no-store"}).then(function(r){ return r.ok? r.text() : ""; }).then(function(t){
@@ -1267,6 +1267,15 @@ html:not([data-theme="dark"]) .lc,html:not([data-theme="dark"]) .lc-modal,html[d
 .lc-ta{display:flex;gap:4px;flex-wrap:wrap}
 .lc-skip{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .lc-skip .chip{cursor:pointer}
+.lc-rec{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.lc-rec:empty{display:none}
+.lc-rec small{font-size:12px;color:var(--ink-3);margin-inline-end:2px}
+.lc-rec .chip{cursor:pointer;min-height:44px;display:inline-flex;align-items:center;max-width:100%;overflow-wrap:anywhere;text-align:start}
+.lc-more{background:none;border:0;color:var(--ink-2);text-decoration:underline;min-height:44px;cursor:pointer;font:inherit;font-size:13px;padding:0 4px}
+.lc-dup{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px;border:1px solid var(--warn);border-radius:12px;margin-top:8px}
+.lc-dup span{flex:1 1 100%;font-weight:600;font-size:13.5px}
+.lc-dup .btn{min-height:44px}
+.lc-go .lc-savebtn{min-height:44px}
 .lc-mbar{display:none}
 @media (min-width:761px){.lc-formcol>.lc-mac{display:none}}
 @media (max-width:1180px){
@@ -1299,7 +1308,8 @@ html:not([data-theme="dark"]) .lc,html:not([data-theme="dark"]) .lc-modal,html[d
   .lc-pre .chip,.lc-skip .chip,.lc-qr .chip{min-height:44px;padding-inline:14px;display:inline-flex;align-items:center}
   .lc-step button{width:44px;height:44px}
   .lc-go{position:static;box-shadow:none;background:transparent;border:0;padding:0}
-  .lc-go .lc-gobtn,.lc-go .lc-count{display:none}
+  .lc-go .lc-gobtn,.lc-go .lc-count,.lc-go .lc-savebtn{display:none}
+  .lc-mbar .lc-savebtn{min-height:46px;padding:10px 12px;white-space:nowrap;font-size:13px}
   .lc-x{width:44px;height:44px}
   .lc-lr{grid-template-columns:22px minmax(0,1fr) auto;min-height:56px}
   .lc-lr .lc-lw{grid-column:2/4;grid-row:2}
@@ -1318,6 +1328,7 @@ html:not([data-theme="dark"]) .lc,html:not([data-theme="dark"]) .lc-modal,html[d
   .lc-mtabs b.live{background:#7C78FF;color:#fff;box-shadow:0 0 0 4px rgba(124,120,255,.2)}
   .lc-mbar .lc-gobtn{min-height:46px;padding:10px 22px!important}
 }
+.lc-modal .lc-mf .btn,.lc-modal .lc-dup .btn,.lc .lc-go .lc-savebtn,.lc-modal .lc-more{min-height:44px}
 @media (prefers-reduced-motion:reduce){.lc-card.new,.lc-spin{animation:none}.lc-prog i{transition:none}}
 </style>
 <style id="bramble">
@@ -15429,7 +15440,7 @@ const fieldsOf=p=>SCHEMA[p].adset.concat(SCHEMA[p].ad);
 
 /* ── الحالة ── */
 const ST={pickTab:0,pct:{},msgs:{},say:{},rows:[],loaded:false,err:"",limit:7,mac:null,macSeenAt:0,macChgAt:0,tab:"form",focus:"",hot:"",open:{},rep:{},lib:null,libMap:{},libAt:0,libErr:"",tpls:null,tplId:"",sig:"",busy:false};
-let F=null, touched=false, newId=null, pickSel=null, pollT=null, liveT=null, tplDraft=null;
+let F=null, touched=false, newId=null, pickSel=null, pollT=null, liveT=null, tplDraft=null, briefName="";
 const cloud=()=>RT.cloud()&&!!window.SUPA_DB&&!!SUPA_DB.client;
 const sb=()=>SUPA_DB.client;
 const pickOk=r=>!!r&&r.kind===PICK_KIND;   /* أي فيديو في المكتبة يتختار — الحالة للعرض بس */
@@ -15860,9 +15871,13 @@ async function briefModal(id){ const r=ST.rows.find(x=>x.id===id); if(!r) return
     '<div class="lc-mf"><button type="button" class="btn" data-a="lcCopyBrief">انسخ</button>'+(r.is_test?"":'<button type="button" class="btn" data-a="lcRepeat" data-id="'+r.id+'">كرّر الحملة دي</button>')+'<button type="button" class="btn btn-p" data-a="lcModalClose">تمام</button></div>',"البريف");
   let t="مش قادر أحمّل البريف."; try{ const q=await sb().from("launch_queue").select("brief").eq("id",id).maybeSingle(); if(q.data&&q.data.brief) t=q.data.brief; }catch(e){}
   const el=$("#lcBriefT"); if(el) el.textContent=t; }
+function pasteFill(thenSave){ const r=briefToForm($("#lcPasteT").value); if(!r){ $("#lcPasteE").textContent="مش لاقي حقول القالب في النص ده. الصق البريف كامل (من أول Tamkeen Ads Manager Level)."; return; }
+  closeLc(); F=normalize(r.f); touched=true; briefName=(r.f.title||"").trim(); renderForm(); setTab("form"); const e=Object.keys(check(F).E).length;
+  if(thenSave){ tplSaveModal(""); return; }
+  toast(r.notes[0]||(e?"القالب اتملى — فاضل "+e+" حاجة ناقصة":"القالب اتملى من البريف — راجع واطلق"),!!e&&!r.notes[0]); }
 function pasteModal(){ openModal(mHead("الصق بريف جاهز")+'<p class="hint" style="margin-bottom:10px">الصق القالب متملّي زي ما بتبعته في الشات؛ الحقول هتتملى منه وتقدر تعدّل قبل ما تطلق.</p>'+
     '<textarea class="inp lc-paste" id="lcPasteT" data-focus spellcheck="false" placeholder="TikTok - Value&#10;&#10;Tamkeen Ads Manager Level (airtable)&#10;Client: Molabi&#10;Platform: TikTok&#10;…"></textarea><p class="lc-err" id="lcPasteE" style="display:block;min-height:20px;margin-top:6px" role="alert"></p>'+
-    '<div class="lc-mf"><button type="button" class="btn" data-a="lcModalClose">إلغاء</button><button type="button" class="btn btn-p" data-a="lcPasteFill">املأ القالب</button></div>',"الصق بريف جاهز"); }
+    '<div class="lc-mf"><button type="button" class="btn" data-a="lcModalClose">إلغاء</button><button type="button" class="btn" data-a="lcPasteFill">املأ القالب</button><button type="button" class="btn btn-p" data-a="lcPasteSave">املى الفورم واحفظه كقالب</button></div>',"الصق بريف جاهز"); }
 
 /* ── المكتبة: نفس جدول media بتاع «مكتبة الكريتيف» (فيديوهات ملبي) ── */
 async function loadLib(force){
@@ -15903,7 +15918,9 @@ const TPL={ pre:"lctpl_", lk:"gad.lc.tpls",
   async set(t){ const u=await this.who(); if(u) return DB.doc("data/users/"+u+"/"+this.pre+t.id).set(t); const a=lsGet(this.lk,{}); a[t.id]=t; lsSet(this.lk,a); },
   async del(id){ const u=await this.who(); if(u) return DB.doc("data/users/"+u+"/"+this.pre+id).delete(); const a=lsGet(this.lk,{}); delete a[id]; lsSet(this.lk,a); } };
 async function loadTpls(force){ if(ST.tpls&&!force) return; try{ ST.tpls=(await TPL.list()).filter(t=>t&&t.id&&t.form).sort((a,b)=>(b.upd||b.at||0)-(a.upd||a.at||0)); }catch(e){ ST.tpls=ST.tpls||[]; } paintTplBtn(); if($("#lcTplList")) $("#lcTplList").innerHTML=tplRows(); }
-function paintTplBtn(){ const b=$("#lcTplB"); if(b) b.innerHTML="قوالبي"+(ST.tpls&&ST.tpls.length?' <span class="ltr">('+ST.tpls.length+")</span>":""); }
+function paintTplBtn(){ const b=$("#lcTplB"); if(b) b.innerHTML="قوالبي"+(ST.tpls&&ST.tpls.length?' <span class="ltr">('+ST.tpls.length+")</span>":""); paintRec(); }
+function paintRec(){ const r=$("#lcRec"); if(!r) return; const T=(ST.tpls||[]).slice(0,5);
+  r.innerHTML=T.length?"<small>قوالب سريعة:</small>"+T.map(t=>'<button type="button" class="chip" data-a="lcTplUse" data-id="'+t.id+'" title="املأ الفورم من القالب ده"><span dir="auto">'+E(t.name)+"</span></button>").join(""):""; }
 const TPL_DEF_SKIP=["title","ids"];
 function skipFields(p){ return [["title","عنوان الحملة"],["ids","Creatives ID"],["link","Product Link"],["customs","Adsets ( Custom )"],["campNum","رقم الحملة (Select)"]].concat(fieldsOf(p).map(d=>[d.k,d.l])); }
 function stripForm(f,skip){ const o=cl(f); skip.forEach(k=>{ if(k==="customs"){ o.customs=[]; o.ctype={}; } else if(k==="campNum"){ o.campNum=""; if(o.campMode==="Select") o.campMode="New"; } else if(k in o&&k!=="v") o[k]=""; else if(o.v&&k in o.v){ o.v[k]=""; if(k==="bid") o.v.targetCost=""; } }); o.kindManual=!!f.kindManual; return o; }
@@ -15917,27 +15934,29 @@ function tplRows(){ const T=ST.tpls;
 function tplModal(){ tplDraft=null; openModal(mHead("قوالبي")+'<p class="hint" style="margin-bottom:10px">قوالبك المحفوظة — على حسابك، وبتظهر على الماك والآيباد والآيفون. اختار قالب والفورم يتملى منه، وتفضل الحقول اللي بتتغيّر كل مرة فاضية.</p>'+
     '<div class="lc-tl" id="lcTplList">'+tplRows()+"</div>"+
     '<div class="lc-mf"><button type="button" class="btn" data-a="lcModalClose">اقفل</button><button type="button" class="btn btn-p" data-a="lcTplSave">احفظ القالب الحالي</button></div>',"قوالبي"); loadTpls(true); }
-function tplSaveModal(upd){ const t=upd?(ST.tpls||[]).find(x=>x.id===upd):null; tplDraft={upd:t?t.id:"",skip:new Set(t?(t.skip||[]):TPL_DEF_SKIP)};
-  openModal(mHead(t?"حدّث القالب":"احفظ القالب الحالي")+
-    '<div class="fld"><label for="lcTplName">اسم القالب</label><input class="inp" id="lcTplName" data-focus maxlength="80" dir="auto" autocomplete="off" placeholder="تيك توك CPA الرياض" value="'+E(t?t.name:(F.title.trim()||""))+'"><p class="lc-err" id="lcTplE" style="display:block;min-height:18px" role="alert"></p></div>'+
-    '<div class="fld" style="margin-top:6px"><label>يتغيّر كل مرة <small>الحقول المتعلّمة بتتحفظ فاضية وتملاها مع كل حملة</small></label><div class="lc-skip" id="lcTplSkip">'+skipChips()+"</div></div>"+
-    '<p class="hint" style="margin-top:10px">باقي الحقول (المنصة '+ltr(F.platform)+"، الهدف، الميزانية، النص…) بتتحفظ زي ما هي في الفورم دلوقتي.</p>"+
-    '<div class="lc-mf"><button type="button" class="btn" data-a="lcTpl">رجوع</button><button type="button" class="btn btn-p" data-a="lcTplSaveOk">'+(t?"حدّث القالب":"احفظ")+"</button></div>",t?"حدّث القالب":"احفظ القالب"); }
+function tplSaveModal(upd,from){ const t=upd?(ST.tpls||[]).find(x=>x.id===upd):null; tplDraft={upd:t?t.id:"",skip:new Set(t?(t.skip||[]):TPL_DEF_SKIP),dup:""};
+  openModal(mHead(t?"حدّث القالب":"احفظ كقالب")+
+    '<div class="fld"><label for="lcTplName">اسم القالب</label><input class="inp" id="lcTplName" data-focus maxlength="80" dir="auto" autocomplete="off" placeholder="تيك توك CPA الرياض" value="'+E(t?t.name:(briefName||F.title.trim()||""))+'"><p class="lc-err" id="lcTplE" style="display:block;min-height:18px" role="alert"></p><div id="lcTplDup"></div></div>'+
+    '<p class="hint" style="margin-top:4px">بيتحفظ كل اللي في الفورم دلوقتي. العنوان والـ '+ltr("Creative IDs")+" بيتسابوا فاضيين — تملاهم مع كل حملة.</p>"+
+    '<button type="button" class="lc-more" data-a="lcTplMore" aria-expanded="false" aria-controls="lcTplMore">خيارات أكتر</button>'+
+    '<div id="lcTplMore" hidden><div class="fld" style="margin-top:6px"><label>يتغيّر كل مرة <small>الحقول المتعلّمة بتتحفظ فاضية وتملاها مع كل حملة</small></label><div class="lc-skip" id="lcTplSkip">'+skipChips()+"</div></div></div>"+
+    '<div class="lc-mf"><button type="button" class="btn" data-a="'+(from==="list"?"lcTpl":"lcModalClose")+'">'+(from==="list"?"رجوع":"إلغاء")+'</button><button type="button" class="btn btn-p" data-a="lcTplSaveOk" id="lcTplOk">'+(t?"حدّث القالب":"حفظ")+"</button></div>",t?"حدّث القالب":"احفظ كقالب"); }
 function skipChips(){ return skipFields(F.platform).map(x=>'<button type="button" role="checkbox" aria-checked="'+tplDraft.skip.has(x[0])+'" class="chip'+(tplDraft.skip.has(x[0])?" on":"")+'" data-a="lcTplSkip" data-k="'+x[0]+'">'+(/[A-Za-z]/.test(x[1])&&!/[؀-ۿ]/.test(x[1])?ltr(x[1]):E(x[1]))+"</button>").join(""); }
-async function tplSaveOk(){ const name=($("#lcTplName").value||"").trim(), er=$("#lcTplE");
+async function tplSaveOk(replaceId){ const name=($("#lcTplName").value||"").trim(), er=$("#lcTplE"), dp=$("#lcTplDup"); dp.innerHTML=""; er.textContent="";
   if(!name){ er.textContent="اكتب اسم للقالب"; return; }
-  const T=ST.tpls||[], id=tplDraft.upd||uid();
-  if(T.some(t=>t.id!==id&&(t.name||"").trim().toLowerCase()===name.toLowerCase())){ er.textContent="فيه قالب بنفس الاسم — غيّر الاسم أو حدّث القالب ده من «قوالبي»"; return; }
+  const T=ST.tpls||[], dup=T.find(t=>t.id!==tplDraft.upd&&(t.name||"").trim().toLowerCase()===name.toLowerCase());
+  if(dup&&replaceId!==dup.id){ dp.innerHTML='<div class="lc-dup" role="alert"><span>فيه قالب بنفس الاسم — استبدله؟</span><button type="button" class="btn btn-p" data-a="lcTplReplace" data-id="'+dup.id+'">استبدله</button><button type="button" class="btn" data-a="lcTplOther">اسم تاني</button></div>'; return; }
+  const id=dup?dup.id:(tplDraft.upd||uid());
   const old=T.find(t=>t.id===id), skip=[...tplDraft.skip].filter(k=>skipFields(F.platform).some(x=>x[0]===k));
   const t={id,name,platform:F.platform,skip,form:stripForm(F,skip),at:old?old.at:Date.now(),upd:Date.now()};
   try{ await TPL.set(t); }catch(e){ er.textContent="ماتحفظش: "+String((e&&e.message)||e).slice(0,100); return; }
-  ST.tpls=[t].concat(T.filter(x=>x.id!==id)); ST.tplId=id; paintTplBtn(); closeLc(); toast(old?"القالب «"+name+"» اتحدّث":"القالب «"+name+"» اتحفظ"); }
+  ST.tpls=[t].concat(T.filter(x=>x.id!==id)); ST.tplId=id; paintTplBtn(); closeLc(); toast("اتحفظ القالب «"+name+"»"); }
 
 /* ── التبويبين على الموبايل ── */
 function setTab(v){ ST.tab=v==="list"?"list":"form"; const root=$("#lcRoot"); if(!root) return; root.dataset.tab=ST.tab;
   const a=$("#lcTabF"),b=$("#lcTabL"),g=$("#lcGoM"),c=$("#lcCountM"); if(!a) return;
   a.classList.toggle("on",ST.tab==="form"); b.classList.toggle("on",ST.tab==="list"); a.setAttribute("aria-selected",ST.tab==="form"); b.setAttribute("aria-selected",ST.tab==="list");
-  g.textContent=ST.tab==="form"?"اطلق":"+ حملة جديدة"; g.dataset.a=ST.tab==="form"?"lcLaunch":"lcTab"; g.dataset.v="form"; c.style.display=ST.tab==="form"?"":"none"; }
+  g.textContent=ST.tab==="form"?"اطلق":"+ حملة جديدة"; g.dataset.a=ST.tab==="form"?"lcLaunch":"lcTab"; g.dataset.v="form"; c.style.display=ST.tab==="form"?"":"none"; const sm=$("#lcSaveM"); if(sm) sm.style.display=ST.tab==="form"?"":"none"; }
 function undoToast(msg,id){ let el=$("#toastAct"); if(!el){ el=document.createElement("div"); el.id="toastAct"; document.body.appendChild(el); }
   el.innerHTML="<span>"+E(msg)+'</span><button data-a="lcUndo" data-id="'+E(id)+'">تراجع</button><button class="x" data-a="lcUndoHide">✕</button>'; el.className="toast-act on"; clearTimeout(undoToast.t); undoToast.t=setTimeout(()=>{ el.className="toast-act"; },8000); }
 
@@ -15955,13 +15974,13 @@ Object.assign(ACT,{
   lcPreset:b=>addCustoms(PRESETS[+b.dataset.i][1]),
   lcLaunch:()=>{ launch(); },
   lcTest:()=>{ testLaunch(); },
-  lcBlank:()=>{ setForm(blank(F.platform)); lsSet(DRAFT_KEY,null); ST.tplId=""; toast("قالب فاضي"); },
+  lcBlank:()=>{ briefName=""; setForm(blank(F.platform)); lsSet(DRAFT_KEY,null); ST.tplId=""; toast("قالب فاضي"); },
   lcRepeatLast:async()=>{ let f=null; const r=ST.rows.find(x=>!x.is_test);
     if(r&&cloud()){ try{ const q=await sb().from("launch_queue").select("form").eq("id",r.id).maybeSingle(); f=q.data&&q.data.form; }catch(e){} }
-    f=f||lsGet(LAST_KEY,null); if(!f){ toast("لسه مفيش حملة اتطلقت",true); return; }
+    briefName=""; f=f||lsGet(LAST_KEY,null); if(!f){ toast("لسه مفيش حملة اتطلقت",true); return; }
     setForm(cl(f)); setTab("form"); toast("القالب اتملى من آخر حملة — غيّر اللي عايزه واطلق"); },
   lcRepeat:async b=>{ const r=rowOf(b); if(!r) return; let f=null; try{ const q=await sb().from("launch_queue").select("form").eq("id",r.id).maybeSingle(); f=q.data&&q.data.form; }catch(e){}
-    if(!f){ toast("مش لاقي بيانات الحملة دي",true); return; } closeLc(); setForm(cl(f)); setTab("form"); window.scrollTo({top:0,behavior:"smooth"}); toast("القالب اتملى من «"+r.title+"»"); },
+    if(!f){ toast("مش لاقي بيانات الحملة دي",true); return; } closeLc(); briefName=""; setForm(cl(f)); setTab("form"); window.scrollTo({top:0,behavior:"smooth"}); toast("القالب اتملى من «"+r.title+"»"); },
   lcBrief:b=>{ briefModal(b.dataset.id); },
   lcSay:b=>{ const t=document.getElementById("lcSay_"+b.dataset.id); sayTo(b.dataset.id,t?t.value:ST.say[b.dataset.id]); },
   lcSayQ:b=>{ sayTo(b.dataset.id,QUICK[+b.dataset.i]); },
@@ -15991,9 +16010,8 @@ Object.assign(ACT,{
       toast("اتشال "+ids.length+" من السجل"+(ST.rows.length>ids.length?" — اللي لسه شغّال فضل":"")); }catch(e){ toast("السجل مااتمسحش",true); } ST.sig=""; load(); },
   lcTab:b=>{ setTab(b.dataset.v); lsSet(TAB_KEY,ST.tab); window.scrollTo({top:0}); },
   lcPasteOpen:()=>pasteModal(),
-  lcPasteFill:()=>{ const r=briefToForm($("#lcPasteT").value); if(!r){ $("#lcPasteE").textContent="مش لاقي حقول القالب في النص ده. الصق البريف كامل (من أول Tamkeen Ads Manager Level)."; return; }
-    closeLc(); F=normalize(r.f); touched=true; renderForm(); setTab("form"); const e=Object.keys(check(F).E).length;
-    toast(r.notes[0]||(e?"القالب اتملى — فاضل "+e+" حاجة ناقصة":"القالب اتملى من البريف — راجع واطلق"),!!e&&!r.notes[0]); },
+  lcPasteFill:()=>{ pasteFill(false); },
+  lcPasteSave:()=>{ pasteFill(true); },
   lcPickOpen:()=>pickModal(),
   lcPick:b=>{ const id=b.dataset.id; if(pickSel.has(id)) pickSel.delete(id); else pickSel.add(id); const on=pickSel.has(id); b.classList.toggle("sel",on); b.setAttribute("aria-checked",on); pickCount(); },
   lcPickDone:()=>pickDone(),
@@ -16007,11 +16025,15 @@ Object.assign(ACT,{
   lcModalClose:()=>closeLc(),
   lcModalBg:(b,e)=>{ if(Date.now()-(window.__shAt||0)<600) return; if(e.target===b) closeLc(); },
   lcTpl:()=>tplModal(),
-  lcTplSave:()=>tplSaveModal(""),
-  lcTplUpd:b=>tplSaveModal(b.dataset.id),
+  lcTplSave:()=>tplSaveModal("","list"),
+  lcTplQuick:()=>tplSaveModal(""),
+  lcTplMore:b=>{ const m=$("#lcTplMore"); const o=m.hidden; m.hidden=!o; b.setAttribute("aria-expanded",o); b.textContent=o?"خيارات أقل":"خيارات أكتر"; },
+  lcTplReplace:b=>{ tplSaveOk(b.dataset.id); },
+  lcTplOther:()=>{ $("#lcTplDup").innerHTML=""; const i=$("#lcTplName"); i.focus(); i.select(); },
+  lcTplUpd:b=>tplSaveModal(b.dataset.id,"list"),
   lcTplSkip:b=>{ const k=b.dataset.k; if(tplDraft.skip.has(k)) tplDraft.skip.delete(k); else tplDraft.skip.add(k); const on=tplDraft.skip.has(k); b.classList.toggle("on",on); b.setAttribute("aria-checked",on); },
   lcTplSaveOk:()=>{ tplSaveOk(); },
-  lcTplUse:b=>{ const t=(ST.tpls||[]).find(x=>x.id===b.dataset.id); if(!t) return; closeLc(); setForm(cl(t.form)); ST.tplId=t.id; setTab("form");
+  lcTplUse:b=>{ const t=(ST.tpls||[]).find(x=>x.id===b.dataset.id); if(!t) return; closeLc(); briefName=""; setForm(cl(t.form)); ST.tplId=t.id; setTab("form");
     toast("القالب «"+t.name+"» — املأ "+((t.skip||[]).length?"الحقول الفاضية":"اللي ناقص")+" واطلق"); const first=document.querySelector("#lcf_title"); if(first&&!matchMedia("(max-width:760px)").matches) first.focus({preventScroll:true}); },
   lcTplRen:b=>{ tplDraft={ren:b.dataset.id}; $("#lcTplList").innerHTML=tplRows(); const i=$("#lcTplRenI"); if(i){ i.focus(); i.select(); } },
   lcTplRenX:()=>{ tplDraft=null; $("#lcTplList").innerHTML=tplRows(); },
@@ -16049,10 +16071,11 @@ function view(){
         '<button class="btn" data-a="lcRepeatLast" id="lcRepeatB" type="button">كرّر آخر حملة</button>'+
         '<button class="btn" data-a="lcBlank" type="button">قالب فاضي</button>'+
         '<button class="btn" data-a="lcPasteOpen" type="button">الصق بريف جاهز</button></div>'+
+      '<div class="lc-rec" id="lcRec" aria-label="قوالب سريعة"></div>'+
       '<div id="lcBlocks" style="display:flex;flex-direction:column;gap:14px"></div>'+
       '<div class="card lc-notes" id="lcNotes" aria-live="polite"></div>'+
       '<div class="lc-go"><span class="lc-count" id="lcCount"></span><span class="lc-sp"></span><span class="lc-miss" id="lcMiss" role="alert"></span><kbd class="lc-kbd ltr">⌘/Ctrl + Enter</kbd>'+
-        '<button class="btn btn-p lc-gobtn" data-a="lcLaunch" type="button" aria-keyshortcuts="Meta+Enter Control+Enter">اطلق'+IC.go+"</button></div>"+
+        '<button class="btn lc-savebtn" data-a="lcTplQuick" type="button">احفظ كقالب</button><button class="btn btn-p lc-gobtn" data-a="lcLaunch" type="button" aria-keyshortcuts="Meta+Enter Control+Enter">اطلق'+IC.go+"</button></div>"+
     "</section>"+
     '<aside class="card lc-side" aria-label="الحملات اللي اتطلقت"><div class="lc-sh">'+
       '<div class="card-h"><h2 class="card-t">الحملات اللي اتطلقت</h2><span class="card-x" id="lcTotal"></span></div>'+
@@ -16067,7 +16090,7 @@ function view(){
     '<div class="lc-mbar" id="lcMbar"><div class="lc-mcount" id="lcCountM"></div><div class="lc-mrow">'+
       '<div class="seg lc-mtabs" role="tablist" aria-label="عرض"><button role="tab" type="button" data-a="lcTab" data-v="form" id="lcTabF">القالب</button>'+
       '<button role="tab" type="button" data-a="lcTab" data-v="list" id="lcTabL" aria-label="الحملات اللي اتطلقت">اتطلقت <b class="num" id="lcBadge">0</b></button></div>'+
-      '<button class="btn btn-p lc-gobtn" data-a="lcLaunch" type="button" id="lcGoM">اطلق</button></div></div></div>';
+      '<button class="btn lc-savebtn" data-a="lcTplQuick" type="button" id="lcSaveM">احفظ كقالب</button><button class="btn btn-p lc-gobtn" data-a="lcLaunch" type="button" id="lcGoM">اطلق</button></div></div></div>';
 }
 function mount(){
   if(!$("#lcRoot")) return;

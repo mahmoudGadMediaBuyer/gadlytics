@@ -1674,6 +1674,8 @@ page «إطلاق الحملات»  ──insert──▶  launch_queue (Supabas
 - Hidden helper: `?lctest=1` adds «اختبار ربط (من غير حملة)» under the list — it queues a fixed, harmless test request (no campaign) to check the whole chain.
 - Code: `<style id="lc-css">` (classes `lc-…`) before `<style id="bramble">`, and the module `const LC=(function(){…})()` before `function render()` in `mediabuyer-console.html`; actions are `ACT.lc…`; `render()` calls `LC.mount()` after drawing the view.
 
+- **Templates made simple (Nov 14, local only).** «احفظ كقالب» sits next to «اطلق» (and in the phone bottom bar) and in the paste-brief box («املى الفورم واحفظه كقالب»); it opens one name field (prefilled with the brief's title line, e.g. «Meta - Value»), with the «يتغيّر كل مرة» chips hidden under «خيارات أكتر» (title + Creative IDs blank by default). The 5 most recent templates show as one-tap chips above the form; a duplicate name asks «استبدله / اسم تاني». Storage and the «قوالبي» manage actions are unchanged.
+
 ### 37.2 Table `launch_queue` (private)
 
 | Column | Notes |
@@ -1947,7 +1949,7 @@ Per-step figures from the runs:
 
 ### 38.4 Known issues and open items
 
-- **Blocked server migration `mig_tests_never_count.sql`** — makes test rows (`is_test`) stop counting against the limit of 7 parallel builds. It changes the live database, so it waits for Mahmoud's approval; until then test rows count against the limit of 7. (The file is not in the repo; it is described here so the next session can rewrite it.)
+- **Applied Nov 14 (Mahmoud approved) — migration `launch_tests_never_count`:** hidden test rows (`is_test and hidden`) no longer count against the limit of 7 (`launch_claim`, `launch_poll`), and `launch_numlock` / `launch_tl_lock` give test rows their own number turn, so a test can never block or queue in front of a real campaign. The previous four definitions are saved in `docs` → `sys/backup_launch_fns_20261114` for rollback.
 - **TikTok create tools are rollout-gated until December** (advertiser `7338783723795595266`): TikTok campaigns are still built in Ads Manager through Chrome (slow: one browser step per call, tabs throttled when hidden). Not re-tested since the first attempt.
 - **The TikTok developer app was rejected**, so there is no own-app token for TikTok; the connector is the only API path.
 - **The dollar Snap account** is blocked until its public profile is confirmed (Snap's Public Profile API is not readable with this token) and its videos are uploaded to its own media library; the riyal account is the default and works.
