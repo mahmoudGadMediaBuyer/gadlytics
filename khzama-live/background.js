@@ -71,6 +71,88 @@ function loaded(tabId) {
   });
 }
 
+// ───────── tab calls shared by the links and launch-tool workers (1.4.2) ─────────
+// Chrome sometimes answers a tab create / navigation with «Navigation rejected.» (a tab that is closing, a tab parked by a tab
+// suspender, another extension or a policy). Before 1.4.2 that one error stopped a whole batch, and two campaigns that opened
+// their first tab in the same second hit it together. Now: (1) every tab create / navigation goes through ONE queue with
+// TAB_GAP between calls, so two loops never navigate at the same instant; (2) a rejected navigation is retried on a FRESH tab
+// that is loaded with the URL (never the old tab), with a growing pause, TAB_TRIES attempts in all; only when all of them fail
+// is the error passed on. A tab belongs to ONE loop (its handle is only ever used by that loop) — the old tab of a retry is
+// closed by the loop that owns it, never another one's. `own` = { set: the owner's Set of real tab ids, key: session key }.
+const TAB_GAP = 300, TAB_TRIES = 4;
+const TAB_REAL = new Map();                                  // a loop's stable tab handle → the tab id behind it now
+const tabNow = (h) => (TAB_REAL.has(h) ? TAB_REAL.get(h) : h);
+let tabQ = Promise.resolve(), tabLast = 0;
+function tabSerial(fn) {
+  const run = tabQ.then(async () => {
+    const w = tabLast + TAB_GAP - Date.now();
+    if (w > 0) await sleep(w);
+    try { return await fn(); } finally { tabLast = Date.now(); }
+  });
+  tabQ = run.catch(() => {});
+  return run;
+}
+// errors that a fresh tab / another try can cure (a tab that closed or was parked under us, a rejected navigation)
+const tabTransient = (e) => !e || !e.final && /navigation rejected|no tab with id|tab was closed|tabs cannot be edited|cannot access|frame with id|is showing error page|rejected|discarded/i.test(String(e.message || e));
+const tabPersist = async (own) => { try { await chrome.storage.session.set({ [own.key]: [...own.set] }); } catch { /* */ } };
+async function tabCreate(own, url, tries) {
+  let last = null;
+  for (let k = 0; k < (tries || TAB_TRIES); k++) {
+    if (k) await sleep(400 * k);
+    try {
+      const t = await tabSerial(() => chrome.tabs.create({ url: url || 'about:blank', pinned: false, active: false }));
+      own.set.add(t.id);
+      try { await chrome.tabs.update(t.id, { autoDiscardable: false }); } catch { /* the tab is already going away: the next step finds out */ }
+      await tabPersist(own);
+      return t;
+    } catch (e) { last = e; }
+  }
+  if (tries === 1) throw last;                              // the caller's own loop is the retry
+  const e = new Error('فتح تاب فشل ' + (tries || TAB_TRIES) + ' مرات: ' + String(last && last.message || last).slice(0, 120)); e.final = true; throw e;
+}
+async function tabClose(own, h) {
+  if (h == null) return;
+  const real = tabNow(h);
+  own.set.delete(real); own.set.delete(h); TAB_REAL.delete(h);
+  try { const t = await chrome.tabs.get(real); if (!t.pinned) await chrome.tabs.remove(real); } catch { /* already closed */ }
+  await tabPersist(own);
+}
+// a tab that was just created with its URL: loaded when its status is complete (≤ 45 s) — the callers poll the page anyway
+async function loadedNew(id) {
+  for (let i = 0; i < 300; i++) {
+    try { const t = await chrome.tabs.get(id); if (t.status === 'complete' && t.url && t.url !== 'about:blank') return; } catch { return; }
+    await sleep(150);
+  }
+}
+// load `url` in the loop's tab `h` and wait for it. The first try uses the tab itself; every retry opens a fresh tab with the URL
+// and swaps it in behind the same handle (the old tab is closed). → the handle stays valid for the caller.
+async function tabNavigate(own, h, url) {
+  let last = null;
+  for (let k = 0; k < TAB_TRIES; k++) {
+    const real = tabNow(h);
+    try {
+      if (k === 0) {
+        const wait = loaded(real);
+        await tabSerial(async () => {
+          const t = await chrome.tabs.get(real);
+          if (t.url === url && !t.discarded) await chrome.tabs.reload(real); else await chrome.tabs.update(real, { url });
+        });
+        await wait;
+        return;
+      }
+      await sleep(400 * k);
+      const t = await tabCreate(own, url, 1);               // one try: this loop is the retry
+      TAB_REAL.set(h, t.id);
+      own.set.delete(real);
+      try { const o = await chrome.tabs.get(real); if (!o.pinned) await chrome.tabs.remove(real); } catch { /* the old one is gone already */ }
+      await tabPersist(own);
+      await loadedNew(t.id);
+      return;
+    } catch (e) { last = e; }
+  }
+  const e = new Error('فتح الصفحة فشل ' + TAB_TRIES + ' مرات: ' + String(last && last.message || last).slice(0, 120)); e.final = true; throw e;
+}
+
 // one page: full reload, then poll the reader until the table shows the right day + page (≤ 40 s)
 async function readPage(tabId, d, n) {
   const url = pageUrl(d, n), wait = loaded(tabId);

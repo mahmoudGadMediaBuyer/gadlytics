@@ -16,13 +16,14 @@
 // A submit is NEVER repeated: if the tool does not answer, the tool's History decides. Anything unexpected (login page, a
 // changed form, a field that does not read back, a result that does not match) stops the batch and the agents take over by
 // hand. ملبي only. It never deletes anything, and reads no cookies, storage, tokens or headers.
-const LT_V = '1.4.1';
+const LT_V = '1.4.2';
 const LT_RPC = 'https://ibpwudzjwjraqhfdmzet.supabase.co/rest/v1/rpc/tl_jobs';
 const LT_ALARM = 'lt-tick';
 const LT_ORIGIN = 'https://launch.tamkeen-agency.com';
 const LT_FORM = LT_ORIGIN + '/launch';
 const LT_MAX_PARALLEL = 4;                                   // campaigns launched at the same time — one tab each; inside a campaign one launch at a time
 const LT_TABS = new Set();                                   // the tabs this worker opened and has not closed yet
+const LT_OWN = { set: LT_TABS, key: 'ltTabs' };             // tab create / navigate / close go through background.js (one queue, retries on a fresh tab)
 const LT_KINDS = ['Single', 'Bulk', 'Smart'];
 const LT_PLATFORMS = { ME: 'meta', TT: 'tiktok', SC: 'snapchat' };
 const LT_CODE_RE = /^[A-Z]{2,4}-\d{3,6}$/;
@@ -342,19 +343,11 @@ async function ltRpc(info) {
 // tab lives (measured on the Khzama tab: 6 s → 30 s per link over 12 links), a new tab starts fast again.
 async function ltOpenTab() {
   const { tabId } = await get('tabId');
-  const t = await chrome.tabs.create({ url: 'about:blank', pinned: false, active: false });
-  if (t.id === tabId) throw new LtHalt('tab', 'التبويب اتلخبط مع تبويب التبرعات');
-  await chrome.tabs.update(t.id, { autoDiscardable: false });
-  LT_TABS.add(t.id);
-  await chrome.storage.session.set({ ltTabs: [...LT_TABS] });
+  const t = await tabCreate(LT_OWN, 'about:blank');
+  if (t.id === tabId) { LT_TABS.delete(t.id); throw new LtHalt('tab', 'التبويب اتلخبط مع تبويب التبرعات'); }
   return t;
 }
-async function ltCloseTab(id) {
-  if (id == null) return;
-  LT_TABS.delete(id);
-  try { const t = await chrome.tabs.get(id); if (!t.pinned) await chrome.tabs.remove(id); } catch { /* already closed */ }
-  await chrome.storage.session.set({ ltTabs: [...LT_TABS] });
-}
+const ltCloseTab = (id) => tabClose(LT_OWN, id);
 // tabs left open by a worker that was stopped in the middle (only ids this extension itself opened in this browser session)
 async function ltSweepTabs() {
   const { ltTabs } = await chrome.storage.session.get('ltTabs'), { tabId } = await get('tabId');
@@ -366,16 +359,12 @@ async function ltSweepTabs() {
 }
 // a tab-suspender extension (or Chrome itself) may have parked the tab: its URL is then not the launch tool's any more
 async function ltAwake(tabId) {
-  const t = await chrome.tabs.get(tabId);
+  const t = await chrome.tabs.get(tabNow(tabId));
   return !t.discarded && typeof t.url === 'string' && t.url.startsWith(LT_ORIGIN + '/');
 }
-async function ltNav(tabId, url) {
-  const wait = loaded(tabId), t = await chrome.tabs.get(tabId);
-  if (t.url === url && !t.discarded) await chrome.tabs.reload(tabId); else await chrome.tabs.update(tabId, { url });
-  await wait;
-}
+const ltNav = (tabId, url) => tabNavigate(LT_OWN, tabId, url);   // one queue across campaigns; a rejected navigation → a fresh tab with the URL (background.js)
 async function ltRun(tabId, step, a) {
-  const [{ result }] = await chrome.scripting.executeScript({ target: { tabId }, world: 'MAIN', func: ltStep, args: [step, a || {}] });
+  const [{ result }] = await chrome.scripting.executeScript({ target: { tabId: tabNow(tabId) }, world: 'MAIN', func: ltStep, args: [step, a || {}] });
   if (!result) throw new LtHalt('no-result', 'صفحة أداة الإطلاق مردّتش');
   if (result.state === 'login') throw new LtHalt('login', 'أداة الإطلاق محتاجة تسجيل دخول');
   if (result.state === 'changed') throw new LtHalt('changed', 'فورم أداة الإطلاق اتغيّر: ' + (result.why || ''));
@@ -560,7 +549,7 @@ async function ltLaunch(tabId, job, stub, note, mem) {
   };
   await prepare();
   // 2. may I press Launch? (the FIRST launch waits here for the campaign-number turn)
-  const leave = async () => { await chrome.tabs.update(tabId, { url: 'about:blank' }).catch(() => {}); };
+  const leave = async () => { await tabSerial(() => chrome.tabs.update(tabNow(tabId), { url: 'about:blank' })).catch(() => {}); };
   let waitedLong = false, r;
   for (let waited = 0; ; waited++) {
     const g = (await ltRpc({ take: false, go: job.id })).go || {};

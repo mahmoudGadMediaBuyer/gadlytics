@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "GADLYTICS · خزامى لحظي",
   "description": "بيقرا روابط خزامى (admin.molabi.sa) كل دقيقتين ويبعت تبرعات النهارده لـ GADLYTICS، وبيسجّل روابط الحملات الجديدة في خزامى، وبيشغّل أداة الإطلاق للحملات الجديدة.",
-  "version": "1.4.1",
+  "version": "1.5.1",
   "permissions": [
     "alarms",
     "tabs",

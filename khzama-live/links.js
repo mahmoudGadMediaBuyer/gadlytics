@@ -10,10 +10,13 @@
 // Any unexpected page state (login page, a missing field, a form that does not match) stops the whole batch: the server marks
 // what is left as failed and the agents register those by hand. It never edits or deletes a link, and only titles that start
 // with a campaign code (XXX-12345-…) are accepted. No cookies, storage, tokens or headers are read.
-const LINKS_V = '1.4.1';
+const LINKS_V = '1.5.1';
 const LINKS_MAX_PARALLEL = 3;                                // campaigns whose links are registered at the same time — one tab each; inside a campaign one link at a time
+const LINKS_TABS_MAX = 4;                                     // 1.5.1: Khzama tabs saving at once, all campaigns together (Nov 15: 6 tabs made every save take 90–118 s and pages timed out)
+const LINKS_LANES = 2;                                      // 1.5.0: links of ONE campaign saved side by side, one tab per lane (tested live Nov 15: two tabs saved two links 1.6 s apart, each exactly once). Needs the server to hand out up to `per` jobs of one campaign — an older kz_jobs gives one, and the extra lanes simply find nothing and stop
 const LINKS_PER_TAB = 3;                                     // links per tab: a background tab gets slower with every save (measured 6 s → 30 s per link over 12 links), a fresh tab is fast again
 const LINKS_TABS = new Set();                                // the tabs this worker opened and has not closed yet
+const LINKS_OWN = { set: LINKS_TABS, key: 'linksTabs' };    // tab create / navigate / close go through background.js (one queue, retries on a fresh tab)
 const LINKS_RPC = 'https://ibpwudzjwjraqhfdmzet.supabase.co/rest/v1/rpc/kz_jobs';
 const LINKS_ALARM = 'kz-links';
 const LINK_TITLE_RE = /^[A-Z]{2,4}-\d{3,6}-[A-Za-z0-9_~-]+$/;
@@ -161,7 +164,7 @@ async function linksRpc(info) {
   const { apiKey, anonKey } = await keys();
   const s = await get(['linksOn', 'linksTest']);
   const r = await fetch(LINKS_RPC, { method: 'POST', headers: { 'content-type': 'application/json', Authorization: 'Bearer ' + anonKey, apikey: anonKey },
-    body: JSON.stringify({ p_key: apiKey, p_info: { v: LINKS_V, cap: ['links'], on: s.linksOn !== false, test: s.linksTest === true, max: LINKS_MAX_PARALLEL, ...info } }) });
+    body: JSON.stringify({ p_key: apiKey, p_info: { v: LINKS_V, cap: ['links'], on: s.linksOn !== false, test: s.linksTest === true, max: Math.min(LINKS_TABS_MAX, LINKS_MAX_PARALLEL * LINKS_LANES), per: LINKS_LANES, ...info } }) });
   let j = {}; try { j = await r.json(); } catch { /* */ }
   if (!r.ok || !j || j.ok !== true) throw new Error('السيرفر رفض (kz_jobs ' + r.status + ')');
   return j;
@@ -171,19 +174,11 @@ async function linksRpc(info) {
 // fresh one every LINKS_PER_TAB links and closed when the campaign's links are done
 async function linksOpenTab() {
   const { tabId } = await get('tabId');
-  const t = await chrome.tabs.create({ url: 'about:blank', pinned: false, active: false });
-  if (t.id === tabId) throw new LinksHalt('tab', 'التبويب اتلخبط مع تبويب التبرعات');
-  await chrome.tabs.update(t.id, { autoDiscardable: false });
-  LINKS_TABS.add(t.id);
-  await chrome.storage.session.set({ linksTabs: [...LINKS_TABS] });
+  const t = await tabCreate(LINKS_OWN, 'about:blank');
+  if (t.id === tabId) { LINKS_TABS.delete(t.id); throw new LinksHalt('tab', 'التبويب اتلخبط مع تبويب التبرعات'); }
   return t;
 }
-async function linksCloseTab(id) {
-  if (id == null) return;
-  LINKS_TABS.delete(id);
-  try { const t = await chrome.tabs.get(id); if (!t.pinned) await chrome.tabs.remove(id); } catch { /* already closed */ }
-  await chrome.storage.session.set({ linksTabs: [...LINKS_TABS] });
-}
+const linksCloseTab = (id) => tabClose(LINKS_OWN, id);
 // tabs left open by a worker that was stopped in the middle (only ids this extension itself opened in this browser session)
 async function linksSweepTabs() {
   const { linksTabs } = await chrome.storage.session.get('linksTabs'), { tabId } = await get('tabId');
@@ -195,7 +190,7 @@ async function linksSweepTabs() {
 }
 
 async function linkStep(tabId, step, a) {
-  const [{ result }] = await chrome.scripting.executeScript({ target: { tabId }, world: 'MAIN', func: kzLinkStep, args: [step, a || {}] });
+  const [{ result }] = await chrome.scripting.executeScript({ target: { tabId: tabNow(tabId) }, world: 'MAIN', func: kzLinkStep, args: [step, a || {}] });
   if (!result) throw new LinksHalt('no-result', 'صفحة خزامى مردّتش');
   if (result.state === 'login') throw new LinksHalt('login', 'خزامى محتاج تسجيل دخول');
   return result;
@@ -203,7 +198,7 @@ async function linkStep(tabId, step, a) {
 
 // a tab-suspender extension (or Chrome itself) may have parked the tab: its URL is then not Khzama's any more
 async function linkAwake(tabId) {
-  const t = await chrome.tabs.get(tabId);
+  const t = await chrome.tabs.get(tabNow(tabId));
   return !t.discarded && typeof t.url === 'string' && t.url.startsWith(KZ);
 }
 
@@ -211,11 +206,7 @@ async function linkAwake(tabId) {
 // A tab that was suspended or discarded on the way is simply loaded again (twice at most).
 async function linkFind(tabId, kw, size) {
   const url = KZ + '?keyword=' + encodeURIComponent(kw) + (size ? '&size=' + size : '');
-  const go = async () => {
-    const wait = loaded(tabId), t = await chrome.tabs.get(tabId);
-    if (t.url === url && !t.discarded) await chrome.tabs.reload(tabId); else await chrome.tabs.update(tabId, { url });
-    await wait;
-  };
+  const go = () => tabNavigate(LINKS_OWN, tabId, url);        // one queue across campaigns; a rejected navigation → a fresh tab with the URL (background.js)
   await go();
   let prev = null, last = 'not-ready', woke = 0;
   for (let i = 0; i < 40; i++) {
@@ -331,36 +322,73 @@ async function linksWarm(code) {
 const linksSeen = (r) => set({ linksSeen: Date.now(), linksPending: r.pending || 0, ...(r.batch ? { linksBatch: r.batch } : {}) });
 
 // one campaign's links, one after the other, in a tab of its own. Any failure stops every campaign (the server fails the rest).
-async function linksCampaign(first, ctl) {
-  const lid = first.launch_id;
+async function linksCampaign(first, ctl, lane) {
+  lane = lane || 0;
+  const lid = first.launch_id, lanes = [];
+  // another lane of this campaign: up to LINKS_LANES - 1 more, each takes its own job (the server never hands one job out twice)
+  const more = () => {
+    const L = ctl.lanes.get(lid) || 1;
+    if (lane !== 0 || ctl.stopAll || L >= LINKS_LANES) return;
+    ctl.lanes.set(lid, L + 1);
+    lanes.push((async () => {
+      try {
+        const r = await linksRpc({ take: true, for: lid }).catch(() => null);
+        if (r) await linksSeen(r);
+        if (r && r.job && !ctl.stopAll) await linksCampaign({ ...r.job, launch_id: r.job.launch_id || lid }, ctl, L);
+      } finally { ctl.lanes.set(lid, (ctl.lanes.get(lid) || 1) - 1); }
+    })().catch(async (e) => { await set({ linksError: { at: Date.now(), msg: String(e.message || e).slice(0, 200) } }); }));
+  };
+  if (lane === 0) { ctl.lanes.set(lid, 1); more(); }
   let job = first, tabId = null, B = {}, inTab = 0, lingered = false, next = null, pending = 2;
   try {
     while (job) {
       await chrome.storage.session.set({ linksRunning: Date.now() });
       const s = await get(['linksOn', 'linksTest']), on = s.linksOn !== false, test = s.linksTest === true;
       const t0 = Date.now(), bad = linkGuard(job) || (!!job.test !== test ? 'وضع التجربة مش مطابق' : null);
-      await set({ linksNow: { title: job.title, at: t0, n: ctl.loops.size } });
+      await set({ linksNow: { title: job.title, at: t0, n: ctl.loops.size, lane } });
       let report;
       if (bad) report = { id: job.id, state: 'failed', error: bad };
       else {
-        try {
-          if (tabId == null || inTab >= LINKS_PER_TAB) {
-            const warm = next ? await next : null;
-            next = null;
-            await linksCloseTab(tabId); tabId = null;
-            if (warm && warm.code === job.code) { tabId = warm.tabId; B = warm.B; }
-            else { if (warm) await linksCloseTab(warm.tabId); tabId = (await linksOpenTab()).id; B = {}; }
-            inTab = 0;
+        // A transient tab problem (a tab that closed or was parked under us, a rejected navigation that survived the retries in
+        // background.js) is NOT a page problem: the SAME job runs again on a fresh tab (≤ 3 runs, ≤ 60 s). linkAdd starts with the
+        // no-duplicate check on a freshly loaded list, so a link saved by the run that died is found, never added twice.
+        // A real page problem (login, a changed form, a check that does not match, a refused save) still stops the batch at once.
+        for (let run = 1; ; run++) {
+          try {
+            if (tabId == null || inTab >= LINKS_PER_TAB) {
+              const warm = next ? await next : null;
+              next = null;
+              await linksCloseTab(tabId); tabId = null;
+              if (warm && warm.code === job.code) { tabId = warm.tabId; B = warm.B; }
+              else { if (warm) await linksCloseTab(warm.tabId); tabId = (await linksOpenTab()).id; B = {}; }
+              inTab = 0;
+            }
+            inTab++;
+            if (inTab === LINKS_PER_TAB && job.code && pending > 1 && !next) next = linksWarm(job.code);   // more links are waiting: the next tab loads meanwhile
+            report = { id: job.id, ...(await linkAdd(tabId, job, test, run === 1 ? t0 : Date.now(), B)) };
+            if (report.state !== 'done') report.halt = true;
+            else await set({ linksError: null });
+            break;
+          } catch (e) {
+            // 1.5.1: a SLOW page (cancelled before saving — nothing was saved) stops nothing: the link is NOT reported, so the
+            // server re-queues it by itself after 120 s and hands it out once more (attempt 2, which starts with the no-duplicate
+            // check); this tab is dropped and the campaign goes on with its next link
+            if (e instanceof LinksHalt && e.code === 'slow') {
+              report = null;
+              await linksCloseTab(tabId).catch(() => {}); tabId = null; B = {};
+              await set({ linksError: { at: Date.now(), msg: 'خزامى بطيء — الرابط هيتعاد بعد دقيقتين: ' + String(job.title || '').slice(0, 60) } });
+              break;
+            }
+            if (e instanceof LinksHalt || !tabTransient(e) || run >= 3 || ctl.stopAll || Date.now() - t0 > 60e3) {
+              report = { id: job.id, state: 'failed', error: String(e.message || e).slice(0, 200), halt: true };
+              break;
+            }
+            await set({ linksNow: { title: job.title, at: Date.now(), n: ctl.loops.size, retry: run } });
+            await linksCloseTab(tabId).catch(() => {}); tabId = null; B = {};
+            await sleep(600 * run);
           }
-          inTab++;
-          if (inTab === LINKS_PER_TAB && job.code && pending > 1 && !next) next = linksWarm(job.code);   // more links are waiting: the next tab loads meanwhile
-          report = { id: job.id, ...(await linkAdd(tabId, job, test, t0, B)) };
-          if (report.state !== 'done') report.halt = true;
-          else await set({ linksError: null });
-        } catch (e) {
-          report = { id: job.id, state: 'failed', error: String(e.message || e).slice(0, 200), halt: true };
         }
-        if (report.halt) { ctl.stopAll = true; await set({ linksError: { at: Date.now(), msg: report.error } }); }
+        if (report && report.halt) { ctl.stopAll = true; await set({ linksError: { at: Date.now(), msg: report.error } }); }
       }
       // the report and this campaign's next link in one call
       let r = null;
@@ -369,15 +397,19 @@ async function linksCampaign(first, ctl) {
       await linksSeen(r);
       pending = (r.pending || 0) + (r.job ? 1 : 0);
       job = r.job;
+      if (job && r.pending > 0) more();                       // more of this campaign may be waiting: open another lane
+      if (!job && lane !== 0) break;                          // an extra lane never lingers
       if (!job && on && !ctl.stopAll && !lingered) {         // the agent may send this campaign's last links right after
         lingered = true; await sleep(4000);
         r = await linksRpc({ take: true, for: lid }).catch(() => null);
         job = r && r.job;
+        if (job && r.pending > 0) more();
       } else if (job) lingered = false;
     }
   } finally {
     if (next) { const w = await next.catch(() => null); if (w) await linksCloseTab(w.tabId).catch(() => {}); }
     await linksCloseTab(tabId).catch(() => {});
+    await Promise.allSettled(lanes);                         // the campaign is finished when every lane is
   }
 }
 
@@ -386,7 +418,7 @@ async function linksTick() {
   const now = Date.now(), { linksRunning } = await chrome.storage.session.get('linksRunning');
   if (linksRunning && now - linksRunning < 150e3) return;
   await chrome.storage.session.set({ linksRunning: now });
-  const loops = new Map(), ctl = { stopAll: false, loops };
+  const loops = new Map(), ctl = { stopAll: false, loops, lanes: new Map() };
   let errs = 0;
   try {
     await linksSweepTabs();
