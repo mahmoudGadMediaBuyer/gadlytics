@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="gad-build" content="20261116082309">
+<meta name="gad-build" content="20261116082835">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -16,7 +16,7 @@
 <script>
 /* تحديث تلقائي للتطبيق على الموبايل/الآيباد: مفيش service worker ولا كاش. كل ما التطبيق يتفتح أو يرجع للواجهة
    بيجيب index.html جديد (no-store) ويقارن رقم البيلد؛ لو فيه نسخة أحدث بيفتحها على طول. */
-(function(){ var B="20261116082309", last=0;
+(function(){ var B="20261116082835", last=0;
   function busy(){ return document.querySelector("#cpIn:focus, .ma-sheet, input:focus, textarea:focus"); }
   function chk(){ var n=Date.now(); if(n-last<20000) return; last=n; if(busy()) return;
     /* Nov 16 2026: reads the tiny version.txt (≈15 bytes) instead of downloading the whole 1.7 MB page every time */
@@ -9308,15 +9308,17 @@ const MA={data:null,busy:false,err:"",q:"",proj:"",adv:"",st:"",plat:""};
 const MA_PL=[["meta","ميتا","Meta"],["tiktok","تيك توك","TikTok"],["snap","سناب","Snap"]];
 async function maLoad(force){ if(MA.busy||(MA.data&&!force)) return; MA.busy=true; MA.err="";
   try{ const sb=SUPA_DB.client, cl=(S.ws&&clientById(S.ws))||S.cfg.clients[0]||{}, cname=cl.name||"ملبي";
-    const all=async q=>{ const out=[]; for(let i=0;;i+=1000){ const r=await q().range(i,i+999); if(r.error) throw r.error; out.push(...r.data); if(r.data.length<1000) break; } return out; };
+    // Nov 16 2026: first page alone; if it is full, the next pages are read 4 at a time (were one after another — v_media_daily = 5 pages ≈ 3 s)
+    const all=async q=>{ const r0=await q().range(0,999); if(r0.error) throw r0.error; const out=[...r0.data]; if(r0.data.length<1000) return out;
+      for(let i=1000;;i+=4000){ const rs=await Promise.all([0,1,2,3].map(k=>q().range(i+k*1000,i+k*1000+999))); let end=false;
+        for(const r of rs){ if(r.error) throw r.error; out.push(...r.data); if(r.data.length<1000){ end=true; break; } } if(end) return out; } };
     // Nov 16 2026: the four reads (and the fatigue load) go out together instead of one after another
     const [media,perf,notes,daily]=await Promise.all([
-      all(()=>sb.from("media").select("*").eq("client",cname).order("created_at",{ascending:false})),
+      all(()=>sb.from("media").select("*").eq("client",cname).order("created_at",{ascending:false})).then(async m=>{ thumbVer(m); await thumbUrls(m.map(x=>x.thumb)); return m; }),   // covers sign while the rest loads
       all(()=>sb.from("v_media_perf").select("*").order("creative_id")),
       all(()=>sb.from("docs").select("path,data").eq("coll","media_notes").order("path")),
       all(()=>sb.from("v_media_daily").select("*").order("creative_id").order("date")),
       ftLoad()]);
-    thumbVer(media); await thumbUrls(media.map(m=>m.thumb));
     const DY={}; daily.forEach(d=>{ (DY[d.creative_id]=DY[d.creative_id]||[]).push(d); });
     const disp={}, one=v=>{ v=String(v||"").trim(); if(!v) return v; const k=arKey(v); return disp[k]||(disp[k]=v); };
     media.forEach(m=>{ m.advertiser=one(m.advertiser); m.project=one(m.project); });
@@ -12244,15 +12246,17 @@ function lbColsSet(v){ LB.cols=v; try{ localStorage.setItem("gad.lbCols",JSON.st
 function lbLabel(k){ const c=LB_CALC.find(x=>x[0]===k); return c? L(c[1],c[2]) : k; }
 async function lbLoad(force){ if(LB.busy||(LB.data&&!force)) return; LB.busy=true; LB.err=""; render();
   try{ const sb=SUPA_DB.client, cl=(S.ws&&clientById(S.ws))||S.cfg.clients[0]||{}, cname=cl.name||"ملبي";
-    const all=async q=>{ const out=[]; for(let i=0;;i+=1000){ const r=await q().range(i,i+999); if(r.error) throw r.error; out.push(...r.data); if(r.data.length<1000) break; } return out; };
+    // Nov 16 2026: first page alone; if it is full, the next pages are read 4 at a time (were one after another — v_media_daily = 5 pages ≈ 3 s)
+    const all=async q=>{ const r0=await q().range(0,999); if(r0.error) throw r0.error; const out=[...r0.data]; if(r0.data.length<1000) return out;
+      for(let i=1000;;i+=4000){ const rs=await Promise.all([0,1,2,3].map(k=>q().range(i+k*1000,i+k*1000+999))); let end=false;
+        for(const r of rs){ if(r.error) throw r.error; out.push(...r.data); if(r.data.length<1000){ end=true; break; } } if(end) return out; } };
     // Nov 16 2026: media, performance, notes, fatigue and video stats are read at the same time (were one after another)
     const [media,perf,notes,,vstat]=await Promise.all([
-      all(()=>sb.from("media").select("creative_id,fields,hook,hook_auto,created_at,synced_at,style,kind,url,video_file,thumb,thumb_at,asset_note,thumb_hook,local_file,ai_tags").eq("client",cname).eq("kind","Video").in("style",LB_STYLES).order("creative_id")),
+      all(()=>sb.from("media").select("creative_id,fields,hook,hook_auto,created_at,synced_at,style,kind,url,video_file,thumb,thumb_at,asset_note,thumb_hook,local_file,ai_tags").eq("client",cname).eq("kind","Video").in("style",LB_STYLES).order("creative_id")).then(async m=>{ thumbVer(m); await thumbUrls(m.map(x=>x.thumb)); return m; }),
       all(()=>sb.from("v_media_perf").select("*").order("creative_id")),
       all(()=>sb.from("docs").select("path,data").eq("coll","media_notes").order("path")),
       ftLoad(),
       all(()=>sb.from("v_video_stats").select("*").order("creative_id")).catch(()=>[])]);   // مشاهدات كل فيديو من كل الحملات (مع Smart+ على مستوى الفيديو)
-    thumbVer(media); await thumbUrls(media.map(m=>m.thumb));
     const V={}; vstat.forEach(v=>{ (V[v.creative_id]=V[v.creative_id]||[]).push(v); });
     const P={}; perf.forEach(p=>{ (P[p.creative_id]=P[p.creative_id]||[]).push(p); });
     const N={}; notes.forEach(n=>{ N[n.path.split("/")[1]]=n.data||{}; });
@@ -12333,8 +12337,9 @@ function lbCmp(a,b,k,dir){ const x=a[k], y=b[k], ex=x==null||x==="", ey=y==null|
 const THUMB={}, THV={};   // مسار الصورة في Storage ← رابط موقّع (٧ أيام) · THV = وقت آخر تحديث للصورة
 function thumbVer(rows){ (rows||[]).forEach(m=>{ if(m&&m.thumb&&m.thumb_at) THV[m.thumb]=m.thumb_at; }); }
 async function thumbUrls(paths){ const need=[...new Set(paths.filter(p=>p&&!THUMB[p]))]; if(!need.length||!(window.SUPA_DB&&SUPA_DB.client)) return;
-  for(let i=0;i<need.length;i+=200){ try{ const r=await SUPA_DB.client.storage.from("thumbs").createSignedUrls(need.slice(i,i+200),604800);
-      (r.data||[]).forEach(x=>{ if(x.signedUrl&&x.path) THUMB[x.path]=x.signedUrl+(THV[x.path]?"&v="+Date.parse(THV[x.path]):""); }); }catch(e){} } }
+  const chunks=[]; for(let i=0;i<need.length;i+=200) chunks.push(need.slice(i,i+200));   // Nov 16 2026: all batches at once (were one after another)
+  await Promise.all(chunks.map(async ch=>{ try{ const r=await SUPA_DB.client.storage.from("thumbs").createSignedUrls(ch,604800);
+      (r.data||[]).forEach(x=>{ if(x.signedUrl&&x.path) THUMB[x.path]=x.signedUrl+(THV[x.path]?"&v="+Date.parse(THV[x.path]):""); }); }catch(e){} })); }
 const HT_G=[["#173F37","#2E6B5E"],["#1E2F4A","#3A5A8A"],["#2F2A45","#5A4F86"],["#3A3324","#7A6A44"],["#1F3B44","#3F7584"],["#3A2830","#7A5060"]];
 function htHook(s){ s=String(s||"").trim(); return /^https?:/i.test(s)? "" : s; }
 function hookThumb(o){ let h=0; String(o.proj||"").split("").forEach(c=>{ h=(h*31+c.charCodeAt(0))>>>0; }); const g=HT_G[h%HT_G.length], hk=htHook(o.hook);

@@ -2040,6 +2040,7 @@ Measured on the live site before the change: the first screen waited ~6 s becaus
 - **Start-up (`loadMeta`)**: the 13 collections (changes, experiments, creatives, roster, roster_auto, sheets, tasks, plans, crlib, approvals, taskTemplates, reviews, private tasks) + `earliest()` are fetched with one `Promise.allSettled`. Measured 4.0 s → 0.85 s. A failed collection still falls back to `[]` exactly as before.
 - **Pages**: `maLoad` (إدارة الميديا), `lbLoad` (مكتبة الكريتيف), `exFetch` (platform rows + Khzama rows + name dictionary) and `mxFetch` (funnel + platform data) read their tables in parallel instead of in sequence. Paging inside each table is unchanged.
 - **Update check**: `build.py` now also writes `version.txt` (the build number). The app's auto-update check fetches only that file (≈15 bytes) instead of re-downloading the whole 1.7 MB `index.html` on every open/focus. **Every deploy must upload `index.html` and `version.txt` together** (runbook updated).
+- **Paging + covers**: the page loaders (`maLoad`, `lbLoad`) read page 1 alone, then the next pages 4 at a time; cover URLs are signed in parallel batches and start as soon as the media list arrives. Measured on إدارة الميديا: ≈ 9 s → see the deploy check below.
 - Not changed: the order config → identity → meta → entries (entries need `changes`/`experiments` for the date window).
 
 ### Khzama extension 1.5.1 (same day)
