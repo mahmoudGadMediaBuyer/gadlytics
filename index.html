@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="gad-build" content="20261114100627">
+<meta name="gad-build" content="20261116082309">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -16,11 +16,12 @@
 <script>
 /* تحديث تلقائي للتطبيق على الموبايل/الآيباد: مفيش service worker ولا كاش. كل ما التطبيق يتفتح أو يرجع للواجهة
    بيجيب index.html جديد (no-store) ويقارن رقم البيلد؛ لو فيه نسخة أحدث بيفتحها على طول. */
-(function(){ var B="20261114100627", last=0;
+(function(){ var B="20261116082309", last=0;
   function busy(){ return document.querySelector("#cpIn:focus, .ma-sheet, input:focus, textarea:focus"); }
   function chk(){ var n=Date.now(); if(n-last<20000) return; last=n; if(busy()) return;
-    fetch(location.pathname+"?_b="+n,{cache:"no-store"}).then(function(r){ return r.ok? r.text() : ""; }).then(function(t){
-      var m=t&&t.match(/name="gad-build" content="([^"]+)"/); if(m&&m[1]!==B&&!busy()){ var u=new URL(location.href); u.searchParams.set("_v",m[1]); location.replace(u.toString()); } }).catch(function(){}); }
+    /* Nov 16 2026: reads the tiny version.txt (≈15 bytes) instead of downloading the whole 1.7 MB page every time */
+    fetch(location.pathname.replace(/[^\/]*$/,"")+"version.txt?_b="+n,{cache:"no-store"}).then(function(r){ return r.ok? r.text() : ""; }).then(function(t){
+      var v=String(t||"").trim(); if(/^\d{14}$/.test(v)&&v!==B&&!busy()){ var u=new URL(location.href); u.searchParams.set("_v",v); location.replace(u.toString()); } }).catch(function(){}); }
   document.addEventListener("visibilitychange",function(){ if(!document.hidden) chk(); });
   window.addEventListener("pageshow",function(){ setTimeout(chk,1500); }); window.addEventListener("focus",chk); setInterval(chk,300000); })();
 </script>
@@ -6465,24 +6466,27 @@ function neededWindow(){
   return [lo,hi];
 }
 async function loadMeta(){
-  try{ S.changes=await withTimeout(Store.getColl("changes"),12000,"meta"); }catch(e){ S.changes=[]; }
-  try{ S.experiments=await withTimeout(Store.getColl("experiments"),12000,"meta"); }catch(e){ S.experiments=[]; }
-  try{ S.creatives=await withTimeout(Store.getColl("creatives"),12000,"meta"); }catch(e){ S.creatives=[]; }
-  try{ S.roster=await withTimeout(Store.getColl("roster"),12000,"meta"); }catch(e){ S.roster=[]; }
-  try{ S.sheets={}; (await withTimeout(Store.getColl("sheets"),12000,"meta")).forEach(d=>{ if(d&&d.id) S.sheets[d.id]=d; }); }catch(e){ S.sheets={}; }
-  try{ S.tasks=await withTimeout(Store.getColl("tasks"),12000,"meta"); }catch(e){ S.tasks=[]; }
+  // Nov 16 2026: all collections are fetched AT THE SAME TIME (they were one after another, ~13 × 0.3–0.8 s ≈ 6 s before the first screen)
+  const g=(c,ms)=>withTimeout(Store.getColl(c),ms||12000,"meta");
+  const [chg,exp,cre,ros,rau,sht,tsk,pln,lib,apr,rtp,rev,pv,from]=await Promise.allSettled([
+    g("changes"),g("experiments"),g("creatives"),g("roster"),g("roster_auto"),g("sheets"),g("tasks"),g("plans"),g("crlib",15000),g("approvals"),g("taskTemplates"),
+    isAdmin()? g("reviews") : Promise.resolve(null),
+    (!isPending()&&!isClient())? withTimeout(PRIV.list(),8000,"meta") : Promise.resolve([]),
+    Store.earliest? withTimeout(Store.earliest(),8000,"meta") : Promise.resolve(null)]);
+  const v=(r,d)=>r.status==="fulfilled"&&r.value!=null? r.value : d;
+  S.changes=v(chg,[]); S.experiments=v(exp,[]); S.creatives=v(cre,[]); S.roster=v(ros,[]);
+  if(rau.status==="fulfilled"){ S.rosterAuto=rau.value; RA.t=Date.now(); RA.j=JSON.stringify(S.rosterAuto); } else S.rosterAuto=S.rosterAuto||[];
+  S.sheets={}; v(sht,[]).forEach(d=>{ if(d&&d.id) S.sheets[d.id]=d; });
+  S.tasks=v(tsk,[]);
   if(isClient()) S.tasks=[]; else if(isMember()) S.tasks=S.tasks.filter(t=>t.assigneeId===ME.id||t.createdBy===ME.id);
-  try{ S.plans=await withTimeout(Store.getColl("plans"),12000,"meta"); }catch(e){ S.plans=[]; }
-  try{ S.lib=await withTimeout(Store.getColl("crlib"),15000,"meta"); }catch(e){ S.lib=[]; }
-  try{ S.appr=await withTimeout(Store.getColl("approvals"),12000,"meta"); }catch(e){ S.appr=[]; }
-  try{ S.rtpl=await withTimeout(Store.getColl("taskTemplates"),12000,"meta"); }catch(e){ S.rtpl=[]; }
-  if(isAdmin()){ try{ S.reviews=await withTimeout(Store.getColl("reviews"),12000,"meta"); }catch(e){ S.reviews=[]; } }
+  S.plans=v(pln,[]); S.lib=v(lib,[]); S.appr=v(apr,[]); S.rtpl=v(rtp,[]);
+  if(isAdmin()) S.reviews=v(rev,[]);
   if(SCOPE){ const fc=x=>!x||!x.clientId||SCOPE.has(x.clientId); S.plans=S.plans.filter(fc); S.appr=S.appr.filter(fc); S.lib=S.lib.filter(fc); }
   if(isClient()) S.appr=[];
-  if(!isPending()&&!isClient()){ try{ const pv=await withTimeout(PRIV.list(),8000,"meta"); S.tasks=S.tasks.concat(pv.map(t=>Object.assign({},t,{private:true}))); }catch(e){} }
+  if(!isPending()&&!isClient()) S.tasks=S.tasks.concat(v(pv,[]).map(t=>Object.assign({},t,{private:true})));
   if(SCOPE){ const f=x=>!x||!x.clientId||SCOPE.has(x.clientId);
-    S.roster=(S.roster||[]).filter(f); S.creatives=(S.creatives||[]).filter(f); S.changes=(S.changes||[]).filter(f); S.experiments=(S.experiments||[]).filter(f); }
-  try{ S.dataFrom=Store.earliest? await withTimeout(Store.earliest(),8000,"meta") : null; }catch(e){ S.dataFrom=null; }
+    S.roster=(S.roster||[]).filter(f); S.rosterAuto=(S.rosterAuto||[]).filter(f); S.creatives=(S.creatives||[]).filter(f); S.changes=(S.changes||[]).filter(f); S.experiments=(S.experiments||[]).filter(f); }
+  S.dataFrom=v(from,null);
   bumpVer();
 }
 async function reload(){
@@ -9060,6 +9064,10 @@ th.rs-now .rs-dbtn{color:var(--cyan)}
 .rs-id.new{border-color:color-mix(in srgb,var(--cyan) 50%,transparent);
   background:color-mix(in srgb,var(--cyan) 10%,transparent)}
 .rs-id.hit{outline:2px solid var(--amber);outline-offset:1px}
+.rs-cw{display:flex;flex-direction:column;gap:1px;min-width:0}
+.rs-tg{font-family:var(--f-body,inherit);font-size:max(var(--fs-min,11.5px),9.5px);line-height:1.25;color:var(--ink-3);direction:rtl;white-space:nowrap}
+.rs-tg.off{color:var(--bad)}
+.rs-id.off{opacity:.62}
 .rs-id button{opacity:0;padding:0 3px;font-size:max(var(--fs-min,11.5px),11px);color:var(--bad);background:none;border:none;
   transition:opacity .12s}
 .rs-id:hover button{opacity:1}
@@ -9301,10 +9309,14 @@ const MA_PL=[["meta","ميتا","Meta"],["tiktok","تيك توك","TikTok"],["sn
 async function maLoad(force){ if(MA.busy||(MA.data&&!force)) return; MA.busy=true; MA.err="";
   try{ const sb=SUPA_DB.client, cl=(S.ws&&clientById(S.ws))||S.cfg.clients[0]||{}, cname=cl.name||"ملبي";
     const all=async q=>{ const out=[]; for(let i=0;;i+=1000){ const r=await q().range(i,i+999); if(r.error) throw r.error; out.push(...r.data); if(r.data.length<1000) break; } return out; };
-    const media=await all(()=>sb.from("media").select("*").eq("client",cname).order("created_at",{ascending:false}));
-    const perf=await all(()=>sb.from("v_media_perf").select("*").order("creative_id"));
-    const notes=await all(()=>sb.from("docs").select("path,data").eq("coll","media_notes").order("path"));
-    const daily=await all(()=>sb.from("v_media_daily").select("*").order("creative_id").order("date")); await ftLoad(); thumbVer(media); await thumbUrls(media.map(m=>m.thumb));
+    // Nov 16 2026: the four reads (and the fatigue load) go out together instead of one after another
+    const [media,perf,notes,daily]=await Promise.all([
+      all(()=>sb.from("media").select("*").eq("client",cname).order("created_at",{ascending:false})),
+      all(()=>sb.from("v_media_perf").select("*").order("creative_id")),
+      all(()=>sb.from("docs").select("path,data").eq("coll","media_notes").order("path")),
+      all(()=>sb.from("v_media_daily").select("*").order("creative_id").order("date")),
+      ftLoad()]);
+    thumbVer(media); await thumbUrls(media.map(m=>m.thumb));
     const DY={}; daily.forEach(d=>{ (DY[d.creative_id]=DY[d.creative_id]||[]).push(d); });
     const disp={}, one=v=>{ v=String(v||"").trim(); if(!v) return v; const k=arKey(v); return disp[k]||(disp[k]=v); };
     media.forEach(m=>{ m.advertiser=one(m.advertiser); m.project=one(m.project); });
@@ -9685,9 +9697,35 @@ function rosterGet(cid,date){
   const d=(S.roster||[]).find(x=>x.clientId===cid&&x.date===date);
   return d? d : {clientId:cid,date:date,byPlatform:{}};
 }
-function rosterIds(cid,date,pid){ return (rosterGet(cid,date).byPlatform||{})[pid]||[]; }
+/* إدارة الحملات أوتوماتيك: الدالة roster-sync بتكتب docs roster_auto/<client>__<date> كل 30 دقيقة من حالة الحملات على المنصات.
+   الخانة = اتحاد التلقائي واليدوي. شيل حملة تلقائية = بيخبّيها اليوم ده بس (hide في الدوك اليدوي) ومبتتمسحش من التلقائي. */
+const RA={t:0,busy:false,j:""};
+function raEnsure(){
+  if(RA.busy||Date.now()-RA.t<45000) return; RA.busy=true;
+  Store.getColl("roster_auto").then(r=>{
+    RA.t=Date.now(); RA.busy=false;
+    if(SCOPE) r=(r||[]).filter(x=>!x||!x.clientId||SCOPE.has(x.clientId));
+    const j=JSON.stringify(r||[]); if(j===RA.j) return;
+    RA.j=j; S.rosterAuto=r||[]; if(S.view==="roster") render();
+  }).catch(()=>{ RA.busy=false; RA.t=Date.now(); });
+}
+function rosterAutoDoc(cid,date){ return (S.rosterAuto||[]).find(x=>x.clientId===cid&&x.date===date)||null; }
+function rosterAutoMap(cid,date,pid){ return (((rosterAutoDoc(cid,date)||{}).byPlatform||{})[pid])||{}; }
+function rosterItems(cid,date,pid){
+  const man=rosterGet(cid,date), hid=((man.hide||{})[pid])||[], A=rosterAutoMap(cid,date,pid), out=[], seen={};
+  Object.keys(A).forEach(c=>{ if(hid.indexOf(c)>=0) return; seen[c]=out.length; out.push({id:c,auto:true,manual:false,e:A[c]}); });
+  ((man.byPlatform||{})[pid]||[]).forEach(c=>{ if(c in seen){ out[seen[c]].manual=true; return; } seen[c]=out.length; out.push({id:c,auto:false,manual:true,e:null}); });
+  return out;
+}
+function rosterIds(cid,date,pid,openOnly){
+  return rosterItems(cid,date,pid).filter(o=>!(openOnly&&o.auto&&o.e&&o.e.off_at)).map(o=>o.id); }
+function rosterPids(cid,date){
+  const m=Object.keys(rosterGet(cid,date).byPlatform||{}), a=Object.keys((rosterAutoDoc(cid,date)||{}).byPlatform||{});
+  return m.concat(a.filter(x=>m.indexOf(x)<0)); }
+function rosterHhmm(iso){ try{ return new Date(iso).toLocaleTimeString("en-GB",{timeZone:"Asia/Riyadh",hour:"2-digit",minute:"2-digit",hour12:false}); }catch(e){ return ""; } }
 async function rosterSave(doc){
   doc.id=rosterId(doc.clientId,doc.date);
+  if(doc.hide){ Object.keys(doc.hide).forEach(p=>{ const have=(doc.byPlatform||{})[p]||[]; doc.hide[p]=(doc.hide[p]||[]).filter(c=>have.indexOf(c)<0); if(!doc.hide[p].length) delete doc.hide[p]; }); if(!Object.keys(doc.hide).length) delete doc.hide; }
   try{ await Store.setDoc("roster",doc.id,doc);
     S.roster=(S.roster||[]).filter(x=>!(x.clientId===doc.clientId&&x.date===doc.date)).concat([doc]);
     bumpVer(); return true; }
@@ -9785,6 +9823,7 @@ function renderRoster(){
   const end=S.rf.date||todayISO(), nDays=+S.rf.days||7;
   const days=dateRange(addDays(end,-(nDays-1)),end);
   // يوم التركيز = اللي الملخص بيتكلم عنه. افتراضياً آخر يوم فيه حملات فعلاً
+  raEnsure();
   const hasAny=d=>S.cfg.platforms.some(p=>!isAcct(p.id)&&rosterIds(cid,d,p.id).length);
   let focus=(S.rf.focus&&days.indexOf(S.rf.focus)>=0)? S.rf.focus
     : (days.slice().reverse().find(hasAny)||end);
@@ -9811,12 +9850,14 @@ function renderRoster(){
 
   /* ملخص آخر يوم */
   const Y=addDays(focus,-1);
-  let kept=0,stopped=0,added=0;
+  let kept=0,stopped=0,added=0,running=0;
   plats.forEach(p=>{
-    const y=rosterIds(cid,Y,p.id), t=rosterIds(cid,focus,p.id);
-    kept+=t.filter(x=>y.includes(x)).length;
-    stopped+=y.filter(x=>!t.includes(x)).length;
-    added+=t.filter(x=>!y.includes(x)).length;
+    const y=rosterIds(cid,Y,p.id), items=rosterItems(cid,focus,p.id), yA=rosterAutoMap(cid,Y,p.id), tIds=items.map(o=>o.id);
+    items.forEach(o=>{
+      if(o.auto&&o.e){ if(o.e.carried) kept++; else added++; if(o.e.off_at) stopped++; else running++; }   // التلقائي: carried / first_on / off_at / شغالة دلوقتي
+      else{ if(y.includes(o.id)) kept++; else added++; running++; }
+    });
+    y.forEach(x=>{ if(tIds.indexOf(x)<0&&!(x in yA)) stopped++; });   // يدوي: كانت امبارح ومش النهارده
   });
   h+='<div class="md-sum">'+
     '<div class="md-s"><div class="l">'+esc(L("مستمرة من امبارح","Carried over"))+
@@ -9826,7 +9867,7 @@ function renderRoster(){
     '<div class="md-s"><div class="l">'+esc(L("اتقفلت","Stopped"))+
       '</div><div class="n" style="color:var(--bad)">'+stopped+"</div></div>"+
     '<div class="md-s"><div class="l">'+esc(L("شغالة في ","Running on ")+fdate(focus))+
-      '</div><div class="n">'+(kept+added)+"</div></div></div>";
+      '</div><div class="n">'+running+"</div></div></div>";
 
   /* الشبكة: عمود لكل يوم، صف لكل منصة — زي الشيت */
   h+='<div class="sh-w"><table class="rs-t"><thead><tr>'+
@@ -9856,16 +9897,20 @@ function renderRoster(){
         '<button class="rs-pdel" data-a="delPlat" data-id="'+esc(p.id)+'" title="'+esc(L("احذف المنصة","Delete platform"))+'">✕</button>'+
       "</div></td>"+
       days.map(d=>{
-        const ids=rosterIds(cid,d,p.id), prev=rosterIds(cid,addDays(d,-1),p.id);
+        const items=rosterItems(cid,d,p.id), ids=items.map(o=>o.id), prev=rosterIds(cid,addDays(d,-1),p.id);
         const shown=q? ids.filter(x=>String(x).indexOf(q)>=0) : ids;
-        const nxt=addDays(d,1), nxtIds=rosterIds(cid,nxt,p.id), nxtHas=(S.roster||[]).some(x=>x.clientId===cid&&x.date===nxt);
+        const nxt=addDays(d,1), nxtIds=rosterIds(cid,nxt,p.id), nxtHas=(S.roster||[]).some(x=>x.clientId===cid&&x.date===nxt)||!!rosterAutoDoc(cid,nxt);
         const allNext=shown.length>0&&shown.every(x=>nxtIds.includes(x));
         return '<td class="rs-c'+(d===focus?" rs-now":"")+'">'+
-          shown.map(id=>{
-            const carried=prev.includes(id);
+          items.filter(o=>shown.indexOf(o.id)>=0).map(o=>{
+            const id=o.id, au=o.auto&&o.e, off=!!(au&&o.e.off_at);
+            const carried=au? !!o.e.carried : prev.includes(id);
             const already=nxtIds.includes(id);
-            return '<div class="rs-id '+(carried?"keep":"new")+(nxtHas&&!already?" gone":"")+(q&&String(id).indexOf(q)>=0?" hit":"")+
-              '"'+(nxtHas&&!already?' title="'+esc(L("اشتغلت اليوم ده ومترحّلتش لليوم اللي بعده","Ran this day and didn't carry to the next"))+'"':"")+'><span data-a="rsCamp" data-i="'+esc(id)+'" data-p="'+p.id+'" style="cursor:pointer;text-decoration:underline dotted" title="'+esc(L("افتح ملف الحملة","Open the campaign file"))+'">'+esc(id)+"</span>"+
+            const gone=off||(nxtHas&&!already);
+            const tags=(au?'<span class="rs-tg">'+esc(L("تلقائي","Auto"))+"</span>":"")+
+              (off?'<span class="rs-tg off" title="'+esc(o.e.off_est?L("الوقت تقريبي","Approximate time"):"")+'">'+esc(L("اتقفلت ","Stopped "))+(o.e.off_est?"≈":"")+esc(rosterHhmm(o.e.off_at))+"</span>":"");
+            return '<div class="rs-id '+(carried?"keep":"new")+(gone?" gone":"")+(off?" off":"")+(q&&String(id).indexOf(q)>=0?" hit":"")+
+              '"'+(gone&&!off?' title="'+esc(L("اشتغلت اليوم ده ومترحّلتش لليوم اللي بعده","Ran this day and didn't carry to the next"))+'"':"")+'><span class="rs-cw"><span data-a="rsCamp" data-i="'+esc(id)+'" data-p="'+p.id+'" style="cursor:pointer;text-decoration:'+(off?"line-through":"underline dotted")+'" title="'+esc(L("افتح ملف الحملة","Open the campaign file"))+'">'+esc(id)+"</span>"+tags+"</span>"+
               '<button class="rs-nx'+(already?" done":"")+'" data-a="rsNext" data-p="'+p.id+
                 '" data-i="'+esc(id)+'" data-d="'+esc(d)+'" title="'+
                 esc(already? L("موجودة بالفعل في اليوم اللي بعده","Already on the next day")
@@ -9891,6 +9936,8 @@ function renderRoster(){
   h+='<div class="hint" style="margin-top:12px">'+esc(L(
     "كل عمود يوم وكل صف منصة، زي شيتك. الأخضر = مكمّلة من اليوم اللي قبله · الأزرق = جديدة في اليوم ده. ",
     "Each column is a day and each row a platform, like your sheet. Green = carried from the previous day · blue = new that day. "))+
+    esc(L("«تلقائي» = الحملة اتسحبت لوحدها من حالتها على المنصة (كل 30 دقيقة): الشغالة بتتكرر كل يوم طول ما هي شغالة، واللي بتتقفل بتفضل ظاهرة في يومها بوقت القفل وبتتشال من اليوم اللي بعده. TikTok بيتحدّث مع السحب اليومي. ",
+      "“Auto” = pulled from the campaign's live status on the platform (every 30 min): running campaigns repeat every day while ON; a campaign you turn off stays on its day with the stop time and drops from the next day. TikTok updates with the daily pull. "))+
     esc(L("الترحيل: ← جنب الحملة بيرحّلها هي بس · «الكل ←» تحت الخانة بيرحّل حملات المنصة دي كلها لليوم اللي بعده · ↓ فوق العمود بيجيب كل حملات اليوم اللي قبله، وبعدين تشيل اللي مش عايزه بـ ✕. ترتيب المنصات: اسحب ⠿ لفوق أو لتحت أو دوس ▲▼.",
       "Carrying: ← next to a campaign carries just that one · “All →” under a cell carries all of that platform's campaigns to the next day · ↓ on a column pulls every campaign from the previous day, then drop what you don't want with ✕. Reorder platforms: drag ⠿ up or down, or press ▲▼."))+
     "</div>";
@@ -9928,16 +9975,16 @@ CHG.rfPlat=v=>{ S.rf.plat=v; render(); };
 ACT.rfClear=()=>{ S.rf.q=""; S.rf.plat=""; render(); };
 ACT.rsCarryDay=async t=>{
   const cid=rosterClient(), D=t.dataset.d, P=addDays(D,-1);
-  const prev=rosterGet(cid,P);
-  if(!Object.keys(prev.byPlatform||{}).length)
+  const prevP=rosterPids(cid,P);
+  if(!prevP.length||!prevP.some(p=>rosterIds(cid,P,p,true).length))
     return toast(L("مفيش حملات في اليوم اللي قبله","No campaigns on the previous day"),true);
   const doc=JSON.parse(JSON.stringify(rosterGet(cid,D)));
   doc.byPlatform=doc.byPlatform||{};
   let n=0;
-  Object.keys(prev.byPlatform).forEach(p=>{
+  prevP.forEach(p=>{
     if(S.rf.plat&&p!==S.rf.plat) return;
-    const a=doc.byPlatform[p]||[];
-    (prev.byPlatform[p]||[]).forEach(id=>{ if(!a.includes(id)){ a.push(id); n++; } });
+    const a=doc.byPlatform[p]||[], have=rosterIds(cid,D,p);
+    rosterIds(cid,P,p,true).forEach(id=>{ if(!have.includes(id)&&!a.includes(id)){ a.push(id); n++; } });
     doc.byPlatform[p]=a;
   });
   if(await rosterSave(doc)){ toast(L("اترحّلت ","Carried ")+n+L(" حملة لـ "," campaigns to ")+fdate(D)); render(); }
@@ -9948,6 +9995,8 @@ ACT.rsStop=async t=>{
   const doc=JSON.parse(JSON.stringify(rosterGet(cid,D)));
   doc.byPlatform=doc.byPlatform||{};
   doc.byPlatform[t.dataset.p]=(doc.byPlatform[t.dataset.p]||[]).filter(x=>x!==t.dataset.i);
+  if(t.dataset.i in rosterAutoMap(cid,D,t.dataset.p)){   // تلقائية: بتتخبّى اليوم ده بس ومبتتمسحش من التلقائي
+    doc.hide=doc.hide||{}; const h=doc.hide[t.dataset.p]||[]; if(h.indexOf(t.dataset.i)<0) h.push(t.dataset.i); doc.hide[t.dataset.p]=h; }
   if(await rosterSave(doc)) render();
 };
 ACT.rsStart=async t=>{
@@ -9981,15 +10030,15 @@ ACT.rsAddOk=async t=>{
 };
 ACT.rsCarry=async()=>{
   const cid=rosterClient(), D=S.rf.date||todayISO(), Y=addDays(D,-1);
-  const y=rosterGet(cid,Y);
-  if(!Object.keys(y.byPlatform||{}).length)
+  const yP=rosterPids(cid,Y);
+  if(!yP.some(p=>rosterIds(cid,Y,p,true).length))
     return toast(L("مفيش حملات امبارح","No campaigns yesterday"),true);
   const doc=JSON.parse(JSON.stringify(rosterGet(cid,D)));
   doc.byPlatform=doc.byPlatform||{};
   let n=0;
-  Object.keys(y.byPlatform).forEach(p=>{
-    const a=doc.byPlatform[p]||[];
-    (y.byPlatform[p]||[]).forEach(id=>{ if(!a.includes(id)){ a.push(id); n++; } });
+  yP.forEach(p=>{
+    const a=doc.byPlatform[p]||[], have=rosterIds(cid,D,p);
+    rosterIds(cid,Y,p,true).forEach(id=>{ if(!have.includes(id)&&!a.includes(id)){ a.push(id); n++; } });
     doc.byPlatform[p]=a;
   });
   if(await rosterSave(doc)){ toast(L("اترحّلت ","Carried ")+n+L(" حملة"," campaigns")); render(); }
@@ -12196,11 +12245,14 @@ function lbLabel(k){ const c=LB_CALC.find(x=>x[0]===k); return c? L(c[1],c[2]) :
 async function lbLoad(force){ if(LB.busy||(LB.data&&!force)) return; LB.busy=true; LB.err=""; render();
   try{ const sb=SUPA_DB.client, cl=(S.ws&&clientById(S.ws))||S.cfg.clients[0]||{}, cname=cl.name||"ملبي";
     const all=async q=>{ const out=[]; for(let i=0;;i+=1000){ const r=await q().range(i,i+999); if(r.error) throw r.error; out.push(...r.data); if(r.data.length<1000) break; } return out; };
-    const media=await all(()=>sb.from("media").select("creative_id,fields,hook,hook_auto,created_at,synced_at,style,kind,url,video_file,thumb,thumb_at,asset_note,thumb_hook,local_file,ai_tags").eq("client",cname).eq("kind","Video").in("style",LB_STYLES).order("creative_id"));
+    // Nov 16 2026: media, performance, notes, fatigue and video stats are read at the same time (were one after another)
+    const [media,perf,notes,,vstat]=await Promise.all([
+      all(()=>sb.from("media").select("creative_id,fields,hook,hook_auto,created_at,synced_at,style,kind,url,video_file,thumb,thumb_at,asset_note,thumb_hook,local_file,ai_tags").eq("client",cname).eq("kind","Video").in("style",LB_STYLES).order("creative_id")),
+      all(()=>sb.from("v_media_perf").select("*").order("creative_id")),
+      all(()=>sb.from("docs").select("path,data").eq("coll","media_notes").order("path")),
+      ftLoad(),
+      all(()=>sb.from("v_video_stats").select("*").order("creative_id")).catch(()=>[])]);   // مشاهدات كل فيديو من كل الحملات (مع Smart+ على مستوى الفيديو)
     thumbVer(media); await thumbUrls(media.map(m=>m.thumb));
-    const perf=await all(()=>sb.from("v_media_perf").select("*").order("creative_id"));
-    const notes=await all(()=>sb.from("docs").select("path,data").eq("coll","media_notes").order("path")); await ftLoad();
-    let vstat=[]; try{ vstat=await all(()=>sb.from("v_video_stats").select("*").order("creative_id")); }catch(e){}   // مشاهدات كل فيديو من كل الحملات (مع Smart+ على مستوى الفيديو)
     const V={}; vstat.forEach(v=>{ (V[v.creative_id]=V[v.creative_id]||[]).push(v); });
     const P={}; perf.forEach(p=>{ (P[p.creative_id]=P[p.creative_id]||[]).push(p); });
     const N={}; notes.forEach(n=>{ N[n.path.split("/")[1]]=n.data||{}; });
@@ -13556,16 +13608,24 @@ async function exFetch(from,to){
   const cid=S.ws||(S.cfg.clients[0]||{}).id;
   const k=(cid||"")+"|"+from+"|"+to; if(EX.cache[k]) return EX.cache[k];
   const sb=window.SUPA_DB&&SUPA_DB.client; if(!sb) throw new Error("site-only");
+  // Nov 16 2026: platform rows, Khzama rows and the name dictionary are read at the same time (were one after another)
+  const pAd=(async()=>{
   const out=[]; let i=0;
   for(;;){ let q=sb.from("ad_daily").select("*").gte("date",from).lte("date",to).order("date").order("platform").order("ad_id").order("video_id").range(i,i+999);
     if(cid) q=q.eq("client_id",cid);
     const r=await q; if(r.error) throw r.error; out.push(...r.data); if(r.data.length<1000) break; i+=1000; }
+  return out; })();
+  const pKz=(async()=>{
   const kz=convClient(cid)? await convAsKz(sb,cid,from,to) : []; let ki=0;
   for(;!convClient(cid);){ let q=sb.from("khzama_link_daily").select("date,platform,camp_no,creative_id,code,product,rest,donations,amount,title,custom").gte("date",from).lte("date",to).order("date").order("link_id").range(ki,ki+999);
     if(cid) q=q.eq("client_id",cid);
     const r=await q; if(r.error) break; kz.push(...r.data); if(r.data.length<1000) break; ki+=1000; }
+  return kz; })();
+  const pMd=(async()=>{
   if(!EX.md){ const md={}, al={inf:{},prod:{},vr:{},disp:{}}; for(let mi=0;;mi+=1000){ const r=await sb.from("media").select("creative_id,advertiser,project,season,product,style,launch_url").order("creative_id").range(mi,mi+999);
       if(r.error) break; r.data.forEach(m=>{ md[m.creative_id]=m; exAliasAdd(al,m); }); if(r.data.length<1000) break; } EX.md=md; EX.alias=al; }
+  })();
+  const [out,kz]=await Promise.all([pAd,pKz,pMd]);
   out.kz=kz; EX.cache[k]=out; return out; }
 /* نفس الشخص أو المنتج مكتوب بالعربي مرة وبالإنجليزي مرة (Mnswr-Alsalmy = منصور السالمي):
    القاموس جاي من بورد Airtable (لينك Launch فيه الكود والاسم العربي)، وكل الأسماء بتتوحّد على الاسم العربي */
@@ -13752,8 +13812,8 @@ async function mxFetch(a,b){ const k=a+"|"+b; if(MX.cache[k]) return MX.cache[k]
   const cid=S.ws||(S.cfg.clients[0]||{}).id;
   const all=async(t,cols,ord)=>{ const out=[]; for(let i=0;;i+=1000){ let q=sb.from(t).select(cols).gte("date",a).lte("date",b).order("date"); ord.forEach(o=>{ q=q.order(o); }); q=q.range(i,i+999);
       if(cid) q=q.eq("client_id",cid); const r=await q; if(r.error) throw r.error; out.push(...r.data); if(r.data.length<1000) break; } return out; };
-  const [mx,aff]=await Promise.all([all("mx_daily","date,dim,val,event,cnt",["dim","val","event"]),all("v_mx_aff","date,link,event,cnt,camp_no,creative_id,code",["link","event"])]);
-  let ad=null; try{ ad=await exFetch(a,b); }catch(e){}
+  const [mx,aff,ad]=await Promise.all([all("mx_daily","date,dim,val,event,cnt",["dim","val","event"]),all("v_mx_aff","date,link,event,cnt,camp_no,creative_id,code",["link","event"]),
+    exFetch(a,b).catch(()=>null)]);   // Nov 16 2026: platform data loads alongside, not after
   return MX.cache[k]={mx:mx.filter(r=>r.dim!=="aff"),aff:aff,ad:ad}; }
 async function mxLoad(){ if(MX.busy) return; MX.busy=true; MX.err=""; render();
   try{ const [a,b]=mxRange(); await mxFetch(a,b); }

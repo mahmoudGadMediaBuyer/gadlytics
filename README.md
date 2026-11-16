@@ -57,6 +57,7 @@ The site **only displays data**. It never writes to or changes an ad account. Al
     - 34.5 [Launch tool «أداة الإطلاق» (extension 1.3.0 → 1.4.1)](#345-launch-tool-أداة-الإطلاق--the-extension-runs-the-tamkeen-launch-tool-for-a-build-v130-nov-12-2026)
 37. [Campaign launch from GADLYTICS «إطلاق الحملات»](#37-campaign-launch-from-gadlytics-إطلاق-الحملات-nov-12-2026)
 38. [Launch system field guide — extension changelog, architecture, timings, open items, operating guide](#38-launch-system-field-guide--extension-changelog-architecture-timings-open-items-operating-guide-nov-13-2026)
+39. [إدارة الحملات أوتوماتيك — Campaign roster auto](#39-إدارة-الحملات-أوتوماتيك--campaign-roster-auto-nov-15-2026)
 
 ---
 
@@ -480,7 +481,7 @@ A sheet where **each column is a day and each row is a platform**. Each cell hol
 - **Videos table:** creator, spend, orders, **revenue** and ROAS for each video in the campaign.
 - **Suggestion** with its reasons; see [§8](#8-decision-rules-how-suggestions-are-made). It is a suggestion only. The decision and execution are yours.
 
-> Auto-filling the roster from the platforms every day is planned for the season. For now, ask Claude to "update the campaign sheet".
+> The roster now fills itself from the real on/off state of the campaigns on the platforms, every 30 minutes: see §39. Auto entries carry a small «تلقائي» tag; a campaign you turn off stays on its day with «اتقفلت HH:MM» and is not carried to the next day. Manual add / carry / remove still work (removing an auto entry hides it for that day only).
 
 ### 6.10 Media plans (الميديا بلان)
 
@@ -1185,6 +1186,7 @@ Current row: the defaults above (no `roas.alarm` — the client's `roasAlarm` is
 | `camp-refresh` | v5 | today-only spend (midnight Riyadh → now, per account timezone), `ad_daily` upsert on `client_id,date,platform,level,account_id,ad_id,video_id`, `camp_struct` (paused-parent rule: a child of a paused campaign shows paused), `camp_hourly` 15-min buckets; queues `sys/campreq` with `parts` khzama / conv | the page («تحديث الأرقام»), `camp-alerts`; admin path with `x-ingest-key` checked against a SHA-256 hash (`INGEST_SHA`) |
 | `push` | v5 | Web Push (VAPID keys `VAPID_PUBLIC` / `VAPID_PRIVATE_JWK` in `app_secrets`, RFC 8291 encryption); actions vapid / subscribe / unsubscribe / prefs / mine / test + server `send`; `holdReason` (rule off / outside hours / quiet hours; `force` skips) | the page, `camp-alerts` |
 | `camp-alerts` | v1 | §28 | pg_cron every 5 min |
+| `roster-sync` | v1 | §39: refreshes (`camp-refresh`, skipped in season mode), then writes the auto roster docs `roster_auto/<client>__<date>` | pg_cron `gad-roster-sync` every 30 min, 24 h (verify_jwt ON) |
 | `media-sync` | v1 | Airtable → `media` | `camp-alerts` (every 15 min), the page |
 | `ai` | v1 | the AI assistant | the page |
 | `ingest` | v11 | the Mac's write path for the daily pull; allowed tables include `app_secrets` (by `name`), `camp_struct`, `conv_daily` | scripts in `~/.gadlytics` |
@@ -1250,6 +1252,7 @@ These tasks stop on a permission prompt when they hit a tool they haven't been a
 | Nov 12 | Launch cards: **chat with the campaign** (table `launch_msgs`, `launch-api` v3 `/say` + `draft → building`, `launch_poll` message hand-over, watcher `--msgs` + `MESSAGE` blocks, `launch_status.py say`, resume procedure and fixed rules in the skill), «حالة الحملات» shows the last message, and **build agents run on `sonnet`** (one setting at the top of `launch_dispatch.md`; `opus` if builds make setting mistakes). Local only. |
 | Nov 12 | Launch cards: real progress bar «NN%» from counts (`launch_queue.progress` / `prog`, `launch-api` v2, `launch_status.py --launches/--adsets/--ads/--khzama K/N`; weights 20 / 10 / 35 / 30 + final check 5), card named by the campaign code + full name once known, picker tab «كل الحالات» (any status is selectable; nothing checks status). Local only. |
 | Nov 12 | **Campaign launch from GADLYTICS** (§37, local only — not uploaded yet): new view `launch` «إطلاق الحملات» after «إدارة الحملات» (brief form for Meta / TikTok / Snapchat, validation, «قوالبي» saved templates per user, library picker with tabs by status + «حدّث المكتبة», shared launched list with live states, Mac connection state, report per campaign). Backend: table `launch_queue` (RLS + guard trigger), SQL `launch_claim` / `launch_poll`, edge fn `launch-api` (verify_jwt on), key scope `launch` (`make_api_key.py --launch` → `~/.gadlytics/launch.key`), push on draft / stopped. Mac: `launch_watcher.py`, `launch_status.py`, `launch_lib.py`, runbook `launch_dispatch.md`. Dry-run tested without a real campaign; builds run as background agents of one dispatcher chat «مراقب الإطلاق» (automatic `start_session` is refused by the app); the agent hop is proven by Mahmoud's next test (§37.9). |
+| Nov 15 | **Campaign roster fills itself** (§39, local only until «ارفع»): edge fn `roster-sync` v1 (verify_jwt on) + cron `gad-roster-sync` every 30 min; per client+day docs `roster_auto/<client>__<date>` built from `camp_struct` status + `ad_daily` spend; the page shows auto ∪ manual with «تلقائي» and «اتقفلت HH:MM», tiles by Mahmoud's three rules; TikTok via the daily pull's spend. Backfilled 7 days from spend. |
 | Nov 13 | Docs pass for the GitHub upload: §38 launch-system field guide (extension changelog 1.1.0 → 1.4.1, architecture, measured timings, open items, Egyptian-Arabic operating guide, token-usage lessons); table of contents now lists §34.4, §34.5, §37, §38. |
 
 ## 32) AI assistants API (instinct / MCP) — `gad-api` (Nov 10 2026)
@@ -1889,7 +1892,7 @@ First real runs of the new paths: MGG-03113 (Snapchat by API, 7 min, PAUSED, 6 a
 
 §34.4, §34.5 and §37 describe each piece in depth. This section is the one-page map over them: what each extension version added, how the parts connect, what the real runs measured, what is still open, and how Mahmoud runs it day to day. Nothing here changes behaviour.
 
-### 38.1 Extension changelog «GADLYTICS · خزامى لحظي» (`khzama-live/`, 1.1.0 → 1.4.1)
+### 38.1 Extension changelog «GADLYTICS · خزامى لحظي» (`khzama-live/`, 1.1.0 → 1.4.2)
 
 The extension started (1.0.x, Nov 11) as the donations reader of §34.2. Everything below is the campaign-launch work of Nov 12. Update an installed copy with `chrome://extensions` → «GADLYTICS · خزامى لحظي» → reload (↻); the key stays in `chrome.storage.local`.
 
@@ -1901,6 +1904,7 @@ The extension started (1.0.x, Nov 11) as the donations reader of §34.2. Everyth
 | **1.3.1** | Result-page reader fix | A result page's rows carry short labels (Campaign / Ad / Product Link / Parameters / UTM) for about 0.2 s after it first draws, then the long ones (Campaign Name / Ad Name / UTM URL). The reader looked for the long ones only and flagged a mismatch on the last Creative ID. Now both label sets match, and a result is accepted only after two identical reads in a row. |
 | **1.4.0** | Campaigns in parallel, shorter number lock | Launch tool `LT_MAX_PARALLEL = 4` (one loop and one fresh tab per campaign; the ad sets of one campaign stay one after the other); Khzama `LINKS_MAX_PARALLEL = 3` with a fresh tab every `LINKS_PER_TAB = 3` links (a hidden tab slows down the longer it works). `tl_jobs` / `kz_jobs` hand out one job per campaign (`max`, `for`, `skip`). **The number lock is held only around the New submit** — from the click until the number is read on the result page — instead of the whole launch. |
 | **1.4.1** | Chained Khzama jobs, warm tab, faster agent start | (1) Khzama jobs are **chained per validated ad set**: `tool-launch --wait` / `tool-status --wait` queue each ad set's Parameters strings the moment that ad set is validated (`KHZAMA-LINKS AUTO <custom>`), so links start while later ad sets still launch. (2) A **fresh Khzama tab every 3 links** with a **pre-warmed** next tab (`linksWarm`, read-only campaign-list load) so the tab change costs no page load. (3) **Faster agent start**: the watcher writes `launch_queue/done/<id>.inputs.json` from the page's «Tamkeen Ads Manager Level» block and the agent prompt gets an item 0 — compare the file with the brief and submit it as the very first command. (4) The extension **picks up a new job within 15 s**. |
+| **1.4.2** | «Navigation rejected.» no longer stops a batch | Real run Nov 15 (MGG-03119 Meta + MGG-03120 Snap): at 10:55:41–42 the Khzama links batch of BOTH campaigns failed with «Navigation rejected.» and the agents added 5 links by hand (~2 min). Every tab create / navigation of `links.js` and `launchtool.js` now goes through ONE queue in `background.js` (`tabSerial`, 300 ms between calls) and a rejected one is retried on a FRESH tab opened with the URL (4 tries, growing pause) before anything is reported; a tab that closes or is parked mid-link re-runs the same link on a fresh tab (≤ 3 runs, ≤ 60 s). Every safety check is unchanged. |
 
 ### 38.2 Architecture in one picture
 
@@ -1957,6 +1961,7 @@ Per-step figures from the runs:
 - **Custom names must be letters, digits and `_`** — the extension and the server reject anything else (`REJECTED`), and the launch tool's Parameters string is built from it.
 - **Not proven yet:** a real agent pausing in the middle of a real build (§37.8d); a Khzama login expiry in the middle of a batch is designed to stop the batch and hand the rest to the agent, but has not happened live.
 - **Scheduled tasks** are listed in §38.5; the daily pull is switched off.
+- **Fixed in 1.4.2 (Nov 15) — «Navigation rejected.» stopped whole Khzama batches.** In the real run of MGG-03119 (Meta) + MGG-03120 (Snap), both campaigns opened their first Khzama tab in the same second (10:55:41–42) and Chrome answered a tab call with «Navigation rejected.»; every error that was not a page problem was treated as a halt, so that campaign's batch stopped and the server failed the rest of its ad set («الإضافة وقفت: Navigation rejected.»). Later batches (10:56:07 on) went through. Chrome's own reason is not logged, so the exact trigger (a tab closing, a tab-suspender parking it, or two calls at once) is inferred from the timing and the code path, and the fix covers all three: (1) **one queue** (`tabSerial`) for every tab create and navigation of both workers, 300 ms apart, so two loops never navigate at the same instant; (2) **retry on a fresh tab** — `tabNavigate` / `tabCreate` (in `background.js`) try the tab itself once, then three times on a new tab opened with the URL (pause 0.4 / 0.8 / 1.2 s), the old tab closed by the loop that owns it; only when all four fail does the batch stop, with «فتح الصفحة فشل 4 مرات»; (3) **a tab that dies mid-link** (`No tab with id`, `The tab was closed`) re-runs the same link on a fresh tab — it starts with the no-duplicate check on a freshly loaded list, so a link saved by the run that died is found, never added twice; (4) the same helpers serve `launchtool.js` (a submit is still never repeated). Real page problems — login page, a changed form, a pre-save mismatch, no exact `TSW`, a refused save — still stop the batch at once; the pre-save form-value check, no-duplicate, `TSW` exact, the title guard and one link at a time per campaign are untouched. Tests (mock server only, `MOCK=1`): `kz_rej_ut.js` 34 checks and `lt_ut.js rej` 14 checks (a rejection once and always, create and update, two campaigns in parallel, rotation + warm-up, a tab dying right after the save click); `kz_par_ut.js` 18, `lt_ut.js off` 23 and the local part of `kz_ut.js` 41 still pass. `kz_rej_ut.js` fails on 1.4.1 exactly like the real run. Update: `chrome://extensions` → reload (↻) → version 1.4.2.
 
 ### 38.5 Operating guide for Mahmoud (Egyptian Arabic)
 
@@ -1998,3 +2003,44 @@ Per-step figures from the runs:
 - **Background agents inherit the chat's model.** If the dispatcher chat runs on Fable/Opus, every build agent does too unless you pass `model: sonnet` to the Agent tool. That is why `Build model: sonnet` sits at the top of the runbook; do the same for any execution work (builds, uploads, data pulls). Keep the big model for design, diagnosis and review.
 - Execution is cheap on Sonnet because the agents mostly call fixed commands (`launch_status.py`, `tool-launch`, `khzama-links`); the extension does the repetitive browser work with zero model calls.
 - The watcher, the extension and the scheduled-task checks cost nothing while idle; only a claimed request starts a model.
+
+## 39) إدارة الحملات أوتوماتيك — Campaign roster auto (Nov 15 2026)
+
+The roster (view `roster`, «إدارة الحملات») fills itself from the real on/off state of the campaigns. **Read-only towards the ad platforms.**
+
+**Mahmoud's rules**
+1. A campaign that is ON on a platform appears on that platform's row for the day and **carries over** to every following day while it stays ON.
+2. A campaign he turns OFF during a day **still shows that day** (counted in «اتقفلت», with the stop time) but is **not carried** to tomorrow.
+3. A campaign he turns ON or creates during the day is **added to that day** («جديدة»).
+Example: 10 running on Meta, 3 stopped at midday → today shows 10 (3 «اتقفلت»), tomorrow starts with 7.
+
+**Data flow**
+- pg_cron **`gad-roster-sync`** (jobid 3, `*/30 * * * *`, 24 h, anon-key header, same command as `gad-season-tick`) → edge fn **`roster-sync`** (verify_jwt ON, source `supabase/functions/roster-sync/index.ts`).
+- Per client of `config/app.clients`: (1) `camp-refresh` `{client, from: today, to: today}` first — skipped when `sys/season` is active with a tick < 10 min old (season-tick refreshes every 2 min); (2) read campaign rows of `camp_struct` (all platforms; ON = status `active`/`enabled`/`delivering`) and today's `ad_daily` rows with spend > 0; the entry is the campaign code (`camp_no`, else the `PM_CAMP` regex `[A-Z]{2,4}-\d{3,6}` on the name); (3) write the auto doc.
+- Doc `docs` `roster_auto/<client>__<YYYY-MM-DD>` (Riyadh day) = `{clientId, date, byPlatform:{pid:{CODE:{first_on, last_seen_on, off_at|null, source, carried, off_est?, late?, provisional?}}}, platforms:{pid:{fresh, struct_at}}, synced_at, backfill?}`.
+  - New day: the first run after Riyadh midnight builds it from yesterday's codes that are still ON (`carried:true`, `first_on` kept). Yesterday's still-open codes that are no longer ON are closed on yesterday (`off_at` = the run time, capped at 23:59:59, `off_est:true`).
+  - Each run: a code ON now (or with spend today) that is missing is added (`carried:false` = «جديدة»); a code no longer ON gets `off_at`; a code back ON clears `off_at`.
+  - Manual roster docs (`roster/*`) are never touched by the function.
+- Heartbeat `sys/roster_sync`: `running`, `started_at`, `last_run_at`, `ms`, `ok`, `season_running`, `clients.{id}.{refresh, platforms.{pid}.{fresh,total,on,closed,carried,new}, docs_written, ms}`, `runs`. Self-throttle: overlap < 5 min and a run < 4 min ago are skipped. Body `{backfill_days: 1..14}` rebuilds past days from `ad_daily` spend (no refresh, not throttled); `{dry:true}` returns the computed doc and writes nothing.
+- **Fresh vs stale platforms.** A platform whose `camp_struct` rows were updated in the last 25 min is *fresh* (Meta + Snap, through `camp-refresh`). **TikTok** is stale (only the Claude daily pull writes it, and `camp-refresh` answers `not_built`): no status is read from it. It gets entries from `ad_daily` spend > 0 (source `spend`, filled in when the daily pull lands, usually the next morning) and a one-day *provisional* carry (source `carry`) from yesterday's spend entry, dropped once its day is over if no spend backs it. So TikTok is at most about a day late; it becomes live the day the TikTok API app is approved and `camp-refresh` writes it.
+- **Backfill (Nov 15):** 7 days (Nov 8–14) built from `ad_daily` spend > 0 per day. `ad_daily` has no Meta/Snap rows after Oct 19 / Oct 14 and no TikTok after Nov 9 (ديمان), so most backfilled days are empty; the days that have data show «ran that day». There is no past status history, so past days have no off times: their entries have `off_at:null`, and the page shows the red «gone» outline when a code is missing from the next day.
+
+**Page (`renderRoster`)**
+- Each cell = auto entries ∪ manual ids, minus the codes hidden for that day (`hide:{pid:[codes]}` in the manual doc of the day). Auto entries carry a small «تلقائي» tag; closed ones are dimmed and struck through with «اتقفلت HH:MM» (≈ when the time is an estimate).
+- Tiles for the focus day: «جديدة» = auto entries with `carried:false`; «مستمرة من امبارح» = `carried:true`; «اتقفلت» = entries with `off_at`; «شغالة» = entries still ON. Manual-only ids keep the old day-to-day comparison.
+- ✕ on an auto entry hides it for that day only (never deletes it from the auto doc); adding it again by hand un-hides it. ↓ / «الكل ←» skip entries closed that day.
+- The page loads `roster_auto` with the other docs and refreshes it (at most every 45 s) when the roster is open.
+
+**Checks:** `select data from docs where path='sys/roster_sync';` · `select path, data from docs where path like 'roster_auto/%' order by path desc;` · `select * from cron.job_run_details where jobid=3 order by start_time desc limit 5;`
+
+## 40) Speed — parallel loading + light update check (Nov 16 2026)
+
+Measured on the live site before the change: the first screen waited ~6 s because every read went out one after another.
+
+- **Start-up (`loadMeta`)**: the 13 collections (changes, experiments, creatives, roster, roster_auto, sheets, tasks, plans, crlib, approvals, taskTemplates, reviews, private tasks) + `earliest()` are fetched with one `Promise.allSettled`. Measured 4.0 s → 0.85 s. A failed collection still falls back to `[]` exactly as before.
+- **Pages**: `maLoad` (إدارة الميديا), `lbLoad` (مكتبة الكريتيف), `exFetch` (platform rows + Khzama rows + name dictionary) and `mxFetch` (funnel + platform data) read their tables in parallel instead of in sequence. Paging inside each table is unchanged.
+- **Update check**: `build.py` now also writes `version.txt` (the build number). The app's auto-update check fetches only that file (≈15 bytes) instead of re-downloading the whole 1.7 MB `index.html` on every open/focus. **Every deploy must upload `index.html` and `version.txt` together** (runbook updated).
+- Not changed: the order config → identity → meta → entries (entries need `changes`/`experiments` for the date window).
+
+### Khzama extension 1.5.1 (same day)
+After the 4-campaign run on 1.5.0 (6 Khzama tabs → 90–118 s per save, 6 links failed and were added by hand): at most **4** Khzama tabs at once (`LINKS_TABS_MAX`), **2** per campaign (`LINKS_LANES`), and a page that is too slow no longer halts the batch — the link is left unreported, the server re-queues it after 120 s (attempt 2 starts with the no-duplicate check), every other link goes on. Server `kz_jobs` takes `per` (migration `kz_jobs_per_campaign_lanes`, backup in docs `sys/backup_kz_jobs_20261115`); 1.4.2 backup folder `khzama-live-backup-1.4.2/` (see its ROLLBACK.md), 1.5.0 backup `khzama-live-backup-1.5.0/`.
