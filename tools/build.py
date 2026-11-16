@@ -25,8 +25,9 @@ head = """<!doctype html>
 (function(){ var B="__BUILD__", last=0;
   function busy(){ return document.querySelector("#cpIn:focus, .ma-sheet, input:focus, textarea:focus"); }
   function chk(){ var n=Date.now(); if(n-last<20000) return; last=n; if(busy()) return;
-    fetch(location.pathname+"?_b="+n,{cache:"no-store"}).then(function(r){ return r.ok? r.text() : ""; }).then(function(t){
-      var m=t&&t.match(/name="gad-build" content="([^"]+)"/); if(m&&m[1]!==B&&!busy()){ var u=new URL(location.href); u.searchParams.set("_v",m[1]); location.replace(u.toString()); } }).catch(function(){}); }
+    /* Nov 16 2026: reads the tiny version.txt (≈15 bytes) instead of downloading the whole 1.7 MB page every time */
+    fetch(location.pathname.replace(/[^\/]*$/,"")+"version.txt?_b="+n,{cache:"no-store"}).then(function(r){ return r.ok? r.text() : ""; }).then(function(t){
+      var v=String(t||"").trim(); if(/^\d{14}$/.test(v)&&v!==B&&!busy()){ var u=new URL(location.href); u.searchParams.set("_v",v); location.replace(u.toString()); } }).catch(function(){}); }
   document.addEventListener("visibilitychange",function(){ if(!document.hidden) chk(); });
   window.addEventListener("pageshow",function(){ setTimeout(chk,1500); }); window.addEventListener("focus",chk); setInterval(chk,300000); })();
 </script>
@@ -40,4 +41,5 @@ import time
 BUILD = time.strftime("%Y%m%d%H%M%S", time.gmtime())
 head = head.replace("__BUILD__", BUILD)
 open(os.path.join(ROOT, "index.html"), "w", encoding="utf-8").write(head + app + "\n</body>\n</html>\n")
+open(os.path.join(ROOT, "version.txt"), "w", encoding="utf-8").write(BUILD + "\n")   # upload together with index.html
 print("build", BUILD, "· index.html", os.path.getsize(os.path.join(ROOT, "index.html")), "bytes from", SRC)
