@@ -2,6 +2,9 @@
 
 Goal: every Molabi library video (styles مشهور/مودل/ابداعي) has a cover = its opening frame **with its hook written on the image**, and a hook = the first sentence the speaker says — distinct enough to tell videos apart. Videos never stay on the Mac.
 
+**Automatic since Nov 16 2026:** `~/.gadlytics/auto_media.py` runs every 15 min (launchd `com.gadlytics.automedia`, ~/Library/LaunchAgents) — media_sync, then cover + Whisper hook + hook-on-image for every Molabi video (all styles) not in media_assets.done, newest first; no video → asset_note no_video; network errors retry next run. Log ~/.gadlytics/auto_media.log. The manual steps below stay for re-hooks and dedupe.
+Stop: `launchctl bootout gui/$(id -u)/com.gadlytics.automedia`.
+
 1. **Queue** (Supabase execute_sql; the result is big → read it from the saved tool-result file with python, never retype):
    with sp as (select creative_id, sum(spend) s from public.v_media_perf group by 1)
    select json_agg(json_build_object('id',m.creative_id,'url',m.url,'h',(coalesce(m.hook,'')<>'' and m.hook not ilike 'http%') or coalesce(m.hook_auto,'')<>'' or coalesce(d.data->>'hook','')<>'','t',m.thumb is not null) order by coalesce(sp.s,0) desc) as gad_thumb_queue

@@ -156,3 +156,36 @@ update public.docs set data = data || jsonb_build_object('status','done','done_a
    صرف Apple Search Ads وجوجل (مالهمش connector): python3 ~/.gadlytics/conv_spend_to_ad_daily.py DIR/conv.json … → ingest ad_daily (منصة asa/google من تكلفة AppsFlyer).
 3. execute_sql بمحتوى ~/.gadlytics/rebuild_entries_conv.sql (entries لديمان).
 فخاخ: AppsFlyer بالدولار وبتوقيت UTC (السكريبت بيضرب ×3.75)؛ صرف ميتا مش متربط في AppsFlyer (Cost فاضي) — الصرف دايماً من المنصة نفسها؛ تقارير سلة قبل 12 أكتوبر 2026 بترجع صفر.
+
+## ديمان — مصادر الأرقام (من 17 نوفمبر 2026، حسب محمود)
+- الصرف: المنصات بس (تيك توك الشغال دلوقتي + Apple Search Ads من تكلفة AppsFlyer ×3.75).
+- الطلبات والإيراد = الباك إند https://dashboard.dimaan.sa/admin/marketing/statistics («الطلبات»: عدد الطلبات + إجمالي الطلبات) + سلة (reports_sales_over_time).
+  العملاء الجدد = «العملاء الجدد» (أول شراء) + «إجمالي طلباتهم» = إيراد العملاء الجدد.
+  الباك إند بيعرض آخر 4 أيام بس، ومن غير تقسيم لكل منصة أو حملة. بيتقري من كروم (محمود عامل تسجيل دخول): اضغط كل تبويب يوم واقرا main.innerText.
+  الصفوف بتتكتب في conv_daily بـ channel 'backend' (purchases, revenue, new_customers, new_customer_revenue)، و os 'all'، و source_raw 'dimaan_backend'.
+  بيتسحب لما يدوس «حدّث كل حاجة» بس، فأي يوم أقدم من 4 أيام ما اتسحبش بيضيع.
+- الأيام من 27 أغسطس لـ 13 نوفمبر 2026 جاية من الشيت «Dimaan Performance»، بـ channel 'sheet' (إيراده شامل سلة، ومفيهوش عدد طلبات).
+- AppsFlyer: إجمالي لكل نظام، groupings [Date, App]:
+  - Installs، و af_add_to_cart Unique users period "0" (اللي ضافوا للسلة يوم ما نزّلوا التطبيق)، و af_complete_registration Count period "activity".
+  - بتتكتب بـ channel 'app' و source_raw 'appsflyer_total'.
+  - التوقيت UTC، فالأرقام بتختلف شوية عن الشيت.
+- بعدها شغّل rebuild_entries_conv.sql (من 27 أغسطس). بيطلع صف «ديمان: النظام + سلة» (store) وصفين للتطبيق (app_ios و app_android)، وصف لكل حملة فيه الصرف بس.
+  ROAS الحملة الواحدة مش هيظهر، لأن الطلبات مالهاش تقسيم لكل حملة.
+- (17 نوفمبر) لكل حملة: طلبات وإيراد المنصة (ad_daily purchases/revenue) بيتكتبوا plat_orders/plat_revenue.
+  AppsFlyer لكل حملة: groupings [Date, Media source, Campaign] + فلتر Media source المدفوعة، in_app_event af_purchase، metrics Installs + Count/Revenue period "activity".
+  الصفوف دي بتتكتب في conv_daily بـ channel 'af_camp'، والإيراد بالدولار ×3.75. لو الصفوف قربت من 300 قسّم الفترة.
+  إجمالي AppsFlyer لكل نظام (af_purchase بـ Date, App) بيتكتب purchases/revenue على صفوف appsflyer_total، ومنها كروت af_orders/af_revenue/af_roas فوق.
+- Apple Ads (app-ads.apple.com/cm/app/19271690/report) لسه مالوش سحب يومي مباشر.
+  الصفحة بتعرض إجمالي الفترة بس، وبتجيب بياناتها من reporting/graphql.
+  الصرف والتحميلات لكل حملة جايين من تكلفة AppsFlyer (Apple Search Ads ×3.75).
+- (17 نوفمبر) حملات Apple Ads متسجلة يدوي في camp_struct (platform asa، account_id appsflyer-asa، والميزانية اليومية بالريال = الدولار ×3.75):
+  - 2144574897 MGG-02994-Search: 20$ → 75 ريال
+  - 2144573822 MGG-02993-Auto: 30$ → 112.5 ريال
+  - 2142732812 MG00133: واقفة
+  في ad_daily، الـ campaign_id بتاع asa = رقم Apple ده، مش اسم الحملة. أي سحب جديد لـ ASA من تكلفة AppsFlyer لازم يحط الرقم ده.
+  لو حملة اتفتحت أو اتقفلت أو الميزانية اتغيرت في Apple Ads، حدّث camp_struct بإيدك.
+  camp-apply بيرفض أي منصة غير meta/tiktok/snap، فزرار التشغيل والإيقاف بتاع ASA مش هيشتغل من السيستم.
+- (17 نوفمبر) إعادة بناء ديمان بقت دالة في الداتابيز: execute_sql «select public.rebuild_entries_dm1n4an(date 'YYYY-MM-DD')» (من اليوم ده لقدام، وأقل حاجة من 27 أغسطس).
+  ملف rebuild_entries_conv.sql فيه نفس الكلام، بس الدالة أسرع.
+  ديمان مالهاش تحديث لحظي: «تحديث سريع» بيسحب ميتا وسناب بس (camp-refresh: TIKTOK_TOKEN → not_built).
+  عشان كده صرف تيك توك وApple بيتحدث بس لما Claude يسحب.
