@@ -40,6 +40,8 @@ Reply to Mahmoud in Egyptian Arabic. Tool and field names stay English.
 ## Media-buyer tools (Nov 2026)
 ⚡ تحديث سريع (`sys/pullreq` mode quick → today only, see daily_pull.md) · library: views/frequency/retention (`v_video_stats`), AI hook tags (`media.ai_tags`, step 3e), «الدرجة /100», ✦ الأنماط + ✍ Brief, 🚀 الإطلاقات (`settings.launch`) · مركز الإجراءات: «حوّلها لمهمة» / «تجاهل» · التجارب: مختبر الاختبارات (`labtests/*`; split by tag in ad set + Khzama link names, or city holdout from `mx_daily dim=city`) · التقارير: «الشهر والمواسم» (forecast, Hijri months, weekdays; `settings.month`). Details: README section 20.
 
+**Airtable sync breaks when Airtable changes its page (Nov 16 2026):** the data URL is read from the shared-view HTML with `urlWithParams\s*[:=]\s*"…"` (it was `urlWithParams: "…"`, now `var urlWithParams = "…"`). If «حدّث» says «shared view not readable (unshared?)» but the link opens fine, look at how `urlWithParams` appears in the page and fix the regex in all 3 copies: `~/.gadlytics/media_sync.py`, `scripts/media_sync.py` and the `media-sync` edge function (redeploy, verify_jwt true).
+
 **▶ الفيديو opens the video file, not the folder:** Airtable's URL is a Drive *folder* per creative. `video_links.py` (run by `media_sync.py` after every sync; cache `~/.gadlytics/video_links.json`) lists each public folder, picks the Snap/story version, and stores `https://drive.google.com/file/d/<id>/view` in `media.video_file`. The site uses `video_file || url` everywhere, with a small 📁 link to the folder. Backfill/recheck: `python3 ~/.gadlytics/video_links.py --all <pairs.json>`.
 
 
@@ -168,3 +170,21 @@ Mac sizes (final, Nov 10): `html.ma-desk .ma{max-width:none;margin:0}`; `.ma-spl
 ## Campaign roster auto «إدارة الحملات أوتوماتيك» — `roster-sync` (Nov 15 2026, README §39)
 - The `roster` view fills itself: edge fn `roster-sync` (verify_jwt ON) + cron `gad-roster-sync` every 30 min, 24 h. It refreshes first (`camp-refresh` today; skipped when season mode runs), reads `camp_struct` campaign status + `ad_daily` spend > 0, and writes docs `roster_auto/<client>__<date>` = `{byPlatform:{pid:{CODE:{first_on,last_seen_on,off_at|null,source,carried}}}, platforms:{pid:{fresh}}}`; heartbeat `sys/roster_sync`. Read-only on the platforms; never touches manual `roster/*` docs.
 - Rules: ON → on the day and carried while ON · turned OFF in a day → still shown that day («اتقفلت HH:MM»), not carried · turned ON in a day → added that day («جديدة»). The page shows auto ∪ manual, «تلقائي» tag, tiles from these rules; ✕ on an auto entry only hides it that day (`hide` in the manual doc). TikTok has no live status (only the daily pull): spend-based, ~1 day late. Body `{backfill_days:N}` rebuilds past days from spend; `{dry:true}` computes only. Check: `select data from docs where path='sys/roster_sync';`
+
+**ديمان: الكروت ومصادرها والتحديث (17 نوفمبر 2026)**
+- مصادر الأرقام: `runbooks/daily_pull.md` (قسم ديمان). إعادة البناء: `select public.rebuild_entries_dm1n4an(date 'YYYY-MM-DD')`.
+- الكروت العشرة لديمان بس:
+  - الصرف من المنصات
+  - الطلبات والإيراد من الباك إند + سلة
+  - ROAS
+  - التحميلات من AppsFlyer
+  - تكلفة التحميل
+  - العملاء الجدد
+  - إيراد العملاء الجدد
+  - ROAS العملاء الجدد
+  - CAC
+- الباك إند `dashboard.dimaan.sa/admin/marketing/statistics` بيعرض آخر 4 أيام بس، وبيتقري من كروم.
+- الأزرار:
+  - «حدّث كل حاجة» في لوحتي بيحدّث كل حاجة: المنصات، وAirtable، وطلبات السحب، والكاش.
+  - زرار كل قسم بيحدّث قسمه بس.
+- تيك توك لسه مش لحظي: تطبيق TikTok API «GADLYTICS» وحساب المطوّر اترفضوا (17 نوفمبر).
