@@ -2045,3 +2045,19 @@ Measured on the live site before the change: the first screen waited ~6 s becaus
 
 ### Khzama extension 1.5.1 (same day)
 After the 4-campaign run on 1.5.0 (6 Khzama tabs → 90–118 s per save, 6 links failed and were added by hand): at most **4** Khzama tabs at once (`LINKS_TABS_MAX`), **2** per campaign (`LINKS_LANES`), and a page that is too slow no longer halts the batch — the link is left unreported, the server re-queues it after 120 s (attempt 2 starts with the no-duplicate check), every other link goes on. Server `kz_jobs` takes `per` (migration `kz_jobs_per_campaign_lanes`, backup in docs `sys/backup_kz_jobs_20261115`); 1.4.2 backup folder `khzama-live-backup-1.4.2/` (see its ROLLBACK.md), 1.5.0 backup `khzama-live-backup-1.5.0/`.
+
+## ديمان — مصادر الأرقام والكروت (17 نوفمبر 2026)
+- **الصرف:** من المنصات. Apple Ads جاي من تكلفة AppsFlyer ×3.75، وحملاته متسجلة في camp_struct بـ platform asa.
+- **الطلبات والإيراد:** الباك إند بتاع ديمان («الطلبات») + سلة. الأيام من 27 أغسطس لـ 13 نوفمبر من شيت الأداء بتاع محمود (channel sheet).
+  - العملاء الجدد = «العملاء الجدد» في الباك إند (أول شراء).
+  - التحميلات والتسجيل والإضافة للسلة من AppsFlyer لكل نظام.
+- **لكل حملة:**
+  - `plat_orders`/`plat_revenue`: طلبات وإيراد المنصة نفسها.
+  - `af_c_installs`/`af_c_orders`/`af_c_revenue`: AppsFlyer للحملة.
+  - الاتنين ظاهرين في الجدول والدرج، ومش داخلين في الإجمالي.
+- **إجمالي AppsFlyer (كل المصادر):** `af_orders`/`af_revenue` على صفوف app_ios/app_android.
+- **الكروت فوق في لوحتي:** ديمان عنده 10 كروت: الـ 6 العاديين + طلبات AppsFlyer وإيراده وROAS بتاعه والتحميلات (`.pm-kpis10`).
+  - `kpiKeys()` بيخفي المقاييس اللي `kinds` بتاعتها مش متطابقة مع نوع العميل.
+- **الدرج (`pmDrawerConv`):** إحصائيات المنصة + قسم «AppsFlyer للحملة دي» + الـ ad sets من `ad_daily` لايف (`pmAdsetsLoad`).
+- **إعادة البناء:** دالة `public.rebuild_entries_dm1n4an(from date)`، ومش متاحة لـ anon ولا authenticated.
+- **تيك توك:** التطبيق GADLYTICS وحساب المطوّر اترفضوا (17 نوفمبر)، فـ camp-refresh لسه مش بيحدّث تيك توك لايف.

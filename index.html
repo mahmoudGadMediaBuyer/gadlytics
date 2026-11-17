@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="gad-build" content="20261116082835">
+<meta name="gad-build" content="20261117110026">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -16,7 +16,7 @@
 <script>
 /* تحديث تلقائي للتطبيق على الموبايل/الآيباد: مفيش service worker ولا كاش. كل ما التطبيق يتفتح أو يرجع للواجهة
    بيجيب index.html جديد (no-store) ويقارن رقم البيلد؛ لو فيه نسخة أحدث بيفتحها على طول. */
-(function(){ var B="20261116082835", last=0;
+(function(){ var B="20261117110026", last=0;
   function busy(){ return document.querySelector("#cpIn:focus, .ma-sheet, input:focus, textarea:focus"); }
   function chk(){ var n=Date.now(); if(n-last<20000) return; last=n; if(busy()) return;
     /* Nov 16 2026: reads the tiny version.txt (≈15 bytes) instead of downloading the whole 1.7 MB page every time */
@@ -1273,6 +1273,8 @@ html:not([data-theme="dark"]) .lc,html:not([data-theme="dark"]) .lc-modal,html[d
 .lc-rec small{font-size:12px;color:var(--ink-3);margin-inline-end:2px}
 .lc-rec .chip{cursor:pointer;min-height:44px;display:inline-flex;align-items:center;max-width:100%;overflow-wrap:anywhere;text-align:start}
 .lc-more{background:none;border:0;color:var(--ink-2);text-decoration:underline;min-height:44px;cursor:pointer;font:inherit;font-size:13px;padding:0 4px}
+.lc-hand{margin:0 0 10px;padding:10px 12px;border:1px solid var(--lc-acc,var(--cyan));background:var(--lc-acc-bg,var(--brand-50));border-radius:12px;font-size:13.5px;line-height:1.6}
+.lc-hand b{font-size:15px;margin-inline-end:2px}
 .lc-dup{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px;border:1px solid var(--warn);border-radius:12px;margin-top:8px}
 .lc-dup span{flex:1 1 100%;font-weight:600;font-size:13.5px}
 .lc-dup .btn{min-height:44px}
@@ -1553,9 +1555,9 @@ let _lang="ar";
 const LANG=()=>_lang;
 function syncLang(){ try{ _lang=(S.cfg.settings.lang)||"ar"; }catch(e){ _lang="ar"; } return _lang; }
 const EN=()=>LANG()==="en";
-/* عميل من غير خزامى (ديمان): كل نص بيقول «خزامى/تبرع» بيتقري «AppsFlyer وسلة/طلب» وهو مختار — من غير ما نلمس نصوص ملبي */
+/* عميل من غير خزامى (ديمان): كل نص بيقول «خزامى/تبرع» بيتقري «النظام + سلة/طلب» (من 17 نوفمبر 2026: الطلبات والإيراد من الباك إند + سلة) وهو مختار — من غير ما نلمس نصوص ملبي */
 let CONV_WS=false;
-const convTxt=s=>typeof s!=="string"? s : s.replace(/وخزامى/g," وAppsFlyer وسلة").replace(/خزامى/g,"AppsFlyer وسلة").replace(/Khzama/g,"AppsFlyer + Salla")
+const convTxt=s=>typeof s!=="string"? s : s.replace(/وخزامى/g," والنظام + سلة").replace(/خزامى/g,"النظام + سلة").replace(/Khzama/g,"System + Salla")
   .replace(/التبرعات/g,"الطلبات").replace(/تبرعات/g,"طلبات").replace(/التبرع/g,"الطلب").replace(/تبرع/g,"طلب").replace(/[Dd]onations/g,m=>m[0]==="D"?"Orders":"orders").replace(/[Dd]onation/g,m=>m[0]==="D"?"Order":"order");
 const L=(ar,en)=>{ const s=(EN()&&en!=null)?en:ar; return CONV_WS? convTxt(s) : s; };
 const mLabel=m=>m?L(m.label,m.labelEn):"";
@@ -3438,11 +3440,14 @@ function kpiPicker(sec,keys){
     "التغيير بيتحفظ ويفضل معاك.</div>";
 }
 function kpiKeys(){
+  /* ميترِك ليها kinds بتظهر بس لما العميل المختار من نفس المجال (ديمان app → AppsFlyer؛ ملبي kind فاضي → متظهرش). «كل العملاء» → اللي من غير kinds بس */
+  const kind=S.ws? clientKindOf(S.ws) : null;
+  const okK=m=>!m.kinds||!m.kinds.length||(!!kind&&m.kinds.indexOf(kind)>=0);
   const k=S.cfg.settings.kpis;
-  if(k&&k.length) return k.filter(x=>metricByKey(x));
-  return S.cfg.metrics.filter(m=>m.pin).map(m=>m.key);
+  if(k&&k.length) return k.filter(x=>{ const m=metricByKey(x); return m&&okK(m); });
+  return S.cfg.metrics.filter(m=>m.pin&&okK(m)).map(m=>m.key);
 }
-const KPI_IC={spend:["wallet","#465FFF"],revenue:["coins","#12B76A"],backend_revenue:["coins","#12B76A"],iap_revenue:["coins","#12B76A"],orders:["cart","#F79009"],backend_orders:["cart","#F79009"],
+const KPI_IC={af_orders:["cart","#F79009"],af_revenue:["coins","#12B76A"],af_roas:["trend","#7A5AF8"],spend:["wallet","#465FFF"],revenue:["coins","#12B76A"],backend_revenue:["coins","#12B76A"],iap_revenue:["coins","#12B76A"],orders:["cart","#F79009"],backend_orders:["cart","#F79009"],
   roas:["trend","#7A5AF8"],cpa:["target","#EE46BC"],cpc:["cursor","#6172F3"],cpm:["eye","#9E77ED"],add_to_cart:["cart","#F79009"],checkouts:["receipt","#0BA5EC"],view_content:["eye","#0BA5EC"],poas:["trend","#15B79E"],aov:["receipt","#0BA5EC"],impressions:["eye","#6172F3"],clicks:["cursor","#0BA5EC"],ctr:["percent","#16B364"],cvr:["percent","#16B364"],
   leads:["users2","#EF6820"],new_customers:["users2","#EF6820"],profit:["trend","#15B79E"],net_profit:["trend","#15B79E"]};
 function kpiIcon(key){ const d=KPI_IC[key]||(/profit|net/.test(key)?["trend","#15B79E"]:["overview","#465FFF"]); return '<span class="kpi-ic" style="--c:'+d[1]+'">'+ic(d[0])+"</span>"; }
@@ -6632,9 +6637,10 @@ ACT.togP=t=>{ const i=S.f.platforms.indexOf(t.dataset.id);
 ACT.clearF=()=>{ S.f.clients=[]; S.f.platforms=[]; S.f.campaign=""; render(); };
 ACT.liveToday=()=>{ S.liveDate=todayISO(); refresh(); };
 ACT.togDaily=()=>{ S.cfg.settings.cmpDaily=!S.cfg.settings.cmpDaily; saveCfg(); render(); };
-ACT.togKpi=t=>{ const k=kpiKeys().slice(), i=k.indexOf(t.dataset.id);
-  i<0? k.push(t.dataset.id) : k.splice(i,1);
-  S.cfg.settings.kpis=k.length?k:[t.dataset.id]; saveCfg(); render(); };
+ACT.togKpi=t=>{ const vis=kpiKeys(), raw=(S.cfg.settings.kpis&&S.cfg.settings.kpis.length?S.cfg.settings.kpis:vis).slice(), id=t.dataset.id;
+  /* الكروت المخفية لمجال تاني (زي AppsFlyer وملبي مختار) بتفضل محفوظة — بنشيل/نضيف اللي اتضغط بس */
+  const i=raw.indexOf(id); if(vis.indexOf(id)>=0&&i>=0) raw.splice(i,1); else if(i<0) raw.push(id);
+  S.cfg.settings.kpis=raw.length?raw:[id]; saveCfg(); render(); };
 ACT.mclose=closeModal;
 ACT.mbg=(t,e)=>{ if(Date.now()-(window.__shAt||0)<600) return; if(e.target.classList.contains("modal-bg")) closeModal(); };
 
@@ -10959,13 +10965,16 @@ const PM_CAMP=/\b([A-Z]{2,4}-\d{3,6})\b/;
 function pmDemoData(){ return demoRowsGen(); }
 function pmRows(from,to){
   if(PM.demo){ const D=pmDemoData(); return D.rows.filter(r=>r.date>=from&&r.date<=to); }
-  return factsIn(from,to).map(f=>{ const v=lastV(f); return {date:f.date,platformId:f.platformId,name:f.campaign||"—",spend:+v.spend||0,revenue:+v.revenue||0,orders:+v.orders||0}; });
+  return factsIn(from,to).map(f=>{ const v=lastV(f); return {date:f.date,platformId:f.platformId,name:f.campaign||"—",spend:+v.spend||0,revenue:+v.revenue||0,orders:+v.orders||0,
+    po:+v.plat_orders||0,pr:+v.plat_revenue||0,ai:+v.af_c_installs||0,ao:+v.af_c_orders||0,ar:+v.af_c_revenue||0,
+    af_orders:+v.af_orders||0,af_revenue:+v.af_revenue||0,installs:+v.installs||0}; });
 }
 function pmEnd(){ if(PM.demo) return pmDemoData().end;   // آخر يوم فيه صرف فعلاً — أيام خزامى لوحدها أو اللقطات الفاضية متنفعش مرجع للكروت
   const L0=lastDataDay(), sp={}; pmRows(addDays(L0,-60),L0).forEach(r=>{ if(r.spend>0) sp[r.date]=1; });
   const ds=Object.keys(sp).sort(); return ds.length? ds[ds.length-1] : L0; }
 function pmAgg(rows){ const a={spend:0,revenue:0,orders:0}; rows.forEach(r=>{ a.spend+=r.spend; a.revenue+=r.revenue; a.orders+=r.orders; }); return pmDer(a); }
-function pmDer(a){ a.roas=a.spend?a.revenue/a.spend:null; a.cpa=a.orders?a.spend/a.orders:null; a.aov=a.orders?a.revenue/a.orders:null; return a; }
+function pmDer(a){ a.roas=a.spend?a.revenue/a.spend:null; a.cpa=a.orders?a.spend/a.orders:null; a.aov=a.orders?a.revenue/a.orders:null;
+  if(a.af_revenue!=null) a.af_roas=a.spend?a.af_revenue/a.spend:null; return a; }
 function pmTarget(){ const t=roasTarget(null); return t?t.v:null; }
 function pmStatus(c,ref){ if(c.roas==null||!ref) return ["","—"];
   return c.roas>=ref*1.1? ["g",L("زوّد","Scale")] : c.roas>=ref*0.85? ["y",L("راقب","Watch")] : ["r",L("وقّف","Pause")]; }
@@ -10978,16 +10987,21 @@ function pmSpark(pts,color,w,h){ w=w||100; h=h||30; const v=pts.filter(x=>x!=nul
 function pmLine(P){ return chCurve(P); }
 function pmModel(){
   const end=pmEnd(), from=addDays(end,-(PM.days-1)), cur=pmRows(from,end), days=dateRange(from,end);
-  const byDay={}; cur.forEach(r=>{ const a=byDay[r.date]||(byDay[r.date]={spend:0,revenue:0,orders:0}); a.spend+=r.spend; a.revenue+=r.revenue; a.orders+=r.orders; });
-  const dayVals=days.map(d=>pmDer(Object.assign({spend:0,revenue:0,orders:0},byDay[d]||{})));
-  const camps={}; cur.forEach(r=>{ const k=r.platformId+"|"+r.name; const c=camps[k]||(camps[k]={k:k,name:r.name,platformId:r.platformId,spend:0,revenue:0,orders:0,byDay:{}});
-    c.spend+=r.spend; c.revenue+=r.revenue; c.orders+=r.orders; const b=c.byDay[r.date]||(c.byDay[r.date]={spend:0,revenue:0}); b.spend+=r.spend; b.revenue+=r.revenue; });
+  const byDay={}; cur.forEach(r=>{ const a=byDay[r.date]||(byDay[r.date]={spend:0,revenue:0,orders:0,af_orders:0,af_revenue:0,installs:0}); a.spend+=r.spend; a.revenue+=r.revenue; a.orders+=r.orders;
+    a.af_orders+=r.af_orders||0; a.af_revenue+=r.af_revenue||0; a.installs+=r.installs||0; });
+  const dayVals=days.map(d=>pmDer(Object.assign({spend:0,revenue:0,orders:0,af_orders:0,af_revenue:0,installs:0},byDay[d]||{})));
+  const camps={}; cur.forEach(r=>{ const k=r.platformId+"|"+r.name; const c=camps[k]||(camps[k]={k:k,name:r.name,platformId:r.platformId,spend:0,revenue:0,orders:0,po:0,pr:0,ai:0,ao:0,ar:0,byDay:{}});
+    c.spend+=r.spend; c.revenue+=r.revenue; c.orders+=r.orders; ["po","pr","ai","ao","ar"].forEach(x=>{ c[x]+=r[x]||0; });
+    const b=c.byDay[r.date]||(c.byDay[r.date]={spend:0,revenue:0,pr:0}); b.spend+=r.spend; b.revenue+=r.revenue; b.pr+=r.pr||0; });
+  /* ديمان (CONV_WS): الطلبات والإيراد الإجمالي من صف «النظام + سلة»، وكل حملة بتتعرض بطلبات وإيراد المنصة نفسها (plat_orders/plat_revenue) — مبيدخلوش في الإجمالي */
+  const conv=CONV_WS&&!PM.demo;
   const list=Object.values(camps).filter(c=>c.spend>0||c.orders>0).map(c=>{ pmDer(c); const m=String(c.name).match(PM_CAMP); c.code=m?m[1]:c.name;
+    const usePl=conv&&c.spend>0; c.dO=usePl?c.po:c.orders; c.dR=usePl?c.pr:c.revenue; c.dRoas=usePl?(c.spend?c.pr/c.spend:null):c.roas; c.plat=usePl;
     const pr=String(c.name).match(/PR:([^|·]+)/), vr=String(c.name).match(/VR:([^|·]+)/);
     c.sub=pr? [pr[1],vr&&vr[1]].filter(Boolean).map(x=>x.trim().replace(/-/g," ")).join(" · ") : m? String(c.name).replace(m[1],"").replace(/^[\s|·\-_]+|[\s|·\-_]+$/g,"").replace(/\s*\|\s*/g," · ") : ""; return c; });
   const plats={}; list.forEach(c=>{ const p=plats[c.platformId]||(plats[c.platformId]={id:c.platformId,spend:0,revenue:0,orders:0}); p.spend+=c.spend; p.revenue+=c.revenue; p.orders+=c.orders; });
   const tot=pmAgg(cur), ref=pmTarget()||tot.roas;
-  return {end:end,from:from,days:days,dayVals:dayVals,list:list,plats:Object.values(plats).map(pmDer).sort((a,b)=>b.spend-a.spend),tot:tot,ref:ref,hasTarget:!!pmTarget()};
+  return {conv:conv,end:end,from:from,days:days,dayVals:dayVals,list:list,plats:Object.values(plats).map(pmDer).sort((a,b)=>b.spend-a.spend),tot:tot,ref:ref,hasTarget:!!pmTarget()};
 }
 function pmHead(){
   const hr=new Date().getHours(), F=RF.fresh||{}, Y=addDays(todayISO(),-1);
@@ -11007,9 +11021,13 @@ function pmBlock(){
   const K=[["spend",L("الصرف","Spend"),C,"var(--c-sp)",1,L("المنصات","Platforms")],["revenue",L("الإيراد","Revenue"),C,"var(--c-rev)",1,L("خزامى","Khzama")],
     ["roas","ROAS","","var(--teal)",1,M.hasTarget?L("الهدف ","Target ")+fnum(M.ref,2)+"x":L("خزامى ÷ المنصات","Khzama ÷ platforms")],["orders",L("الطلبات","Orders"),"","var(--teal)",1,L("خزامى","Khzama")],
     ["cpa",L("تكلفة الطلب","Cost per order"),C,"var(--bad)",0,L("أقل أحسن","Lower is better")],["aov",L("متوسط التبرع","Avg. donation"),C,"var(--teal)",1,L("خزامى","Khzama")]];
-  const kv=(k,v)=>v==null?"—":k==="roas"?fnum(v,2)+"x":k==="cpa"?fnum(v,1):fnum(v,0);
+  /* ديمان: 4 كروت AppsFlyer (كل المصادر — مش الإعلانات بس) من صفوف app_ios/app_android */
+  const AFS=L("AppsFlyer (كل المصادر)","AppsFlyer (all sources)");
+  if(M.conv) K.push(["af_orders",L("طلبات AppsFlyer","AppsFlyer orders"),"","var(--teal)",1,AFS],["af_revenue",L("إيراد AppsFlyer","AppsFlyer revenue"),C,"var(--c-rev)",1,AFS],
+    ["af_roas",L("ROAS AppsFlyer","AppsFlyer ROAS"),"","var(--teal)",1,AFS],["installs",L("التحميلات","Installs"),"","var(--teal)",1,AFS]);
+  const kv=(k,v)=>v==null?"—":(k==="roas"||k==="af_roas")?fnum(v,2)+"x":k==="cpa"?fnum(v,1):fnum(v,0);
   let h="";
-  h+='<div class="pm-kpis">'+K.map(k=>{ const v=last[k[0]], p=pct(v,prev[k[0]]), good=p==null?null:(k[4]?p>=0:p<=0);
+  h+='<div class="pm-kpis'+(K.length===10?" pm-kpis10":"")+'">'+K.map(k=>{ const v=last[k[0]], p=pct(v,prev[k[0]]), good=p==null?null:(k[4]?p>=0:p<=0);
     const sel=PM.met===k[0]||(PM.met==="sr"&&(k[0]==="spend"||k[0]==="revenue"));
     return '<button class="pm-k'+(sel?" on":"")+'" data-a="pmMet" data-v="'+k[0]+'" title="'+esc(L("اعرضه في الرسمة","Show it in the chart"))+'"><div class="pm-kl">'+esc(k[1])+" · "+esc(endLab)+"</div>"+
       '<div class="pm-kv"><span class="num">'+esc(kv(k[0],v))+"</span>"+(k[2]&&v!=null?"<small>"+esc(k[2])+"</small>":"")+"</div>"+
@@ -11017,14 +11035,18 @@ function pmBlock(){
       pmSpark(d.slice(-10).map(x=>x[k[0]]),k[0]==="cpa"?"var(--bad)":k[3])+"</button>"; }).join("")+"</div>";
   /* الرسمة */
   const G=PM.gran, lab=[], agg=[];
-  for(let i=0;i<n;i+=G){ const sl=d.slice(i,i+G), a=pmDer({spend:sum(sl.map(x=>x.spend)),revenue:sum(sl.map(x=>x.revenue)),orders:sum(sl.map(x=>x.orders))});
+  for(let i=0;i<n;i+=G){ const sl=d.slice(i,i+G), a=pmDer({spend:sum(sl.map(x=>x.spend)),revenue:sum(sl.map(x=>x.revenue)),orders:sum(sl.map(x=>x.orders)),
+      af_orders:sum(sl.map(x=>x.af_orders||0)),af_revenue:sum(sl.map(x=>x.af_revenue||0)),installs:sum(sl.map(x=>x.installs||0))});
     agg.push(a); lab.push((G===1?"":G===7?L("أسبوع ","Wk "):L("من ","From "))+fdate(M.days[i])); }
-  const fm=k=>v=>v==null?"—":k==="roas"?fnum(v,2)+"x":fcompact(v,k==="cpa"?1:0)+(k==="orders"||k==="roas"?"":" "+C);
+  const fm=k=>v=>v==null?"—":(k==="roas"||k==="af_roas")?fnum(v,2)+"x":fcompact(v,k==="cpa"?1:0)+((k==="orders"||k==="af_orders"||k==="installs")?"":" "+C);
   const MET={sr:[["revenue",L("الإيراد (خزامى)","Revenue (Khzama)"),"var(--c-rev)"],["spend",L("الصرف (المنصات)","Spend (platforms)"),"var(--c-sp)"]],
     spend:[["spend",L("الصرف (المنصات)","Spend (platforms)"),"var(--c-sp)"]],revenue:[["revenue",L("الإيراد (خزامى)","Revenue (Khzama)"),"var(--c-rev)"]],
     roas:[["roas","ROAS","var(--teal)"]].concat(M.hasTarget?[["_t",L("الهدف","Target"),"var(--amber)"]]:[]),orders:[["orders",L("الطلبات (خزامى)","Orders (Khzama)"),"var(--teal)"]],
-    cpa:[["cpa",L("تكلفة الطلب","Cost per order"),"var(--bad)"]],aov:[["aov",L("متوسط التبرع","Avg. donation"),"var(--teal)"]]};
-  const TT={sr:L("الصرف مقابل الإيراد","Spend vs revenue"),spend:L("الصرف","Spend"),revenue:L("الإيراد","Revenue"),roas:"ROAS",orders:L("الطلبات","Orders"),cpa:L("تكلفة الطلب","Cost per order"),aov:L("متوسط التبرع","Avg. donation")};
+    cpa:[["cpa",L("تكلفة الطلب","Cost per order"),"var(--bad)"]],aov:[["aov",L("متوسط التبرع","Avg. donation"),"var(--teal)"]],
+    af_orders:[["af_orders",L("طلبات AppsFlyer","AppsFlyer orders"),"var(--teal)"]],af_revenue:[["af_revenue",L("إيراد AppsFlyer","AppsFlyer revenue"),"var(--c-rev)"]],
+    af_roas:[["af_roas",L("ROAS AppsFlyer","AppsFlyer ROAS"),"var(--teal)"]],installs:[["installs",L("التحميلات","Installs"),"var(--teal)"]]};
+  const TT={sr:L("الصرف مقابل الإيراد","Spend vs revenue"),spend:L("الصرف","Spend"),revenue:L("الإيراد","Revenue"),roas:"ROAS",orders:L("الطلبات","Orders"),cpa:L("تكلفة الطلب","Cost per order"),aov:L("متوسط التبرع","Avg. donation"),
+    af_orders:L("طلبات AppsFlyer","AppsFlyer orders"),af_revenue:L("إيراد AppsFlyer","AppsFlyer revenue"),af_roas:L("ROAS AppsFlyer","AppsFlyer ROAS"),installs:L("التحميلات","Installs")};
   const ser=MET[PM.met].filter(s=>!PM.hide[s[0]]).map(s=>({name:s[1],color:s[2],pts:s[0]==="_t"?agg.map(()=>M.ref):agg.map(a=>a[s[0]]),fmt:fm(s[0]==="_t"?"roas":s[0]),dash:s[0]==="_t"}));
   const chart=ser.length? chPlot({type:G>1?"combo":"area",soft:true,h:250,xlab:lab,series:ser,aria:TT[PM.met]}) : '<div class="empty" style="padding:40px">'+esc(L("اختار خط من فوق","Pick a line above"))+"</div>";
   const seg=(act,cur,opts)=>'<div class="pm-seg">'+opts.map(o=>'<button class="'+(cur===o[0]?"on":"")+'" data-a="'+act+'" data-v="'+o[0]+'">'+esc(o[1])+"</button>").join("")+"</div>";
@@ -11034,7 +11056,8 @@ function pmBlock(){
       (PM.met!=="sr"?'<button class="pm-back" data-a="pmMet" data-v="sr">'+esc(L("رجّع الصرف مقابل الإيراد","Back to spend vs revenue"))+"</button>":"")+"</div>"+chart+"</div>";
   /* المنصات + محتاج تدخلك */
   const pt=sum(M.plats.map(p=>p.spend))||1;
-  const urg=M.list.filter(c=>{ const ds=M.days.slice(-3); return ds.every(x=>{ const b=c.byDay[x]; return b&&b.spend>0&&b.revenue/b.spend<M.ref*0.85; }); }).sort((a,b)=>b.spend-a.spend);
+  const bRev=(c,b)=>c.plat?b.pr:b.revenue;   // ديمان: إيراد المنصة للحملة
+  const urg=M.list.filter(c=>{ const ds=M.days.slice(-3); return ds.every(x=>{ const b=c.byDay[x]; return b&&b.spend>0&&bRev(c,b)/b.spend<M.ref*0.85; }); }).sort((a,b)=>b.spend-a.spend);
   h+='<div class="card"><div class="card-h"><div><div class="card-t">'+esc(L("المنصات","Platforms"))+'</div><div class="hint">'+esc(L("اضغط على منصة تفلتر الجدول","Click a platform to filter the table"))+"</div></div></div>"+
     '<div class="pm-pl">'+M.plats.map(p=>{ const pl=platById(p.id)||{name:p.id,color:"var(--cyan)"};
       return '<button class="pm-plr'+(PM.pf===p.id?" on":"")+'" data-a="pmPf" data-v="'+esc(p.id)+'"><div class="pm-plt"><b>'+esc(pl.name)+'</b><span class="num">'+fcompact(p.spend,0)+" "+esc(C)+" · "+(p.roas==null?"—":fnum(p.roas,2)+"x")+"</span></div>"+
@@ -11046,35 +11069,73 @@ function pmBlock(){
   /* الجدول */
   const ps=[...new Set(M.list.map(c=>c.platformId))];
   let rows=M.list.filter(c=>!PM.pf||c.platformId===PM.pf);
-  const sk=PM.sort.k; rows.sort((a,b)=>{ const x=sk==="st"?(a.roas||0):a[sk], y=sk==="st"?(b.roas||0):b[sk]; return (typeof x==="string"?String(x).localeCompare(y,"ar"):((x==null?-1e9:x)-(y==null?-1e9:y)))*PM.sort.dir; });
+  const SKM={orders:"dO",revenue:"dR",roas:"dRoas",st:"dRoas"}, sk=SKM[PM.sort.k]||PM.sort.k; rows.sort((a,b)=>{ const x=sk==="dRoas"?(a.dRoas||0):a[sk], y=sk==="dRoas"?(b.dRoas||0):b[sk]; return (typeof x==="string"?String(x).localeCompare(y,"ar"):((x==null?-1e9:x)-(y==null?-1e9:y)))*PM.sort.dir; });
   const th=(k,t,n)=>'<th class="'+(n?"n ":"")+(k?"pm-th":"")+'"'+(k?' data-a="pmSort" data-v="'+k+'"':"")+">"+esc(t)+(k&&PM.sort.k===k?(PM.sort.dir>0?" ↑":" ↓"):"")+"</th>";
   const last14=M.days.slice(-14);
-  h+='<div class="card pm-camps"><div class="card-h"><div><div class="card-t">'+esc(L("أداء الحملات","Campaign performance"))+'</div><div class="hint">'+esc(L("الصرف من المنصات · الطلبات والإيراد من خزامى · اضغط على أي حملة تفتح تفاصيلها","Spend from platforms · orders & revenue from Khzama · click a campaign for details"))+"</div></div>"+
+  h+='<div class="card pm-camps"><div class="card-h"><div><div class="card-t">'+esc(L("أداء الحملات","Campaign performance"))+'</div><div class="hint">'+esc(M.conv? L("الصرف من المنصات · الطلبات والإيراد من النظام + سلة · طلبات كل حملة من المنصة · اضغط على أي حملة تفتح تفاصيلها","Spend from platforms · orders & revenue from System + Salla · each campaign's orders from the platform · click a campaign for details") : L("الصرف من المنصات · الطلبات والإيراد من خزامى · اضغط على أي حملة تفتح تفاصيلها","Spend from platforms · orders & revenue from Khzama · click a campaign for details"))+"</div></div>"+
     '<div class="pm-tools"><input class="inp pm-q" id="pmQ" placeholder="'+esc(L("ابحث عن حملة…","Search campaigns…"))+'" autocomplete="off">'+
     seg("pmPf",PM.pf,[["",L("الكل","All")]].concat(ps.map(p=>[p,(platById(p)||{name:p}).name])))+"</div></div>"+
-    '<div class="tw"><table class="pm-t"><thead><tr>'+th("code",L("الحملة","Campaign"))+th("platformId",L("المنصة","Platform"))+th("spend",L("الصرف","Spend"),1)+th("orders",L("الطلبات","Orders"),1)+th("revenue",L("الإيراد","Revenue"),1)+th("roas","ROAS",1)+th("",L("آخر 14 يوم","Last 14 days"),1)+th("st",L("الحالة","Status"))+"</tr></thead><tbody>"+
-    (rows.length?rows.map(c=>{ const st=pmStatus(c,M.ref), pl=platById(c.platformId)||{name:c.platformId,color:"var(--cyan)"};
-      const tr=last14.map(x=>{ const b=c.byDay[x]; return b&&b.spend?b.revenue/b.spend:null; });
+    '<div class="tw"><table class="pm-t"><thead><tr>'+th("code",L("الحملة","Campaign"))+th("platformId",L("المنصة","Platform"))+th("spend",L("الصرف","Spend"),1)+th("orders",M.conv?L("طلبات المنصة","Platform orders"):L("الطلبات","Orders"),1)+th("revenue",M.conv?L("إيراد المنصة","Platform revenue"):L("الإيراد","Revenue"),1)+th("roas",M.conv?L("ROAS المنصة","Platform ROAS"):"ROAS",1)+th("",L("آخر 14 يوم","Last 14 days"),1)+th("st",L("الحالة","Status"))+"</tr></thead><tbody>"+
+    (rows.length?rows.map(c=>{ const st=pmStatus({roas:c.dRoas},M.ref), pl=platById(c.platformId)||{name:c.platformId,color:"var(--cyan)"};
+      const tr=last14.map(x=>{ const b=c.byDay[x]; return b&&b.spend?bRev(c,b)/b.spend:null; });
       return '<tr data-a="pmOpen" data-i="'+esc(c.k)+'" data-q="'+esc((c.name+" "+pl.name).toLowerCase())+'"><td><b class="num">'+esc(c.code)+"</b>"+(c.sub?"<small>"+esc(c.sub)+"</small>":"")+'</td><td><span class="pm-pf"><i></i>'+esc(pl.name)+"</span></td>"+
-        '<td class="n">'+fnum(c.spend,0)+'</td><td class="n">'+fnum(c.orders,0)+'</td><td class="n">'+fnum(c.revenue,0)+'</td><td class="n"><b>'+(c.roas==null?"—":fnum(c.roas,2)+"x")+"</b></td>"+
+        '<td class="n">'+fnum(c.spend,0)+'</td><td class="n">'+fnum(c.dO,0)+'</td><td class="n">'+fnum(c.dR,0)+'</td><td class="n"><b>'+(c.dRoas==null?"—":fnum(c.dRoas,2)+"x")+"</b></td>"+
         '<td class="n pm-tsp">'+pmSpark(tr,st[0]==="r"?"var(--bad)":"var(--ink-2)",96,26)+"</td><td>"+(st[0]?'<span class="pm-tag '+st[0]+'">'+esc(st[1])+"</span>":"—")+"</td></tr>"; }).join("")
       :'<tr><td colspan="8" class="empty" style="padding:24px">'+esc(L("مفيش حملات هنا","No campaigns here"))+"</td></tr>")+"</tbody></table></div>"+
     '<div class="pm-foot"><span id="pmCount">'+rows.length+" "+esc(L("حملة","campaigns"))+"</span><span>"+esc(M.hasTarget?L("الحالة مقابل الهدف ","Status vs target ")+fnum(M.ref,2)+"x":L("الحالة مقابل متوسط الحساب ","Status vs account average ")+(M.ref?fnum(M.ref,2)+"x":"—"))+" · "+esc(L("اضغط على عنوان أي عمود يرتّب بيه","Click a column title to sort"))+"</span></div></div>";
   if(PM.open){ const c=M.list.find(x=>x.k===PM.open); if(c) h+=pmDrawer(c,M,C); }
   return h;
 }
+/* ديمان: درج الحملة — نتايج المنصة نفسها + AppsFlyer للحملة + المجموعات الإعلانية (ad_daily، بتتحمّل لما الدرج يتفتح) */
+function pmDrawerConv(c,M,C){
+  const d=(a,b)=>b?a/b:null, x2=v=>v==null?"—":fnum(v,2)+"x", cell=(lb,v)=>'<div><span>'+esc(lb)+'</span><b class="num">'+v+"</b></div>";
+  const cpi=d(c.spend,c.ai);
+  return '<div class="pm-mk">'+cell(L("الصرف · آخر ","Spend · last ")+PM.days+L(" يوم"," days"),fnum(c.spend,0))+cell(L("طلبات المنصة","Platform orders"),fnum(c.po,0))+
+      cell(L("إيراد المنصة","Platform revenue"),fnum(c.pr,0))+cell(L("ROAS المنصة","Platform ROAS"),x2(d(c.pr,c.spend)))+"</div>"+
+    '<div><div class="card-t" style="margin-bottom:8px">'+esc(L("AppsFlyer للحملة دي","AppsFlyer for this campaign"))+"</div>"+
+    '<div class="pm-mk pm-mk3">'+cell(L("التحميلات","Installs"),fnum(c.ai,0))+cell(L("تكلفة التحميل (CPI)","CPI"),cpi==null?"—":fnum(cpi,2))+cell(L("طلبات AppsFlyer","AppsFlyer orders"),fnum(c.ao,0))+
+      cell(L("إيراد AppsFlyer","AppsFlyer revenue"),fnum(c.ar,0))+cell(L("ROAS AppsFlyer","AppsFlyer ROAS"),x2(d(c.ar,c.spend)))+cell(L("تكلفة الطلب","Cost per order"),c.ao?fnum(c.spend/c.ao,1):"—")+"</div>"+
+    (c.ai||c.ao?"":'<div class="hint" style="margin-top:6px">'+esc(L("مفيش أرقام AppsFlyer للحملة دي في الفترة — بتظهر بعد سحب AppsFlyer لكل حملة.","No AppsFlyer numbers for this campaign in the period yet."))+"</div>")+"</div>";
+}
+const PM_AS={};
+function pmAdsetsHTML(c,M,C){
+  const key=c.k+"|"+M.from+"|"+M.end, A=PM_AS[key];
+  if(!A){ PM_AS[key]={rows:null}; setTimeout(()=>pmAdsetsLoad(key,c,M),0); }
+  const st=PM_AS[key];
+  let b;
+  if(st.err) b='<div class="hint">'+esc(L("المجموعات مش راضية تتحمّل: ","Ad sets failed to load: "))+esc(st.err)+"</div>";
+  else if(!st.rows) b='<div class="hint">'+esc(L("بيحمّل…","Loading…"))+"</div>";
+  else if(!st.rows.length) b='<div class="hint">'+esc(L("مفيش مجموعات إعلانية صرفت في الفترة دي.","No ad sets spent in this period."))+"</div>";
+  else b='<div class="tw"><table class="pm-t pm-as"><thead><tr><th>'+esc(L("المجموعة","Ad set"))+'</th><th class="n">'+esc(L("الصرف","Spend"))+'</th><th class="n">'+esc(L("الظهور","Impr."))+'</th><th class="n">'+esc(L("الضغطات","Clicks"))+
+      '</th><th class="n">'+esc(L("طلبات المنصة","Orders"))+'</th><th class="n">'+esc(L("الإيراد","Revenue"))+'</th><th class="n">ROAS</th></tr></thead><tbody>'+
+      st.rows.map(r=>'<tr><td><b>'+esc(r.n)+'</b></td><td class="n">'+fnum(r.s,0)+'</td><td class="n">'+fnum(r.i,0)+'</td><td class="n">'+fnum(r.c,0)+'</td><td class="n">'+fnum(r.o,0)+'</td><td class="n">'+fnum(r.r,0)+'</td><td class="n"><b>'+(r.s?fnum(r.r/r.s,2)+"x":"—")+"</b></td></tr>").join("")+"</tbody></table></div>";
+  return '<div><div class="card-t" style="margin-bottom:8px">'+esc(L("المجموعات الإعلانية","Ad sets"))+' <small class="hint">'+esc(fdate(M.from)+" — "+fdate(M.end))+"</small></div>"+b+"</div>";
+}
+async function pmAdsetsLoad(key,c,M){
+  const st=PM_AS[key];
+  try{ const sb=SUPA_DB.client, out={}; let i=0;
+    for(;;){ const r=await sb.from("ad_daily").select("adset_name,spend,impressions,clicks,purchases,revenue").eq("client_id",S.ws).eq("platform",c.platformId).eq("level","ad")
+        .eq("campaign_name",c.name).gte("date",M.from).lte("date",M.end).order("date").order("ad_id").range(i,i+999);
+      if(r.error) throw r.error; const rows=r.data||[];
+      rows.forEach(x=>{ const n=x.adset_name||"—", a=out[n]||(out[n]={n:n,s:0,i:0,c:0,o:0,r:0}); a.s+=+x.spend||0; a.i+=+x.impressions||0; a.c+=+x.clicks||0; a.o+=+x.purchases||0; a.r+=+x.revenue||0; });
+      if(rows.length<1000) break; i+=1000; }
+    st.rows=Object.values(out).filter(a=>a.s>0||a.o>0).sort((a,b)=>b.s-a.s);
+  }catch(e){ st.err=String((e&&e.message)||e).slice(0,120); }
+  if(S.view==="me"&&PM.open===c.k) render();
+}
 function pmDrawer(c,M,C){
-  const st=pmStatus(c,M.ref), pl=platById(c.platformId)||{name:c.platformId}, ds=M.days.slice(-14);
+  const st=pmStatus({roas:c.dRoas},M.ref), pl=platById(c.platformId)||{name:c.platformId}, ds=M.days.slice(-14);
   const rec={g:L("الـ ROAS فوق المرجع بوضوح. زوّد الميزانية 15–20% وراقب يومين.","ROAS is clearly above the reference. Raise budget 15–20% and watch two days."),
     y:L("قريبة من المرجع. سيبها على نفس الميزانية وراجعها بعد يومين.","Close to the reference. Keep the budget and review in two days."),
     r:L("تحت المرجع. قلّل الميزانية أو بدّل الكريتيف قبل ما تكمل.","Below the reference. Cut budget or swap creative before continuing.")}[st[0]]||L("مفيش بيانات كفاية للحكم.","Not enough data to judge.");
   const code=String(c.name).match(PM_CAMP);
   return '<div class="pm-scrim" data-a="pmClose"></div><aside class="pm-dr"><div class="pm-drh"><div><h3 class="num">'+esc(c.code)+"</h3><p>"+esc([c.sub,pl.name].filter(Boolean).join(" · "))+(st[0]?' <span class="pm-tag '+st[0]+'">'+esc(st[1])+"</span>":"")+"</p></div>"+
     '<button class="btn btn-s" data-a="pmClose" aria-label="'+esc(L("قفل","Close"))+'">✕</button></div><div class="pm-drb">'+
-    '<div class="pm-mk"><div><span>'+esc(L("الصرف · آخر ","Spend · last ")+PM.days+L(" يوم"," days"))+'</span><b class="num">'+fnum(c.spend,0)+'</b></div><div><span>'+esc(L("الإيراد · خزامى","Revenue · Khzama"))+'</span><b class="num">'+fnum(c.revenue,0)+"</b></div>"+
-      '<div><span>'+esc(L("الطلبات · خزامى","Orders · Khzama"))+'</span><b class="num">'+fnum(c.orders,0)+'</b></div><div><span>ROAS</span><b class="num">'+(c.roas==null?"—":fnum(c.roas,2)+"x")+"</b></div></div>"+
+    (c.plat? pmDrawerConv(c,M,C) : '<div class="pm-mk"><div><span>'+esc(L("الصرف · آخر ","Spend · last ")+PM.days+L(" يوم"," days"))+'</span><b class="num">'+fnum(c.spend,0)+'</b></div><div><span>'+esc(L("الإيراد · خزامى","Revenue · Khzama"))+'</span><b class="num">'+fnum(c.revenue,0)+"</b></div>"+
+      '<div><span>'+esc(L("الطلبات · خزامى","Orders · Khzama"))+'</span><b class="num">'+fnum(c.orders,0)+'</b></div><div><span>ROAS</span><b class="num">'+(c.roas==null?"—":fnum(c.roas,2)+"x")+"</b></div></div>")+
     '<div><div class="card-t" style="margin-bottom:8px">'+esc(L("آخر 14 يوم","Last 14 days"))+"</div>"+
-      chPlot({type:"area",soft:true,h:180,xlab:ds.map(fdate),series:[{name:L("الإيراد","Revenue"),color:"var(--c-rev)",pts:ds.map(x=>(c.byDay[x]||{}).revenue||0),fmt:v=>fnum(v,0)+" "+C},{name:L("الصرف","Spend"),color:"var(--c-sp)",pts:ds.map(x=>(c.byDay[x]||{}).spend||0),fmt:v=>fnum(v,0)+" "+C}]})+"</div>"+
+      chPlot({type:"area",soft:true,h:180,xlab:ds.map(fdate),series:[{name:c.plat?L("إيراد المنصة","Platform revenue"):L("الإيراد","Revenue"),color:"var(--c-rev)",pts:ds.map(x=>{ const b=c.byDay[x]||{}; return (c.plat?b.pr:b.revenue)||0; }),fmt:v=>fnum(v,0)+" "+C},{name:L("الصرف","Spend"),color:"var(--c-sp)",pts:ds.map(x=>(c.byDay[x]||{}).spend||0),fmt:v=>fnum(v,0)+" "+C}]})+"</div>"+
+    (c.plat? pmAdsetsHTML(c,M,C) : "")+
     '<div class="pm-rec"><b>'+esc(L("التوصية: ","Recommendation: "))+esc(st[1])+"</b><br>"+esc(rec)+"</div></div>"+
     '<div class="pm-drf">'+(code&&!PM.demo?'<button class="btn btn-p" data-a="rsCamp" data-i="'+esc(code[1])+'" data-p="'+esc(c.platformId)+'">'+esc(L("افتح ملف الحملة","Open campaign file"))+"</button>"+
       '<button class="btn" data-a="pmChg" data-i="'+esc(code[1])+'">'+esc(L("سجل التغييرات","Change log"))+"</button>":'<span class="hint">'+esc(PM.demo?L("ملف الحملة وسجل التغييرات بيشتغلوا على الأرقام الحقيقية بس.","Campaign file and change log work on real data only."):"")+"</span>")+"</div></aside>";
@@ -11371,12 +11432,14 @@ html [style*="drop-shadow"]{filter:none!important}
 .pm-drh h3{font-size:20px;font-weight:800;color:var(--ink);text-align:start}
 .pm-drh p{font-size:13px;color:var(--ink-3);margin-top:4px;line-height:1.6}
 .pm-drb{padding:18px 22px;overflow:auto;flex:1;display:flex;flex-direction:column;gap:18px}
+.pm-mk.pm-mk3{grid-template-columns:1fr 1fr 1fr}@media(max-width:520px){.pm-mk.pm-mk3{grid-template-columns:1fr 1fr}}.pm-as td,.pm-as th{white-space:nowrap}
 .pm-mk{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}
 .pm-mk div{background:var(--ground-1);padding:12px 14px}.pm-mk span{display:block;font-size:12px;color:var(--ink-3)}.pm-mk b{display:block;font-size:20px;font-weight:800;margin-top:4px;color:var(--ink)}
 .pm-rec{background:var(--ground-2);border-radius:12px;padding:14px 16px;font-size:13.5px;line-height:1.7;color:var(--ink-2)}.pm-rec b{color:var(--ink)}
 .pm-drf{padding:14px 22px;border-top:1px solid var(--line);display:flex;gap:10px}
 @media (max-width:1180px){.pm-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.pm-grid{grid-template-columns:1fr}}
 @media (max-width:640px){.pm-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.pm-q{width:100%}}
+.pm-kpis.pm-kpis10{grid-template-columns:repeat(5,minmax(0,1fr))}@media (max-width:900px){.pm-kpis.pm-kpis10{grid-template-columns:repeat(2,minmax(0,1fr))}}
 `+"</style>");
 
 function renderMe(){
@@ -12252,7 +12315,7 @@ async function lbLoad(force){ if(LB.busy||(LB.data&&!force)) return; LB.busy=tru
         for(const r of rs){ if(r.error) throw r.error; out.push(...r.data); if(r.data.length<1000){ end=true; break; } } if(end) return out; } };
     // Nov 16 2026: media, performance, notes, fatigue and video stats are read at the same time (were one after another)
     const [media,perf,notes,,vstat]=await Promise.all([
-      all(()=>sb.from("media").select("creative_id,fields,hook,hook_auto,created_at,synced_at,style,kind,url,video_file,thumb,thumb_at,asset_note,thumb_hook,local_file,ai_tags").eq("client",cname).eq("kind","Video").in("style",LB_STYLES).order("creative_id")).then(async m=>{ thumbVer(m); await thumbUrls(m.map(x=>x.thumb)); return m; }),
+      all(()=>sb.from("media").select("creative_id,fields,hook,hook_auto,created_at,synced_at,style,kind,url,video_file,thumb,thumb_at,asset_note,thumb_hook,local_file,ai_tags").eq("client",cname).eq("kind","Video").order("creative_id")   /* Nov 16 2026: every style (تصوير/مونتاج too) — was مشهور/مودل/ابداعي only, so new filmed videos never showed */).then(async m=>{ thumbVer(m); await thumbUrls(m.map(x=>x.thumb)); return m; }),
       all(()=>sb.from("v_media_perf").select("*").order("creative_id")),
       all(()=>sb.from("docs").select("path,data").eq("coll","media_notes").order("path")),
       ftLoad(),
@@ -12614,7 +12677,7 @@ function renderCreativeLibrary(){
   if(LB.msg) h+='<div class="hint" style="margin-bottom:8px">'+esc(LB.msg)+"</div>";
   const cols=LB.cols.filter(k=>colsAll.indexOf(k)>=0), s0=sorts[0]||{};
   if(!LB.sel) LB.sel=new Set();
-  if(LB.sel.size) h+='<div class="lb-bulk"><b>'+LB.sel.size+esc(L(" فيديو متحدد"," selected"))+'</b><button class="btn btn-p btn-s" data-a="lbAddMg">➕ '+esc(L("أضف لإدارة الميديا","Add to media management"))+'</button><button class="btn btn-s" data-a="upSel">⇪ '+esc(L("ارفع على المنصات","Upload to platforms"))+'</button><button class="btn btn-s" data-a="lbSelNone">'+esc(L("إلغاء التحديد","Clear selection"))+"</button></div>";
+  if(LB.sel.size) h+='<div class="lb-bulk"><b>'+LB.sel.size+esc(L(" فيديو متحدد"," selected"))+'</b><button class="btn btn-p btn-s" data-a="lbLaunch">🚀 '+esc(L("اطلقهم","Launch them"))+'</button><button class="btn btn-s" data-a="lbCopyIds">📋 '+esc(L("انسخ الـ IDs","Copy IDs"))+'</button><button class="btn btn-s" data-a="lbAddMg">➕ '+esc(L("أضف لإدارة الميديا","Add to media management"))+'</button><button class="btn btn-s" data-a="upSel">⇪ '+esc(L("ارفع على المنصات","Upload to platforms"))+'</button><button class="btn btn-s" data-a="lbSelNone">'+esc(L("إلغاء التحديد","Clear selection"))+"</button></div>";
   const head="<tr><th class=\"lb-ck\"></th><th class=\"lb-thc\"></th>"+cols.map(k=>'<th data-a="lbSort" data-k="'+esc(k)+'" class="'+(LB_NUM[k]?"num":"")+'">'+esc(lbLabel(k))+(s0.k===k?(s0.dir<0?" ▾":" ▴"):"")+"</th>").join("")+"</tr>";
   const rowH=r=>'<tr data-a="clbOpen" data-id="'+esc(r.__id)+'"><td class="lb-ck"><input type="checkbox" data-a="lbSel" data-id="'+esc(r.__id)+'"'+(LB.sel.has(r.__id)?" checked":"")+'></td><td class="lb-thc">'+thumbMini(r.__id,r["المشروع"],r._hook,r.__thumb,r.__note)+"</td>"+cols.map(k=>'<td class="'+(LB_NUM[k]?"num":"")+(k==="_hook"?" lb-hook":"")+'">'+lbFmt(k,r[k])+"</td>").join("")+"</tr>";
   const g=LB.groups.filter(x=>x.k); let body="", shown=0;
@@ -12637,6 +12700,12 @@ CHG.lbPer=v=>{ LB.per=v; if(v==="range"&&!LB.from){ LB.to=todayISO(); LB.from=ad
 CHG.clbFrom=v=>{ LB.from=v; render(); }; CHG.lbT=v=>{ LB.to=v; render(); };
 ACT.lbSel=t=>{ const id=t.dataset.id, on=!LB.sel.has(id); on? LB.sel.add(id) : LB.sel.delete(id); setTimeout(()=>{ t.checked=on; render(); },0); };
 ACT.lbSelNone=()=>{ LB.sel=new Set(); render(); };
+/* Nov 16 2026: «🚀 اطلقهم» — الفيديوهات المتحددة تروح لصفحة الإطلاق في الفورم، وقائمة القوالب تتفتح علشان تختار قالب ليهم */
+/* «📋 انسخ الـ IDs»: الـ Creative IDs المتحددة سطر سطر — تتلصق في خانة الفيديوهات في القالب زي ما هي */
+ACT.lbCopyIds=async()=>{ const ids=[...LB.sel]; if(!ids.length) return; const t=ids.join("\n");
+  try{ await navigator.clipboard.writeText(t); toast(ids.length+L(" ID اتنسخوا — الصقهم في القالب"," IDs copied — paste them in the brief")); }
+  catch(e){ modal(L("انسخ الـ IDs","Copy IDs"),'<textarea class="inp ltr" rows="'+Math.min(12,ids.length+1)+'" readonly onfocus="this.select()" style="width:100%">'+esc(t)+"</textarea>"); } };   // لو المتصفح منع النسخ: نعرضهم متعلّمين
+ACT.lbLaunch=()=>{ const ids=[...LB.sel]; if(!ids.length) return; LC.handoff(ids); LB.sel=new Set(); S.view="launch"; try{ window.scrollTo(0,0); }catch(e){} render(); };
 /** إضافة فيديوهات لإدارة الميديا من المكتبة (حتى لو لسه ما اتطلقتش) — بتبدأ في المرحلة ١ */
 async function lbAddToMg(ids,on){ const T=todayISO(); let ok=0;
   for(const id of ids){ const n=Object.assign({},LB.data.N[id]||{}); n.inMgmt=on;
@@ -12686,7 +12755,7 @@ function lbDrop(e){ e.preventDefault(); const to=e.currentTarget.dataset.k, from
 
 ACT.lbSync=async()=>{ if(LB.syncing) return; LB.syncing=true; LB.msg=""; render();
   try{ const r=await SUPA_DB.client.functions.invoke("media-sync",{body:{}}); if(r.error||(r.data&&r.data.error)) throw new Error((r.data&&r.data.error)||r.error.message);
-    LB.msg=L("اتحدثت من Airtable — ","Synced from Airtable — ")+fnum(r.data.ok,0)+L(" سجل"," records"); LB.data=null; }
+    LB.msg=L("اتحدثت من Airtable — ","Synced from Airtable — ")+fnum(r.data.ok,0)+L(" سجل"," records"); LB.data=null; MA.data=null; NEWM.loaded=false; }   // new media shows on every page right away
   catch(e){ LB.msg=L("مقدرتش أحدّث: ","Couldn't sync: ")+(e.message||e); }
   LB.syncing=false; if(!LB.data) await lbLoad(true); else render(); };
 ACT.lbNoteSave=async t=>{ const id=t.dataset.id, tags=[...new Set((($("#lbTags")||{}).value||"").split(/[,،]/).map(x=>x.trim()).filter(Boolean))], note=(($("#lbNote")||{}).value||"").trim();
@@ -14685,7 +14754,7 @@ function renderCampPerf(){
     '<span class="flab">'+esc(L("المشروع","Project"))+'</span><select class="sel" data-c="cpProj"><option value="">'+esc(L("كل المشاريع","All projects"))+"</option>"+Object.keys(projs).sort().map(x=>'<option'+(CP.proj===x?" selected":"")+">"+esc(x)+"</option>").join("")+"</select>"+
     (m.th?'<span class="hint">'+esc(L("حدود ROAS: إنذار تحت ","ROAS: alarm below "))+m.th.alarm.toFixed(2)+"x · "+esc(L("راقب لحد ","watch up to "))+m.th.min.toFixed(2)+"x · "+esc(L("كويس لحد ","OK up to "))+m.th.good.toFixed(2)+"x · "+esc(L("زوّد من ","scale from "))+m.th.good.toFixed(2)+"x</span>":
      tg?'<span class="hint">'+esc(L("هدف الـ ROAS ","ROAS target "))+tg.toFixed(2)+"x ("+esc(T.src)+")</span>":'<span class="hint">'+esc(L("حط حدود ROAS للعميل ده من لوحة التحكم ← العملاء ← تعديل عشان يظهر حكم زوّد/راقب/وقّف","Set a ROAS target in settings to get verdicts"))+"</span>")+"</div>";
-  if(convClient(cid)) h+='<div class="hint cp-note" style="color:var(--ink-3)">'+esc(L("الطلبات والإيراد من AppsFlyer وسلة على مستوى الحملة بس (AppsFlyer مبيقسّمش أقل من كده) — الـ Ad Set والإعلان بالصرف بس.","Orders come from AppsFlyer and Salla per campaign only; ad sets and ads show spend only."))+"</div>";
+  if(convClient(cid)) h+='<div class="hint cp-note" style="color:var(--ink-3)">'+esc(L("الطلبات والإيراد الإجمالي من النظام + سلة — طلبات كل حملة من المنصة نفسها.","Total orders & revenue from System + Salla; each campaign's orders come from the platform."))+"</div>";
   if(!haveStruct) h+='<div class="hint cp-note">'+esc(L("لسه مفيش لقطة لحالة الحملات وميزانياتها — دوس «تحديث الأرقام». لحد ما تيجي، ظاهر كل اللي صرف في الفترة.","No status/budget snapshot yet — press «Refresh numbers». Until then, everything that spent is shown."))+"</div>";
   const camps=m.camps, tot=m.tot, ptot=m.ptot, bud=m.bud, campBudget=m.campBudget; cpFocusApply(m);
   const tile=(lb,val,ar)=>'<div class="cp-tile"><small>'+esc(lb)+"</small><b>"+val+"</b>"+(ar||"")+"</div>";
@@ -14938,7 +15007,7 @@ function renderCampApp(){
       h+='<div class="ma-ks ma-k8">'+cpKpis(m).map(x=>'<div class="ma-k"><small>'+esc(pad?x.lb:(x.lbS||x.lb))+"</small><b>"+maN(x.cur==null?"—":x.fmt(x.cur))+(x.cur$&&x.cur!=null?"<small>"+esc(C)+"</small>":"")+"</b>"+
         (x.sub?'<em class="ma-ksub">'+esc(pad?x.sub:(x.subS||x.sub))+"</em>":(x.prev!==undefined?maDelta(x.cur,x.prev,!!x.low):""))+"</div>").join("")+"</div>";
     }
-    if(conv) h+='<div class="ma-note">'+esc(L("الطلبات والإيراد من AppsFlyer وسلة على مستوى الحملة بس — المجموعات والإعلانات بالصرف بس.","Orders per campaign only; ad sets and ads show spend."))+"</div>";
+    if(conv) h+='<div class="ma-note">'+esc(L("الطلبات والإيراد الإجمالي من النظام + سلة — طلبات كل حملة من المنصة نفسها.","Total orders & revenue from System + Salla; each campaign's orders come from the platform."))+"</div>";
     const q=(CP.mq||"").trim().toLowerCase();
     let camps=maSortCamps(m.camps); const all=camps.length; if(q) camps=camps.filter(c=>String(c.code).toLowerCase().indexOf(q)>=0||String(c.proj||"").toLowerCase().indexOf(q)>=0);
     const sel=pad? (top&&maFind(m,top.k||(top.pl+"|"+top.cid))) || camps[0] : null;
@@ -15996,7 +16065,9 @@ function tplRows(){ const T=ST.tpls;
     return '<div class="lc-tr'+(ST.tplId===t.id?" cur":"")+'">'+(ren? '<input class="inp" id="lcTplRenI" data-focus value="'+E(t.name)+'" maxlength="80" style="flex:1 1 160px" aria-label="اسم القالب"><button type="button" class="btn btn-s btn-p" data-a="lcTplRenOk" data-id="'+t.id+'">حفظ الاسم</button><button type="button" class="btn btn-s" data-a="lcTplRenX">إلغاء</button>'
       : '<button type="button" class="lc-tn" data-a="lcTplUse" data-id="'+t.id+'" title="املأ القالب منه"><b dir="auto">'+E(t.name)+'</b><small><span class="lc-pl" data-p="'+E(t.platform)+'"><i class="lc-dot"></i>'+ltr(t.platform)+"</span>"+(sk?" · "+ltr(sk)+" حقل بيتغيّر كل مرة":"")+"</small></button>"+
         '<div class="lc-ta"><button type="button" class="btn btn-s btn-p" data-a="lcTplUse" data-id="'+t.id+'">استخدم</button><button type="button" class="btn btn-s" data-a="lcTplRen" data-id="'+t.id+'">اسم</button><button type="button" class="btn btn-s" data-a="lcTplUpd" data-id="'+t.id+'" title="خلّي القالب ده = اللي في الفورم دلوقتي">حدّث</button><button type="button" class="btn btn-s" data-a="lcTplDup" data-id="'+t.id+'">كرّر</button><button type="button" class="btn btn-s btn-d" data-a="lcTplDel" data-id="'+t.id+'">'+(tplDraft&&tplDraft.del===t.id?"متأكد؟":"احذف")+"</button></div>")+"</div>"; }).join(""); }
-function tplModal(){ tplDraft=null; openModal(mHead("قوالبي")+'<p class="hint" style="margin-bottom:10px">قوالبك المحفوظة — على حسابك، وبتظهر على الماك والآيباد والآيفون. اختار قالب والفورم يتملى منه، وتفضل الحقول اللي بتتغيّر كل مرة فاضية.</p>'+
+function tplModal(nVid){ tplDraft=null; openModal(mHead(nVid?"اختار قالب للفيديوهات":"قوالبي")+
+    (nVid?'<p class="lc-hand" role="status"><b class="num">'+nVid+'</b> فيديو من مكتبة الكريتيف في الفورم — اختار قالب وهيملا باقي الحقول من غير ما يمسح الفيديوهات. أو اقفل وكمّل بإيدك.</p>':"")+
+    '<p class="hint" style="margin-bottom:10px">قوالبك المحفوظة — على حسابك، وبتظهر على الماك والآيباد والآيفون. اختار قالب والفورم يتملى منه، وتفضل الحقول اللي بتتغيّر كل مرة فاضية.</p>'+
     '<div class="lc-tl" id="lcTplList">'+tplRows()+"</div>"+
     '<div class="lc-mf"><button type="button" class="btn" data-a="lcModalClose">اقفل</button><button type="button" class="btn btn-p" data-a="lcTplSave">احفظ القالب الحالي</button></div>',"قوالبي"); loadTpls(true); }
 function tplSaveModal(upd,from){ const t=upd?(ST.tpls||[]).find(x=>x.id===upd):null; tplDraft={upd:t?t.id:"",skip:new Set(t?(t.skip||[]):TPL_DEF_SKIP),dup:""};
@@ -16039,7 +16110,7 @@ Object.assign(ACT,{
   lcPreset:b=>addCustoms(PRESETS[+b.dataset.i][1]),
   lcLaunch:()=>{ launch(); },
   lcTest:()=>{ testLaunch(); },
-  lcBlank:()=>{ briefName=""; setForm(blank(F.platform)); lsSet(DRAFT_KEY,null); ST.tplId=""; toast("قالب فاضي"); },
+  lcBlank:()=>{ briefName=""; ST.keepIds=false; setForm(blank(F.platform)); lsSet(DRAFT_KEY,null); ST.tplId=""; toast("قالب فاضي"); },
   lcRepeatLast:async()=>{ let f=null; const r=ST.rows.find(x=>!x.is_test);
     if(r&&cloud()){ try{ const q=await sb().from("launch_queue").select("form").eq("id",r.id).maybeSingle(); f=q.data&&q.data.form; }catch(e){} }
     briefName=""; f=f||lsGet(LAST_KEY,null); if(!f){ toast("لسه مفيش حملة اتطلقت",true); return; }
@@ -16083,7 +16154,7 @@ Object.assign(ACT,{
   lcPickTab:b=>{ ST.pickTab=+b.dataset.i||0; pickPaint(); },
   /* «حدّث المكتبة»: نفس مزامنة Airtable ← media اللي «حدّث كل حاجة» ومكتبة الكريتيف بيستخدموها (edge function media-sync) */
   lcLibSync:async b=>{ if(b.disabled) return; b.disabled=true; const t=b.textContent; b.textContent="بيحدّث من Airtable…";
-    try{ const r=await sb().functions.invoke("media-sync",{body:{}}); if(r.error||(r.data&&r.data.error)) throw new Error((r.data&&r.data.error)||r.error.message); await loadLib(true); toast("المكتبة اتحدّثت من Airtable"); }
+    try{ const r=await sb().functions.invoke("media-sync",{body:{}}); if(r.error||(r.data&&r.data.error)) throw new Error((r.data&&r.data.error)||r.error.message); try{ LB.data=null; MA.data=null; NEWM.loaded=false; }catch(_){} await loadLib(true); toast("المكتبة اتحدّثت من Airtable"); }
     catch(e){ toast("المكتبة مااتحدّثتش: "+String((e&&e.message)||e).slice(0,100),true); await loadLib(true); }
     const nb=$("#lcLibSync"); if(nb){ nb.disabled=false; nb.textContent=t; } },
   lcCopyBrief:b=>{ const t=$("#lcBriefT").textContent; (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>{ b.textContent="اتنسخ"; },()=>{ const r=document.createRange(); r.selectNodeContents($("#lcBriefT")); const s=getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent="متعلّم — انسخ"; }); },
@@ -16098,8 +16169,10 @@ Object.assign(ACT,{
   lcTplUpd:b=>tplSaveModal(b.dataset.id,"list"),
   lcTplSkip:b=>{ const k=b.dataset.k; if(tplDraft.skip.has(k)) tplDraft.skip.delete(k); else tplDraft.skip.add(k); const on=tplDraft.skip.has(k); b.classList.toggle("on",on); b.setAttribute("aria-checked",on); },
   lcTplSaveOk:()=>{ tplSaveOk(); },
-  lcTplUse:b=>{ const t=(ST.tpls||[]).find(x=>x.id===b.dataset.id); if(!t) return; closeLc(); briefName=""; setForm(cl(t.form)); ST.tplId=t.id; setTab("form");
-    toast("القالب «"+t.name+"» — املأ "+((t.skip||[]).length?"الحقول الفاضية":"اللي ناقص")+" واطلق"); const first=document.querySelector("#lcf_title"); if(first&&!matchMedia("(max-width:760px)").matches) first.focus({preventScroll:true}); },
+  lcTplUse:b=>{ const t=(ST.tpls||[]).find(x=>x.id===b.dataset.id); if(!t) return; const cur=idInfo(F.ids).ids; closeLc(); briefName=""; setForm(cl(t.form)); ST.tplId=t.id;
+    /* Nov 16 2026: القالب مبيمسحش الفيديوهات — لو جايين من المكتبة («اطلقهم») أو القالب نفسه من غير فيديوهات، الفيديوهات اللي في الفورم بتفضل */
+    const kept=cur.length&&(ST.keepIds||!idInfo(F.ids).ids.length); if(kept){ F.ids=cur.join("\n"); renderForm(); } ST.keepIds=false; setTab("form");
+    toast(kept? "القالب «"+t.name+"» اتملى مع الـ "+cur.length+" فيديو — راجع واطلق" : "القالب «"+t.name+"» — املأ "+((t.skip||[]).length?"الحقول الفاضية":"اللي ناقص")+" واطلق"); const first=document.querySelector("#lcf_title"); if(first&&!matchMedia("(max-width:760px)").matches) first.focus({preventScroll:true}); },
   lcTplRen:b=>{ tplDraft={ren:b.dataset.id}; $("#lcTplList").innerHTML=tplRows(); const i=$("#lcTplRenI"); if(i){ i.focus(); i.select(); } },
   lcTplRenX:()=>{ tplDraft=null; $("#lcTplList").innerHTML=tplRows(); },
   lcTplRenOk:async b=>{ const t=(ST.tpls||[]).find(x=>x.id===b.dataset.id), name=($("#lcTplRenI").value||"").trim(); if(!t||!name) return;
@@ -16162,11 +16235,15 @@ function mount(){
   if(!F) F=normalize(lsGet(DRAFT_KEY,null)||blank("Meta"));
   renderForm(); paintList(); paintMac(); paintTplBtn(); setTab(ST.tab);
   load(); poll(); loadTpls(); loadLib();
+  /* «🚀 اطلقهم» من مكتبة الكريتيف: الفيديوهات تتحط في الفورم وقائمة القوالب تتفتح (مرة واحدة) */
+  if(HAND&&HAND.length){ const ids=HAND; HAND=null; ST.keepIds=true; F.ids=ids.join("\n"); renderForm(); setTab("form"); try{ window.scrollTo(0,0); }catch(e){} setTimeout(()=>tplModal(ids.length),0); }
 }
+let HAND=null;
+function handoff(ids){ HAND=(ids||[]).filter(i=>/^\d{14}$/.test(i)); }
 /* لو المستخدم بيكتب في القالب، render() بتاع الموقع ميبدّلش الـ DOM من تحته (الكيبورد على الموبايل كان هيقفل) */
 function busy(){ const a=document.activeElement; return !!($("#lcRoot")&&a&&a.closest&&a.closest("#lcRoot")&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)); }
 function focus(id){ ST.focus=/^[a-z0-9]{8,24}$/.test(id||"")?id:""; if(ST.focus) ST.tab="list"; }
-return {view,mount,busy,focus,PICK_TABS:LC_PICK_TABS,LICENSE_OK:LC_LICENSE_OK};
+return {view,mount,busy,focus,handoff,PICK_TABS:LC_PICK_TABS,LICENSE_OK:LC_LICENSE_OK};
 })();
 function render(){
   /* لينك مباشر: ?p=campperf&ws=<client>&from=YYYY-MM-DD&to=YYYY-MM-DD&act=all — بيتطبق مرة واحدة أول ما الإعدادات تتحمّل */
