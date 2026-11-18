@@ -189,3 +189,10 @@ update public.docs set data = data || jsonb_build_object('status','done','done_a
   ملف rebuild_entries_conv.sql فيه نفس الكلام، بس الدالة أسرع.
   ديمان مالهاش تحديث لحظي: «تحديث سريع» بيسحب ميتا وسناب بس (camp-refresh: TIKTOK_TOKEN → not_built).
   عشان كده صرف تيك توك وApple بيتحدث بس لما Claude يسحب.
+
+## (18 نوفمبر) التحديث التلقائي من الإضافة (README §41)
+- إضافة khzama-live 1.6.0 بتحدّث صرف تيك توك (ديمان + ملبي، النهارده وامبارح) والباك إند بتاع ديمان لوحدها كل 5 دقايق، وفي خلال دقيقة من زرار الموقع.
+  فقبل ما تسحب الحاجات دي، بص على docs sys/live_sync (sources.*.ok_at). لو آخر نجاح أقل من 15 دقيقة، متسحبهاش تاني.
+- صفوف ad_daily اللي ad_id بتاعها 'live:<adgroup>' جاية من الإضافة. لما تسحب تيك توك بالـ MCP، الـ trigger بيمسحها لوحده.
+- AppsFlyer وسلة لسه بيتسحبوا من هنا، والإضافة مبتقراهمش.
+- إعادة بناء ملبي بقت دالة: select public.rebuild_entries_3sa3k1k(date 'YYYY-MM-DD').
