@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="gad-build" content="20261117120520">
+<meta name="gad-build" content="20261118131317">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -16,7 +16,7 @@
 <script>
 /* تحديث تلقائي للتطبيق على الموبايل/الآيباد: مفيش service worker ولا كاش. كل ما التطبيق يتفتح أو يرجع للواجهة
    بيجيب index.html جديد (no-store) ويقارن رقم البيلد؛ لو فيه نسخة أحدث بيفتحها على طول. */
-(function(){ var B="20261117120520", last=0;
+(function(){ var B="20261118131317", last=0;
   function busy(){ return document.querySelector("#cpIn:focus, .ma-sheet, input:focus, textarea:focus"); }
   function chk(){ var n=Date.now(); if(n-last<20000) return; last=n; if(busy()) return;
     /* Nov 16 2026: reads the tiny version.txt (≈15 bytes) instead of downloading the whole 1.7 MB page every time */
@@ -13571,7 +13571,7 @@ ACT.syncSnap=async()=>{
   if(SYNC.busy) return;
   if(READONLY) return toast(L("وضع المشاهدة — مينفعش تسجل لقطات","View-only — snapshots are locked"),true);
   if(window.SUPA_DB){ await schLoad(); SCH.cfg=Object.assign({every:30,start:"09:00",on:true},SCH.cfg||{},{requested:new Date().toISOString()}); await schSave();
-    return toast(L("اتسجل طلب لقطة — Claude بيشيّك كل ٥ دقايق — اللقطة هتظهر في الشيت خلال ٥–٧ دقايق بالكتير (Meta وTikTok وسناب + خزامى).","Snapshot requested — Claude checks every 5 minutes; it lands within 5–7 minutes.")); }
+    return toast(L("اتسجل طلب لقطة — السيرفر بياخدها خلال دقيقة، وهيوصلك إشعار بأرقامها على الموبايل.","Snapshot requested — the server takes it within a minute and sends you a notification with its numbers.")); }
   const cls=S.cfg.clients.filter(c=>hasLinks(c)&&(!S.ws||c.id===S.ws));
   if(!cls.length){ S.view="admin"; S.setupTab="links"; render(); return toast(L("اربط حسابات العميل الأول من «الربط التلقائي»","Link the client's accounts first"),true); }
   const mcp=await mcpGet();
@@ -13606,11 +13606,11 @@ function renderLinks(){
   if(window.SUPA_DB){ const c=SCH.cfg||{}; if(!SCH.loaded) setTimeout(schLoad,0);
     const acc=[["Meta","312559678073897 · 1355849785679367"],["TikTok","7338783723795595266"],["Snapchat","828aa8bb-bd63-44ee-8cf8-b735981ca06f"],[L("خزامى","Khzama"),"ME · TT · SC · bio · com · DM"]];
     return card(L("السحب التلقائي","Auto-pull"),L("بيتم من Claude — مفيش حاجة تتملي هنا","Runs from Claude — nothing to fill in here"),
-      '<div class="lk-intro">'+esc(L("Claude بيشيّك كل ٥ دقايق من ٩ الصبح لـ ١٢ بالليل: لو جه ميعاد اللقطة أو دوست «ابدأ سناب شوت» بياخد صرف النهارده من أول اليوم لحد اللحظة من كل منصة، وطلبات وإيراد خزامى لأكوادك، ويسجلهم لقطة بوقتها. والسحب اليومي الكامل (كل إعلان وفيديو) بيتم كل يوم الساعة ٨:٣٠ الصبح.",
-        "Claude checks every 5 minutes from 9am to midnight; when a snapshot is due or requested it pulls today's spend per platform and Khzama orders/revenue and logs them."))+"</div>"+
+      '<div class="lk-intro">'+esc(L("السيرفر بيشيّك كل دقيقة: لو جه ميعاد اللقطة أو دوست «ابدأ سناب شوت» بياخد صرف النهارده لكل منصة (ميتا وسناب بيتحدّثوا ساعتها، وتيك توك من إضافة كروم) وطلبات وإيراد خزامى / الباك إند، ويسجلهم لقطة بوقتها، ويبعتلك إشعار بالأرقام والفرق عن اللقطة اللي قبلها.",
+        "The server checks every minute; when a snapshot is due or requested it logs today's spend per platform and orders/revenue, then notifies you with the numbers."))+"</div>"+
       '<div class="tw"><table class="lk-t"><tbody>'+acc.map(a=>"<tr><td><b>"+esc(a[0])+'</b></td><td dir="ltr" class="num">'+esc(a[1])+"</td></tr>").join("")+
       "<tr><td><b>"+esc(L("كل قد إيه","Every"))+"</b></td><td>"+esc((c.every||30)+L(" دقيقة"," min"))+"</td></tr></tbody></table></div>"+
-      '<div class="lk-foot">'+syncBtn()+'<span class="hint">'+esc(L("الطلب بيتنفذ في أول تشييكة (٥–٧ دقايق بالكتير). Claude والكروم لازم يكونوا مفتوحين على الجهاز.","Runs on the next check (≤7 min). Claude and Chrome must be open on the computer."))+"</span></div>"); }
+      '<div class="lk-foot">'+syncBtn()+'<span class="hint">'+esc(L("الطلب بيتنفذ خلال دقيقة. أرقام تيك توك وخزامى والباك إند بتيجي من إضافة كروم، فالماك لازم يكون صاحي عشان تبقى حديثة.","Runs within a minute. TikTok, Khzama and backend numbers come from the Chrome extension, so the Mac must be awake for them to be fresh."))+"</span></div>"); }
   const cl=S.cfg.clients, row=c=>{ const l=clientLinks(c), inp=(k,ph)=>'<input class="inp num" dir="ltr" data-c="lnk" data-id="'+esc(c.id)+'" data-k="'+k+'" value="'+esc(l[k]||"")+'" placeholder="'+esc(ph)+'">';
     return "<tr><td><b>"+esc(c.name)+"</b></td><td>"+inp("meta","312559678073897")+"</td><td>"+inp("tiktok","7338783723795595266")+"</td><td>"+inp("mixpanel","3769752")+"</td></tr>"; };
   return card(L("الربط التلقائي","Auto-pull"),L("رقم حساب كل عميل على كل منصة","Each client's account id on each platform"),
@@ -15212,6 +15212,23 @@ function cpPoll(){ if(CP.polling) return; CP.polling=true; setTimeout(async()=>{
   const now=ch.filter(x=>x.status==="pending").length;
   if(r&&r.status==="pending"||now){ if(now<was){ const st=[]; const sb=SUPA_DB.client; for(let i=0;;i+=1000){ const q=await sb.from("camp_struct").select("*").eq("client_id",cpCid()).order("platform").order("level").order("id").range(i,i+999); if(q.error) break; st.push(...q.data); if(q.data.length<1000) break; } CP.struct=st; render(); } return cpPoll(); }
   cpLoad(true); },20000); }
+/* Nov 18 2026: أرقام الإضافة (تيك توك + الباك إند) بتوصل بعد الضغط بدقيقة لـ 4 دقايق — الموقع كان بيقرا الكروت مرة واحدة قبلها،
+   فكانت بتفضل قديمة لحد reload. دلوقتي: كل 30 ثانية (والصفحة قدامك) بيبص على sys/live_sync؛ أول ما يوصل رقم جديد
+   بيعيد قراية الأرقام والشاشة لوحدها — بعد الضغط على التحديث وكمان مع السحب التلقائي كل 5 دقايق. */
+const LW={seen:0,busy:false,last:0};
+async function lwCheck(){ if(LW.busy||document.hidden||!RT.cloud()) return; const n=Date.now(); if(n-LW.last<15000) return; LW.last=n; LW.busy=true;
+  try{ const d=await RT.get("sys/live_sync").catch(()=>null), at=+(d&&d.last_at)||0;
+    if(!LW.seen){ LW.seen=at; return; }
+    if(at>LW.seen){ LW.seen=at;
+      if(document.querySelector("input:focus, textarea:focus, .ma-sheet")) { LW.seen=at-1; return; }   // بتكتب حاجة — نستنى المرة الجاية
+      await new Promise(r=>setTimeout(r,2500));                                                          // السيرفر بيخلّص إعادة البنا
+      S.loadedFrom=null; S.loadedTo=null; await reload();
+      if(S.view==="campperf"){ await cpLoad(true); }
+      render(); } }
+  finally{ LW.busy=false; } }
+setInterval(lwCheck,30000);
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ LW.last=0; lwCheck(); } });
+window.addEventListener("focus",()=>{ LW.last=0; lwCheck(); });
 ACT.cpMapOpen=t=>{ CP.mapOpen=t.dataset.k; render(); };
 CHG.cpMap=async(v,el)=>{ if(!v) return; const pl=el.dataset.pl, camp=el.dataset.camp, cu=el.dataset.cu, id=(cpCid()+"_"+pl+"_"+camp+"_"+cu).replace(/[^A-Za-z0-9_-]/g,"_");
   try{ await RT.set("campmap/"+id,{client:cpCid(),platform:pl,camp:camp,custom:cu,adset:v,at:Date.now(),by:ME.email||""});
@@ -15488,7 +15505,7 @@ function schBar(){ if(!SCH.loaded) setTimeout(schLoad,0); const c=SCH.cfg||{ever
     '<button class="btn btn-s" data-a="schShift" data-m="-5">'+esc(L("قدّمها ٥ د","5 min sooner"))+'</button><button class="btn btn-s" data-a="schShift" data-m="5">'+esc(L("أخّرها ٥ د","5 min later"))+'</button><button class="btn btn-s btn-p" data-a="schNow">'+esc(L("خدها دلوقتي","Take it now"))+"</button></div>"; }
 CHG.schEvery=v=>{ SCH.cfg=Object.assign({},SCH.cfg||{}, {every:+v}); if(+v&&!SCH.cfg.nextAt) SCH.cfg.nextAt=new Date(Date.now()+ +v*60000).toISOString(); if(!+v) SCH.cfg.nextAt=null; schSave(); };
 ACT.schShift=t=>{ const c=SCH.cfg=Object.assign({},SCH.cfg||{every:30}); const base=c.nextAt? new Date(c.nextAt).getTime() : Date.now(); c.nextAt=new Date(Math.max(Date.now(),base+ +t.dataset.m*60000)).toISOString(); schSave(); };
-ACT.schNow=()=>{ SCH.cfg=Object.assign({},SCH.cfg||{every:30},{nextAt:new Date().toISOString(),requested:new Date().toISOString()}); schSave(); toast(L("اتسجل طلب لقطة دلوقتي — Claude هياخدها في أول دورة.","Snapshot requested — Claude will take it on its next run.")); };
+ACT.schNow=()=>{ SCH.cfg=Object.assign({},SCH.cfg||{every:30},{nextAt:new Date().toISOString(),requested:new Date().toISOString()}); schSave(); toast(L("اتسجل طلب لقطة دلوقتي — السيرفر هياخدها خلال دقيقة ويبعتلك إشعار بأرقامها.","Snapshot requested — the server takes it within a minute and notifies you.")); };
 /* ── كروت اللحظة + مقارنة بنفس الوقت في أيام تانية (من اللقطات، بإيراد خزامى) ── */
 function ssMin(t){ const p=new Date(t).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",hour12:false,timeZone:"Asia/Riyadh"}).split(":"); return (+p[0])*60+(+p[1]); }
 function ssAt(rows,min){ if(!rows||!rows.length) return null; const g=ssGrid(rows).filter(r=>ssMin(r.t)<=min); if(!g.length) return null; const last=g[g.length-1]; const t=ssTot(last.v); return Object.assign(t,{t:last.t}); }

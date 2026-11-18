@@ -2087,3 +2087,52 @@ After the 4-campaign run on 1.5.0 (6 Khzama tabs → 90–118 s per save, 6 link
   - مركز الإجراءات: الإجراءات بس
 - **أي ضغطة والتحديث شغال** بتتنفّذ تاني بعده، مش بتتجاهل.
 - **تيك توك** بيفضل في طابور السحب لحد ما تطبيق TikTok API يتوافق عليه.
+
+## 41) تحديث تلقائي من غير API — إضافة كروم «khzama-live» 1.6.0 + edge function `live-push` (18 نوفمبر 2026)
+The extension now has a 4th job, «تحديث تلقائي», next to Khzama / campaign links / launch tool. It never uses a platform API,
+never touches cookies, storage, tokens or headers and never hooks requests: it opens ONE pinned tab of its own
+(`liveTabId`, autoDiscardable off, parked on about:blank between runs) and reads what the page already rendered.
+- **When:** alarm `live-tick` every minute → a run when the interval passed (popup: 5 / 15 / 30 / 60 min, default 5) or when the site
+  asked: `POST live-push/req` returns `sys/campreq` («تحديث الأرقام») and `sys/pullreq` («حدّث كل حاجة»); a request newer than
+  `liveReqSeen` and younger than 30 min starts a run at once. After the run `POST /done {req_at}` closes that `sys/campreq`
+  (status done, `done_by: live-sync`) so «أداء الحملات» stops waiting and reloads.
+- **TikTok Ads Manager** (`/i18n/manage/creative?aadvid=<acc>&st=<day>&et=<day>`, today + yesterday, ديمان 7267941711098494977 and
+  ملبي 7338783723795595266): the table component's props (`dataSource` + `columns`, found by walking React fibers up from a cell inside
+  `[data-testid=campaign-list-main-table]`). One row per ad group (Smart+): `ad_id` = ad group id, `ad_name` = ad group name,
+  `creative_name` = the ad name, `stat_cost` / `show_cnt` / `click_cnt`. The footer «Total of N … Spend X SAR» must equal the sum of the
+  rows (±0.05) — the table loads rows in chunks, so if a spending ad is not in the loaded chunk the read is refused («partial»), nothing is sent.
+  Never click anything on TikTok (a header click froze the page in a test).
+- **ديمان backend** (`dashboard.dimaan.sa/admin/marketing/statistics`): clicks the 4 day tabs (`[role=tab]`, `aria-selected`), reads
+  «عدد الطلبات / إجمالي الطلبات» and «عملاء جدد / إجمالي طلباتهم»; a value is taken only when two reads 700 ms apart agree.
+- **Server `live-push` v1.0.0** (verify_jwt ON, the extension's own key = scope `khzama`, x-api-key only):
+  `/tiktok` → rpc `live_tiktok_merge` (ad_daily): per ad group, existing MCP rows are SCALED so their sum = the page; an ad group without
+  MCP rows gets one row `ad_id 'live:<adgroup_id>'`. Trigger `ad_daily_drop_live` deletes the live row when a real MCP row for that ad group
+  + day is inserted. Guards: rows ≠ footer → 409; new day < 70% of stored (stored ≥ 20) → 409; 1 push / 50 s per account+day.
+  `/backend` → conv_daily channel backend (≤ 4 days, orders < 50% of stored → 409). Then `rebuild_entries_dm1n4an(day)` /
+  `rebuild_entries_3sa3k1k(day)` (new DB function = `~/.gadlytics/rebuild_entries.sql` from a day). `/status` → one push notification per
+  source + state per 2 h (login_required / error). Heartbeat + per-source state: docs `sys/live_sync`.
+  Migration: `supabase/migrations/20261118_live_sync.sql`.
+- **Site auto-reload (build 20261118131623):** the page polls `sys/live_sync.last_at` every 30 s while visible (and on focus/return). When it grows, it waits 2.5 s, re-reads entries (`reload()`), runs `cpLoad(true)` on campperf, and re-renders. No manual page reload is needed after «تحديث الأرقام» or after the 5-minute timer run. It skips one cycle while you type.
+- **Popup:** box «تحديث تلقائي» — on/off, interval, «حدّث دلوقتي», per-source switch (e.g. turn ملبي TikTok off) with last success /
+  «محتاج تسجيل دخول» / error. Badge «دخول» when any source needs a login. A source failing 5× in a row is retried once an hour.
+- **Not read (yet):** AppsFlyer (dashboard widgets only load while the tab is visible) and Salla (the signed-in Salla user has no access
+  to orders / reports). Both stay on Claude's pull; AppsFlyer can go server-side with an AppsFlyer API token (no approval needed).
+- **Needs:** Chrome open + the Mac awake (Double Shot), signed in to ads.tiktok.com and dashboard.dimaan.sa. Tab suspenders: the tab is
+  pinned and re-loaded with its URL each run; whitelist ads.tiktok.com, dashboard.dimaan.sa and admin.molabi.sa in Tiny Suspender anyway.
+- Airtable → media is already server-side (camp-alerts cron calls media-sync every 15 min, 08:00–23:59 Riyadh) — no Mac needed.
+
+## 42) السناب شوت من السيرفر + إشعار بأرقام كل لقطة (18 نوفمبر 2026)
+
+- **Edge function `snap-tick`** (`supabase/functions/snap-tick/index.ts`, verify_jwt ON). pg_cron `gad-snap-tick` calls it every minute, using the same anon header as `gad-season-tick`. When nothing is due it does one read and returns `due:false`.
+- **Schedule:** docs `config/snapsched`, set from the site (كل ربع ساعة / نص ساعة / ساعة / حسب الطلب, «خدها دلوقتي», «ابدأ سناب شوت»).
+  - A snapshot is due when `requested` is set (and not in the future), or when `every > 0`, the Riyadh time is at or after `start` (default 09:00), and `now ≥ nextAt − 30 s`.
+  - `nextAt` moves before the run starts, so a slow run is never taken twice.
+- **What each run does, per client in `config/app`:**
+  1. Runs `camp-refresh` for Meta + Snap. This is skipped when season-tick already ran it in the last 3 minutes.
+  2. Reads today's spend per platform from `ad_daily`. TikTok comes from the Chrome extension; ASA comes from the daily pull.
+  3. Reads orders and revenue: Khzama per platform for ملبي, and the backend (`conv_daily` with channel = backend) for ديمان.
+  4. Writes the rows to `public.snapshots`, one row per source at the minute.
+  5. Sends ONE push per client through `push` (kind `snapshot`, tag `snap-<client>`). The push holds the totals, the change since the previous snapshot, ROAS, and spend per platform. It adds a ⚠️ line when TikTok, Khzama or the backend data is stale.
+  6. Skips any client with no spend and no orders that day.
+- **Heartbeat:** docs `sys/snaptick`.
+- **Replaces** the Claude scheduled task `gadlytics-snapshots`. That task is disabled since Oct 25. It also read Khzama request headers, which is not allowed any more.
