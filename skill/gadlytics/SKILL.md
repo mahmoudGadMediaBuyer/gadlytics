@@ -188,3 +188,23 @@ Mac sizes (final, Nov 10): `html.ma-desk .ma{max-width:none;margin:0}`; `.ma-spl
   - «حدّث كل حاجة» في لوحتي بيحدّث كل حاجة: المنصات، وAirtable، وطلبات السحب، والكاش.
   - زرار كل قسم بيحدّث قسمه بس.
 - تيك توك لسه مش لحظي: تطبيق TikTok API «GADLYTICS» وحساب المطوّر اترفضوا (17 نوفمبر).
+
+## Auto refresh without API — extension 1.6.0 «تحديث تلقائي» + edge fn `live-push` (Nov 18 2026, README §41)
+- The khzama-live extension reads TikTok Ads Manager (ديمان + ملبي, today + yesterday, «Ad» tab = one row per ad group) and the ديمان backend
+  (4 day tabs) from the page every 5 min (popup: 5/15/30/60) and within a minute of the site's «تحديث الأرقام» / «حدّث كل حاجة»
+  (`live-push/req` → sys/campreq, sys/pullreq; `/done` closes sys/campreq). Read-only, no API, no cookies/tokens; never click on TikTok.
+- Server `live-push` (verify_jwt ON, extension key scope khzama): `/tiktok` → rpc `live_tiktok_merge` (scales MCP rows of the ad group to the
+  page total, or one `ad_id 'live:<adgroup>'` row; trigger `ad_daily_drop_live` removes it when a real MCP row arrives), `/backend` → conv_daily
+  backend; then `rebuild_entries_dm1n4an` / new `rebuild_entries_3sa3k1k(p_from)`. Guards: rows ≠ footer, shrink < 70 %, 1 push/50 s.
+  State: docs `sys/live_sync`. Notifications once per source+state per 2 h.
+  The site watches `sys/live_sync.last_at` (every 30 s while visible) and re-reads entries by itself when it grows.
+- AppsFlyer + Salla are NOT read by the extension (AppsFlyer widgets need a visible tab; Salla user lacks orders/reports access) → still Claude's pull;
+  proposed fix: AppsFlyer API token on the server.
+- Daily pull: TikTok MCP rows coexist — they overwrite the scaled rows and the trigger drops `live:` rows. Count TikTok spend from level 'ad' as before.
+
+
+## Snapshots (السناب شوت) — server side since 2026-11-18
+- Edge function `snap-tick` runs from pg_cron `gad-snap-tick` every minute. It reads `config/snapsched` (every / start / nextAt / requested).
+- When a snapshot is due it writes `public.snapshots` and pushes one notification per client with the numbers (kind `snapshot`). Heartbeat: `sys/snaptick`.
+- To test: POST {"force":true} with the anon header copied from the `gad-season-tick` cron command.
+- Do not revive the Claude task `gadlytics-snapshots`. It read Khzama request headers.
