@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head><meta charset="utf-8"><title>خزامى لحظي</title><link rel="stylesheet" href="style.css">
-<style>body { width: 300px; padding: 14px; } .bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; }</style></head>
+<style>body { width: 300px; padding: 14px; } .bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; } select { font: inherit; border: 1px solid var(--line); border-radius: 8px; padding: 6px; background: transparent; color: inherit; }</style></head>
 <body>
   <h1>GADLYTICS · خزامى لحظي</h1>
   <div class="box" id="status"></div>
@@ -10,6 +10,13 @@
     <label class="switch"><input type="checkbox" id="on"> <span>شغال</span></label>
   </div>
   <p class="mute">بيسحب تبرعات النهارده من خزامى كل دقيقتين. <a href="options.html" target="_blank">الإعدادات</a></p>
+  <div class="box" id="live"></div>
+  <div class="bar">
+    <button id="liveRun">حدّث دلوقتي</button>
+    <select id="liveEvery" title="كل قد إيه"><option value="5">كل 5 دقايق</option><option value="15">كل 15 دقيقة</option><option value="30">كل 30 دقيقة</option><option value="60">كل ساعة</option></select>
+    <label class="switch"><input type="checkbox" id="liveOn"> <span>شغّال</span></label>
+  </div>
+  <p class="mute">بيقرا صرف تيك توك (ديمان + ملبي) وأرقام الباك إند بتاع ديمان من الصفحة نفسها في تاب متثبّت، ويحدّث السيستم والموبايل والآيباد. زرار «تحديث الأرقام» في الموقع بيشغّله في خلال دقيقة.</p>
   <div class="box" id="links"></div>
   <div class="bar">
     <span class="mute">بتسجّل روابط الحملة الجديدة في خزامى (المعلن TSW) في تاب تاني.</span>

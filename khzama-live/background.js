@@ -3,7 +3,8 @@
 // Never touches Khzama cookies, storage, tokens or headers. This loop never types anything into Khzama.
 // links.js is the second job: it registers the affiliate links of campaign builds, one tab of its own per campaign.
 // launchtool.js is the third: it runs the Tamkeen launch tool for campaign builds, one tab of its own per campaign.
-importScripts('reader.js', 'links.js', 'launchtool.js');
+// live.js is the fourth: «تحديث تلقائي» — TikTok Ads Manager (ديمان + ملبي) and the ديمان backend, read from the page (1.6.0).
+importScripts('reader.js', 'links.js', 'launchtool.js', 'live.js');
 
 const API = 'https://ibpwudzjwjraqhfdmzet.supabase.co/functions/v1/gad-api';
 const CONFIG_JS = 'https://mahmoudgadmediabuyer.github.io/gadlytics/config.js';
@@ -233,8 +234,10 @@ async function tick(manual = false) {
 }
 
 async function badge() {
-  const s = await get(['enabled', 'paused', 'fails']);
-  const [text, color] = s.enabled === false ? ['off', '#888'] : s.paused === 'login' ? ['دخول', '#d93025'] : s.fails ? ['!', '#e37400'] : ['', '#188038'];
+  const s = await get(['enabled', 'paused', 'fails', 'liveSrc', 'liveOn']);
+  const lv = s.liveOn === false ? [] : Object.values(s.liveSrc || {}).filter((x) => x && !x.off);
+  const liveLogin = lv.some((x) => x.login), liveFail = lv.some((x) => (x.fails || 0) >= 2);
+  const [text, color] = s.enabled === false && s.liveOn === false ? ['off', '#888'] : s.paused === 'login' || liveLogin ? ['دخول', '#d93025'] : s.fails || liveFail ? ['!', '#e37400'] : ['', '#188038'];
   await chrome.action.setBadgeText({ text });
   await chrome.action.setBadgeBackgroundColor({ color });
 }
@@ -243,11 +246,13 @@ async function ensureAlarm() {
   if (!(await chrome.alarms.get(ALARM))) chrome.alarms.create(ALARM, { periodInMinutes: 2, delayInMinutes: 0.2 });
 }
 
-chrome.runtime.onInstalled.addListener(ensureAlarm);
-chrome.runtime.onStartup.addListener(ensureAlarm);
-chrome.alarms.onAlarm.addListener((a) => { if (a.name === ALARM) tick(); });
+chrome.runtime.onInstalled.addListener(() => { ensureAlarm(); liveAlarm(); });
+chrome.runtime.onStartup.addListener(() => { ensureAlarm(); liveAlarm(); });
+chrome.alarms.onAlarm.addListener((a) => { if (a.name === ALARM) tick(); if (a.name === LIVE_ALARM) liveTick(false); });
 chrome.runtime.onMessage.addListener((m, _s, reply) => {
   if (m?.cmd === 'run') { tick(true).then(() => reply({ ok: true })); return true; }
   if (m?.cmd === 'badge') { badge().then(() => reply({ ok: true })); return true; }
+  if (m?.cmd === 'live-run') { liveTick(true).then(() => reply({ ok: true })); return true; }
 });
 ensureAlarm();
+liveAlarm();

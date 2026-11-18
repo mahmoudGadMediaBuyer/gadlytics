@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "GADLYTICS · خزامى لحظي",
-  "description": "بيقرا روابط خزامى (admin.molabi.sa) كل دقيقتين ويبعت تبرعات النهارده لـ GADLYTICS، وبيسجّل روابط الحملات الجديدة في خزامى، وبيشغّل أداة الإطلاق للحملات الجديدة.",
-  "version": "1.5.1",
+  "description": "بيقرا روابط خزامى (admin.molabi.sa) كل دقيقتين ويبعت تبرعات النهارده لـ GADLYTICS، وبيسجّل روابط الحملات الجديدة في خزامى، وبيشغّل أداة الإطلاق للحملات الجديدة، وبيحدّث صرف تيك توك (ديمان + ملبي) وأرقام الباك إند بتاع ديمان لوحده من الصفحة.",
+  "version": "1.6.1",
   "permissions": [
     "alarms",
     "tabs",
@@ -11,6 +11,8 @@
   ],
   "host_permissions": [
     "https://admin.molabi.sa/*",
+    "https://ads.tiktok.com/*",
+    "https://dashboard.dimaan.sa/*",
     "https://launch.tamkeen-agency.com/*",
     "https://ibpwudzjwjraqhfdmzet.supabase.co/*",
     "https://mahmoudgadmediabuyer.github.io/*"
